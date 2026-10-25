@@ -1,7 +1,7 @@
 # @studnicky/iridis-image
 
 Reduces image pixels to a representative palette via median-cut clustering
-(`gallery:extract`), assigns the dominant colours to the shipped 5-role
+(`gallery:extract`), assigns the dominant colours to the shipped gallery
 gallery schema (`gallery:assignRoles`), and optionally shifts the accent hue
 away from the frame when their ΔE2000 distance is below the configured
 threshold (`gallery:harmonize`). Pair with browser canvas pixel sampling: feed
@@ -89,11 +89,10 @@ export function generateGalleryTheme(pixels: InputInterface['colors']) {
 |---|---|---|
 | `gallery:extract` | `colors`, `metadata.gallery.k` | Replaces `state.colors` with the K dominant colours and records `state.metadata['gallery:dominantColors']`. |
 | `gallery:assignRoles` | dominant colours + the gallery role schema | seeds `state.roles` so `resolve:roles` has a starting assignment. |
-| `gallery:harmonize` | resolved `accent` / `frame` roles + optional `metadata.gallery.harmonizeThreshold` | When ΔE2000 is below the threshold, shifts the accent hue 30° away from the frame and records `state.metadata['gallery:harmonizeDetails']`. |
+| `gallery:harmonize` | resolved `accent` / `frame` roles + optional `metadata.gallery.harmonizeThreshold` | When ΔE2000 is below the threshold, shifts the accent hue away from the frame and records `state.metadata['gallery:harmonizeDetails']`. |
 
-The shipped `galleryRoleSchema5` (canvas, frame, accent, muted, text) targets
-WCAG AA / AAA across the three required pairs (`text/canvas` 7:1,
-`text/frame` 4.5:1, `accent/canvas` 3:1) and ships as a strict-typed
+The shipped `galleryRoleSchema5` defines its canvas, frame, accent, muted, and
+text roles with WCAG constraints and ships as a strict-typed
 `RoleSchemaEntity` instance.
 
 Part of [iridis](https://github.com/Studnicky/iridis).

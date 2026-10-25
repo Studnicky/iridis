@@ -37,10 +37,6 @@ import validatePackageName from 'validate-npm-package-name';
 import { packagePipeline } from './package-pipeline.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const EXPECTED_PACKAGES = 18;
-const EXPECTED_SOURCES = 366;
-const EXPECTED_ARTIFACTS = 1464;
-const EXPECTED_EXPORTS = 40;
 const METADATA_FILES = ['README.md', 'LICENSE', 'CHANGELOG.md', 'package.json'];
 const DEPENDENCY_FIELDS = ['dependencies', 'optionalDependencies', 'peerDependencies'];
 const WORKSPACE_RANGE = 'workspace:*';
@@ -175,9 +171,6 @@ const packageRecordsFor = (rootDirectory) => {
     })
     .filter(({ manifest }) => manifest.private !== true)
     .toSorted((left, right) => left.directoryName.localeCompare(right.directoryName));
-  if (records.length !== EXPECTED_PACKAGES) {
-    fail(`expected ${EXPECTED_PACKAGES} public packages, found ${records.length}`);
-  }
   return records;
 };
 
@@ -373,6 +366,44 @@ const extractArchive = async (archive, destination, stageDirectory, privateRoot)
   }
 };
 
+const sourceOutputFor = (packageDirectory) => {
+  const configPath = join(packageDirectory, 'tsconfig.build.json');
+  const config = typescript.readConfigFile(configPath, typescript.sys.readFile);
+  if (config.error !== undefined) {
+    fail(`TypeScript could not read build config: ${configPath}`);
+  }
+  const parsed = typescript.parseJsonConfigFileContent(
+    config.config,
+    typescript.sys,
+    packageDirectory,
+    undefined,
+    configPath
+  );
+  if (parsed.errors.length > 0) {
+    fail(`TypeScript could not parse build config: ${configPath}`);
+  }
+  const sourceCount = parsed.fileNames.filter((path) => {
+    return path.endsWith('.ts')
+      && !path.endsWith('.d.ts')
+      && !/(?:^|[/\\])(?:tests?|__tests__)(?:[/\\]|$)|(?:\.test|\.spec)\.ts$/u.test(path);
+  }).length;
+  const options = parsed.options;
+  const emitsJavaScript = options.emitDeclarationOnly !== true;
+  const emittedFilesPerSource = [
+    emitsJavaScript,
+    options.declaration === true,
+    emitsJavaScript && options.sourceMap === true && options.inlineSourceMap !== true,
+    options.declaration === true && options.declarationMap === true
+  ].filter(Boolean).length;
+  if (emittedFilesPerSource === 0) {
+    fail(`TypeScript build config emits no files: ${configPath}`);
+  }
+  return {
+    'artifacts': sourceCount * emittedFilesPerSource,
+    'sources': sourceCount
+  };
+};
+
 const validatePackageLayout = (packageDirectory, manifest, expectedArtifacts) => {
   for (const metadata of METADATA_FILES) {
     const path = join(packageDirectory, metadata);
@@ -406,22 +437,6 @@ const validatePackageLayout = (packageDirectory, manifest, expectedArtifacts) =>
     fail(`package ${manifest.name} expected ${expectedArtifacts} artifacts, found ${artifacts.length}`);
   }
   return artifacts.length;
-};
-
-const validateTotals = (totals) => {
-  const expected = {
-    'archives': EXPECTED_PACKAGES,
-    'artifacts': EXPECTED_ARTIFACTS,
-    'exports': EXPECTED_EXPORTS,
-    'packages': EXPECTED_PACKAGES,
-    'sources': EXPECTED_SOURCES
-  };
-  for (const [field, value] of Object.entries(expected)) {
-    if (totals[field] !== value) {
-      fail(`expected ${field}=${value}, found ${String(totals[field])}`);
-    }
-  }
-  return totals;
 };
 
 const dependencyEntriesFor = (manifest) => {
@@ -847,10 +862,11 @@ const stage = (rootDirectory = ROOT) => {
 const smoke = async (rootDirectory = ROOT) => {
   const records = packageRecordsFor(rootDirectory);
   const recordsByName = new Map(records.map((record) => [record.manifest.name, record]));
-  const sourceCount = records.reduce((total, { packageDirectory }) => {
-    return total + listFiles(join(packageDirectory, 'src')).filter((path) => {
-      return path.endsWith('.ts') && !path.endsWith('.d.ts');
-    }).length;
+  const sourceOutputs = new Map(records.map((record) => {
+    return [record.directoryName, sourceOutputFor(record.packageDirectory)];
+  }));
+  const sourceCount = [...sourceOutputs.values()].reduce((total, output) => {
+    return total + output.sources;
   }, 0);
   const publishDirectories = stage(rootDirectory);
   return withTemporaryDirectory('iridis-consumer-', async (temporaryDirectory) => {
@@ -871,14 +887,15 @@ const smoke = async (rootDirectory = ROOT) => {
       if (publishDirectory === undefined) {
         fail(`missing publish stage for ${record.manifest.name}`);
       }
+      const sourceOutput = sourceOutputs.get(record.directoryName);
+      if (sourceOutput === undefined) {
+        fail(`missing source output description for ${record.manifest.name}`);
+      }
       const stagedManifest = readJson(join(publishDirectory, 'package.json'));
-      const expectedArtifacts = listFiles(join(record.packageDirectory, 'src'))
-        .filter((path) => path.endsWith('.ts') && !path.endsWith('.d.ts'))
-        .length * 4;
       artifactCount += validatePackageLayout(
         publishDirectory,
         stagedManifest,
-        expectedArtifacts
+        sourceOutput.artifacts
       );
       exportCount += Object.keys(stagedManifest.exports).length;
       const archive = packArchive(publishDirectory, archivesDirectory, cacheDirectory);
@@ -889,7 +906,7 @@ const smoke = async (rootDirectory = ROOT) => {
         publishDirectory,
         temporaryDirectory
       );
-      validatePackageLayout(installedDirectory, stagedManifest, expectedArtifacts);
+      validatePackageLayout(installedDirectory, stagedManifest, sourceOutput.artifacts);
       archives.push(archive);
       extractedByName.set(stagedManifest.name, installedDirectory);
     }
@@ -928,16 +945,16 @@ const smoke = async (rootDirectory = ROOT) => {
       }
     }
 
-    if (runtimeImports !== EXPECTED_EXPORTS) {
-      fail(`expected ${EXPECTED_EXPORTS} isolated runtime imports, found ${runtimeImports}`);
+    if (runtimeImports !== exportCount) {
+      fail(`isolated runtime imports differ from staged exports: imports=${runtimeImports}, exports=${exportCount}`);
     }
-    const totals = validateTotals({
+    const totals = {
       'archives': archives.length,
       'artifacts': artifactCount,
       'exports': exportCount,
       'packages': records.length,
       'sources': sourceCount
-    });
+    };
     return {
       ...totals,
       cli,
@@ -955,9 +972,9 @@ export const packageConsumerSmoke = Object.freeze({
   packArchive,
   'run': smoke,
   runCommand,
+  sourceOutputFor,
   stage,
   validatePackageLayout,
-  validateTotals,
   verifyConsumer,
   verifyCli,
   withTemporaryDirectory

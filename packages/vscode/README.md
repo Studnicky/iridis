@@ -1,6 +1,6 @@
 # @studnicky/iridis-vscode
 
-Generate a portable VS Code `theme.json` from an explicitly framed, tiered palette. The plugin resolves a 64-role vocabulary, emits 132 registry-backed workbench colours, semantic-token rules, and TextMate token colours. Every emitted colour is sRGB `#RRGGBB` or `#RRGGBBAA`.
+Generate a portable VS Code `theme.json` from an explicitly framed palette. The plugin resolves its declared role vocabulary, emits registry-backed workbench colours, semantic-token rules, and TextMate token colours. Every emitted colour is sRGB `#RRGGBB` or `#RRGGBBAA`.
 
 ## Install
 
@@ -68,16 +68,9 @@ const themeJson = state.outputs['vscode:themeJson'];
 
 `vscode:seedRoles` requires exactly one object in `input.colors`. Its `framing` must equal `input.runtime.framing`; it rejects extra, missing, or malformed role keys. Roles supplied by name remain caller-stated and exact, while the core pipeline derives missing roles. `metadata['core:roleProvenance']` records each role's origin and ordered adjustment evidence. `metadata['core:contrastReport']` records every declared contrast result; it reports a failed caller-stated pair without changing that colour.
 
-## Schemas and tiers
+## Schemas
 
-Use `VSCODE_ROLE_SCHEMAS_64.dark` or `.light` for the declared framing. The schemas are explicit dark and light role definitions; light themes are generated through the light schema, not by inverting a dark output. `VSCODE_ROLE_SCHEMAS_16` exports a 16-role view of the same canonical definitions.
-
-| Tier | Exact supplied roles |
-|---|---|
-| 4 | `background`, `foreground`, `keyword`, `error` |
-| 8 | Tier 4 plus `type`, `function`, `number`, `constant` |
-| 16 | `background`, `foreground`, `surface`, `muted`, `keyword`, `type`, `function`, `variable`, `string`, `number`, `constant`, `comment`, `error`, `warning`, `info`, `success` |
-| 64 | The 16 base roles plus accent, UI, ANSI, Git, diff, bracket, and widget roles declared by `VSCODE_ROLE_SCHEMAS_64` |
+Use `VSCODE_ROLE_SCHEMAS_64.dark` or `.light` for the declared framing. The schemas are explicit dark and light role definitions; light themes are generated through the light schema, not by inverting a dark output. `VSCODE_ROLE_SCHEMAS_16` exports a compact view of the same canonical definitions. The selected seed tier declares its exact caller-supplied role keys.
 
 The schema declares WCAG pairs for foreground, muted text, syntax roles, status colours, `onAccent`, links, and chrome foreground. It also declares bounded pairs for `surface` and `accent`. The VS Code plugin consumes the same engine and the same `input.contrast` configuration as every other output. `enforce:compliance` applies the selected standard to these pairs and adjusts derived roles; a pair whose endpoints are both caller-stated is reported without changing either colour.
 
@@ -87,10 +80,10 @@ The schema declares WCAG pairs for foreground, muted text, syntax roles, status 
 |---|---|
 | `vscode:seedRoles` | Validates the structured tiered palette and creates named caller-stated seed records. |
 | `vscode:deriveUiRoles` | Derives absent UI extension roles while preserving caller-stated roles. |
-| `vscode:expandTokens` | Builds 27 syntax and TextMate base tokens from the resolved framing surface. |
+| `vscode:expandTokens` | Builds syntax and TextMate base tokens from the resolved framing surface. |
 | `vscode:applyModifiers` | Generates semantic token rules and enforces their background contrast. |
 | `emit:vscodeSemanticRules` | Writes `outputs['vscode:semanticTokenRules']`. |
-| `emit:vscodeUiPalette` | Writes `outputs['vscode:workbenchColors']` from the 64-role vocabulary. |
+| `emit:vscodeUiPalette` | Writes `outputs['vscode:workbenchColors']` from the declared role vocabulary. |
 | `emit:vscodeThemeJson` | Combines workbench, semantic, and TextMate token output into `outputs['vscode:themeJson']`. |
 
 `emit:vscodeThemeJson` requires both preceding emit tasks. The two emit tasks may run in either order after their own prerequisites.

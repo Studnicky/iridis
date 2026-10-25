@@ -1,5 +1,5 @@
 ---
-title: 7. CLI Usage
+title: CLI Usage
 description: Run an iridis pipeline from a validated JSON configuration file.
 ---
 

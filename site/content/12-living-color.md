@@ -1,11 +1,11 @@
 ---
-title: "12. Living Color"
+title: "Living Color"
 description: Animating between palette points while every constraint keeps holding on each frame — see it live in the Motion and Color stream cards above.
 ---
 
 ## Living color
 
-A static palette is one frozen point. Living Color animates a palette from one point to another while every constraint the engine already enforces — role schemas, WCAG/APCA contrast — keeps holding at each intermediate frame, not just at the two endpoints. See it live: the **Motion** card's duration/easing sliders drive `--iridis-tune`/`--iridis-ease`, the same two CSS variables every color transition on this page runs on, and the **Color stream** card seismographs each decorative role's live chroma drift in real time. Five packages implement this, in addition to the single-point derivation `@studnicky/iridis` core already does:
+A static palette is one frozen point. Living Color animates a palette from one point to another while every constraint the engine already enforces — role schemas, WCAG/APCA contrast — keeps holding at each intermediate frame, not just at the endpoints. See it live: the **Motion** card's duration/easing sliders drive the CSS transition variables used across the page, and the **Color stream** card seismographs each decorative role's live chroma drift in real time. Animation packages extend the single-point derivation `@studnicky/iridis` core already does:
 
 | Package | Provides |
 |---|---|
@@ -27,7 +27,7 @@ Treating the palette this way makes a small algebra fall out for free — these 
 
 | Operation | Meaning |
 |---|---|
-| `lerp(a, b, 0.3)` | thirty percent of the way from `a` toward `b` |
+| `lerp(a, b, t)` | an interpolated point from `a` toward `b` |
 | `subtract(a, b)` | per-role OKLCH delta vector |
 | `nearest(a, corpus)` | closest preset to a custom palette under a perceptual metric |
 | `drift(current, derived, threshold)` | "the user adjusted accent past tolerance, re-derive?" |

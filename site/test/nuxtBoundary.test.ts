@@ -1,5 +1,7 @@
 import { chromium, type Page } from '@playwright/test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { test } from 'node:test';
 import { setTimeout } from 'node:timers/promises';
 
@@ -8,6 +10,21 @@ import { ProductionNitroServer } from './fixtures/ProductionNitroServer.ts';
 import { TestPatterns } from './fixtures/TestPatterns.ts';
 
 class NuxtBoundaryHarness {
+  static documentTitle(slug: string): string {
+    const source = readFileSync(join(import.meta.dirname, '../content', `${slug}.md`), 'utf8');
+    const prefix = 'title:';
+    const line = source.split('\n').find((candidate) => {
+      const matches = candidate.startsWith(prefix);
+      return matches;
+    });
+    if (line === undefined) {
+      throw new Error(`Document ${slug} declares no title`);
+    }
+    const result = line.slice(prefix.length).trim()
+      .replaceAll('"', '');
+    return result;
+  }
+
   static async requestSsr(url: string): Promise<{ 'error': Error | undefined; 'html': string | undefined }> {
     try {
       const response = await fetch(url);
@@ -417,20 +434,21 @@ await test('built Nuxt app SSRs and hydrates the rendered navigation order', { '
   await NuxtBoundaryHarness.navigateFrom(page, 'combine', 'Refine', 'refine');
   await NuxtBoundaryHarness.navigateFrom(page, 'refine', 'Combine', 'combine');
   await NuxtBoundaryHarness.navigateFrom(page, 'combine', 'Upload', 'upload');
-  await NuxtBoundaryHarness.navigateFrom(page, 'upload', '2. The Four Stages', '02-the-four-stages');
+  await NuxtBoundaryHarness.navigateFrom(page, 'upload', NuxtBoundaryHarness.documentTitle('02-the-four-stages'), '02-the-four-stages');
 
   const referenceSection = page.locator('#reference');
   await referenceSection.scrollIntoViewIfNeeded();
+  const nextDocumentTitle = NuxtBoundaryHarness.documentTitle('03-adopting-existing-apps');
   const nextDocumentButton = referenceSection.getByRole('button', {
     'exact': true,
-    'name': '3. Adopting Iridis In An Existing App'
+    'name': nextDocumentTitle
   });
   assert.equal(await nextDocumentButton.count(), 1);
   await nextDocumentButton.click();
-  await assert.doesNotReject(page.waitForFunction(() => {
-    const result = document.querySelector('#remaining-documents h2')?.textContent?.includes('3. Adopting Iridis In An Existing App') === true;
+  await assert.doesNotReject(page.waitForFunction((title) => {
+    const result = document.querySelector('#remaining-documents h2')?.textContent?.includes(title) === true;
     return result;
-  }));
+  }, nextDocumentTitle));
   await NuxtBoundaryHarness.waitForTargetNearTop(page, '03-adopting-existing-apps');
 
   const directScrollState = await page.locator('[id="05-recipe-vue-capacitor"]').evaluate(async (element) => {
@@ -461,7 +479,7 @@ await test('built Nuxt app SSRs and hydrates the rendered navigation order', { '
   );
   assert.equal(
     directScrollState.header,
-    '5. Recipe: Vue + Capacitor Per-Category Palettes',
+    NuxtBoundaryHarness.documentTitle('05-recipe-vue-capacitor'),
     `Direct scrolling must select the document at the reading position: ${JSON.stringify(directScrollState)}`
   );
 

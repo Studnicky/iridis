@@ -1,6 +1,6 @@
 # @studnicky/iridis-stylesheet
 
-Emits CSS custom properties from resolved roles. Produces a four-block stylesheet:
+Emits CSS custom properties from resolved roles. Produces a stylesheet with
 unconditional `:root` defaults, a `@media (prefers-color-scheme: dark)` override,
 a `@supports (color: color(display-p3 0 0 0))` wide-gamut override, and a
 `@media (forced-colors: active)` block whose values are Windows High Contrast
@@ -83,7 +83,7 @@ export function generateStylesheet(roleSchema: RoleSchemaEntity.Type) {
 | `darkScheme` | `string` | `@media (prefers-color-scheme: dark) { :root { ... } }`, empty when `state.variants.dark` is unset |
 | `wideGamut` | `string` | `@supports` block with `color(display-p3 r g b)` values, empty when no role has `displayP3` populated |
 | `forcedColors` | `string` | `@media (forced-colors: active)` block with WHCM tokens picked from `hints.intent` |
-| `full` | `string` | All four blocks concatenated in cascade order |
+| `full` | `string` | Every emitted block concatenated in cascade order |
 | `map` | `Record<string, string>` | Role name → CSS variable name |
 
 The `emit:cssVarsScoped` task is the multi-scope companion: register it instead

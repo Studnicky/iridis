@@ -1,5 +1,5 @@
 ---
-title: 4. Long-form Engine API
+title: Long-form Engine API
 description: Construct the Engine directly for custom schemas, explicit contrast checking, or plugin emitters.
 ---
 
@@ -61,7 +61,7 @@ Construct `new Engine()`, register the core tasks (`coreTasks`), `adopt()` the p
 
 ## Compliance configuration and reports
 
-`input.contrast` is the single configuration boundary for selected contrast standards, color-vision-deficiency work, non-mandatory pairs, and strict output handling. `algorithm` selects `wcag21` or `apca`; `level` selects the mandatory-pair target. `nonMandatoryLevel` selects `AA` or `AAA` for schema-declared non-mandatory pairs and defaults to `AA`.
+`input.contrast` is the configuration boundary for selected contrast standards, color-vision-deficiency work, non-mandatory pairs, and strict output handling. `algorithm` selects `wcag21` or `apca`; `level` selects the mandatory-pair target. `nonMandatoryLevel` selects `AA` or `AAA` for schema-declared non-mandatory pairs and defaults to `AA`.
 
 `cvdMode` defaults to `warn`. `warn` reports simulated CVD floor and drop evidence without changing roles. `nudge` attempts bounded corrections for unpinned roles and preserves unresolved evidence as advisory. `enforce` applies the same bounded correction and leaves unresolved CVD constraints in the terminal report.
 
@@ -101,10 +101,10 @@ Changing a control reruns the pipeline and the schema reachability list. The rea
 
 Feasibility and CVD correction run on closed-form and bounded numeric paths rather than sampling.
 
-- `analyzeSchema` certifies neutral, shared-root, and independent-root hue envelopes with interval witnesses over the lightness/chroma corners of each role. A role schema with 32 roles analyzes in about 25 ms.
+- `analyzeSchema` certifies neutral, shared-root, and independent-root hue envelopes with interval witnesses over each role's authored lightness and chroma bounds.
 - Repair scoring, proofs, and CVD range pruning share one numeric `ColorCoordinate` model, which `@studnicky/iridis/math` exports for callers that score candidates themselves.
 - CVD correction runs against a fixed search budget per run. A run that exhausts its budget returns the best candidate found and reports the unresolved constraints.
-- The demo runs palette work and the schema reachability check in one engine worker; the check uses latest-wins sequencing so a stale reply never overwrites a newer result.
+- The demo runs palette work and the schema reachability check in an engine worker; the check uses latest-wins sequencing so a stale reply never overwrites a newer result.
 
 ### Safety
 
@@ -128,9 +128,9 @@ Same engine, same plugins. The CLI dynamically imports only the plugins whose `e
 A role schema is a consumer-authored contract: a `name`, an optional `description`, an array of `roles`, and an optional array of `contrastPairs`. iridis never infers meaning from a role's name — every downstream decision reads the role's declared `intent` instead. Each entry in `roles[]` is a `RoleDefinitionInterface`:
 
 - **`name`** — becomes the suffix of the emitted CSS custom property (`--iridis-{name}`) and the key every downstream task uses to look up `state.roles[name]`. Keep it lowercase kebab-case and stable; renaming a role is a breaking change for every consumer reading `--iridis-{old-name}`.
-- **`intent`** — the classifier that drives forced-colors (WHCM) token selection, the APCA Lc target, the default WCAG ratio, and Capacitor StatusBar style. It's one of ten values (`text`, `background`, `accent`, `muted`, `critical`, `positive`, `link`, `button`, `onAccent`, `onButton`) grouped into a core, signal, and interaction family. iridis never infers intent from the role name: when intent is omitted it stays undefined and each downstream task applies its documented generic default. Declare it whenever semantic output matters.
+- **`intent`** — the classifier that drives forced-colors (WHCM) token selection, the APCA Lc target, the default WCAG ratio, and Capacitor StatusBar style. The role-definition schema declares the supported values. iridis never infers intent from the role name: when intent is omitted it stays undefined and each downstream task applies its documented generic default. Declare it whenever semantic output matters.
 - **`required`** — when intake yields no colors, `resolve:roles` synthesizes a required non-derived role from its declared range centers and hue target. With available colors, required and optional roles use the same hint/distance assignment. A derived role still needs a resolvable `derivedFrom` source. Mark a role required only when downstream code needs a concrete fallback.
 - **`derivedFrom`** — after `resolve:roles`, `expand:family` derives the child from the resolved source. A declared lightness or chroma range contributes its midpoint; an omitted range preserves the source coordinate. `hueOffset` rotates relative to the source hue. Expansion iterates to a fixed point, so acyclic chains resolve regardless of schema order; missing sources and cycles remain unassigned and produce warnings.
-- **`hue`** / **`hueClamp`** — `hue` is a semantic target, and `hueClamp` limits how far the current hue may rotate toward it along the shortest arc. The default limit is 90°. These fields work for directly resolved and `derivedFrom` roles; `hueOffset` is used only when no absolute `hue` target is declared.
-- **`lightnessRange`** / **`chromaRange`** — `resolve:roles` pushes an assigned seed's OKLCH lightness and chroma into these bounds. For a derived role, `expand:family` uses each declared range's midpoint. Keep both ranges narrow (lightness ≤ 0.15 wide) for surface and text roles so the result stays inside the role's perceptual zone regardless of seed; widen lightness (≥ 0.20) for accent roles so the seed's identity shows through, and cap chroma around 0.32 for sRGB-only emit targets.
+- **`hue`** / **`hueClamp`** — `hue` is a semantic target, and `hueClamp` limits how far the current hue may rotate toward it along the shortest arc. These fields work for directly resolved and `derivedFrom` roles; `hueOffset` is used only when no absolute `hue` target is declared.
+- **`lightnessRange`** / **`chromaRange`** — `resolve:roles` pushes an assigned seed's OKLCH lightness and chroma into these bounds. For a derived role, `expand:family` uses each declared range's midpoint. Author ranges that preserve the intended perceptual zone while leaving sufficient room for declared contrast requirements and the target gamut.
 - **`contrastPairs`** — a declarative accessibility contract, not a styling hint: `enforce:compliance` solves every declared pair after `resolve:roles` and `expand:family`. It preserves authored hue relationships and range envelopes, keeps stated roles exact, and may adjust either unpinned endpoint inside its declared constraints. Declare a pair for every foreground/background combination that renders together; the terminal report records the target, achieved value, shortfall, and limiting constraints for any pair that remains unresolved.

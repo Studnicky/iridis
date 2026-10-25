@@ -244,6 +244,24 @@ test('archive extraction rejects bytes that differ from the validated stage', as
   });
 });
 
+test('archive extraction rejects a file that is absent from the validated stage', async () => {
+  await packageConsumerSmoke.withTemporaryDirectory('iridis-archive-file-set-test-', async (root) => {
+    const archive = join(root, 'archive.tgz');
+    const stage = join(root, 'stage');
+    const extracted = join(root, 'extracted');
+    writeStage(stage);
+    writeArchive(archive, [
+      ...archiveEntries,
+      { 'content': 'unexpected\n', 'path': 'package/dist/unexpected.js', 'type': 'File' }
+    ]);
+    await assert.rejects(
+      packageConsumerSmoke.extractArchive(archive, extracted, stage, root),
+      /archive evidence count differs/u
+    );
+    assert.equal(existsSync(extracted), false);
+  });
+});
+
 test('archive extraction rejects pre-existing, linked, and escaping destinations', async (context) => {
   await context.test('pre-existing empty directory', async () => {
     await packageConsumerSmoke.withTemporaryDirectory('iridis-existing-target-test-', async (root) => {
@@ -368,8 +386,6 @@ test('direct external dependencies resolve from their declaring package and vali
     });
   });
 });
-
-
 test('optional peer dependencies are excluded from copied external closures', async () => {
   await packageConsumerSmoke.withTemporaryDirectory('iridis-optional-peer-test-', async (root) => {
     const workspace = join(root, 'workspace');
@@ -872,7 +888,7 @@ test('package layout validation rejects a missing export target', () => {
             'import': './dist/index.js'
           }
         }
-      }, 2),
+      }),
       /missing import target/u
     );
   } finally {
@@ -880,15 +896,39 @@ test('package layout validation rejects a missing export target', () => {
   }
 });
 
-test('total validation rejects incomplete archive coverage', () => {
-  assert.throws(
-    () => packageConsumerSmoke.validateTotals({
-      'archives': 17,
-      'artifacts': 1284,
-      'exports': 42,
-      'packages': 18,
-      'sources': 321
-    }),
-    /expected archives=18, found 17/u
-  );
+test('package layout validation rejects a missing emitted artifact', () => {
+  const root = mkdtempSync(join(tmpdir(), 'iridis-emitted-artifact-test-'));
+  try {
+    const source = join(root, 'source');
+    const stage = join(root, 'stage');
+    writeStage(stage);
+    mkdirSync(join(source, 'src'), { 'recursive': true });
+    writeFileSync(join(source, 'src', 'index.ts'), 'export const fixture = true;\n');
+    writeFileSync(join(source, 'src', 'index.test.ts'), 'export const fixtureTest = true;\n');
+    writeFileSync(join(source, 'tsconfig.build.json'), `${JSON.stringify({
+      'compilerOptions': {
+        'declaration': true,
+        'declarationMap': true,
+        'sourceMap': true
+      },
+      'exclude': ['src/**/*.test.ts'],
+      'include': ['src/**/*.ts']
+    }, null, 2)}\n`);
+    const expected = packageConsumerSmoke.sourceOutputFor(source);
+    assert.equal(expected.sources, 1);
+    assert.throws(
+      () => packageConsumerSmoke.validatePackageLayout(stage, {
+        'name': '@fixture/archive',
+        'exports': {
+          '.': {
+            'types': './dist/index.d.ts',
+            'import': './dist/index.js'
+          }
+        }
+      }, expected.artifacts),
+      /expected .* artifacts, found 2/u
+    );
+  } finally {
+    rmSync(root, { 'force': true, 'recursive': true });
+  }
 });

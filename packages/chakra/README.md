@@ -96,7 +96,7 @@ export function generateChakraTheme(roleSchema: RoleSchemaEntity.Type) {
 The engine has no numeric-shade generator (no `s50`..`s900` scale); the only
 per-role colour data available is the canonical resolved role
 (`state.roles`) and the `dark`/`light` variants `derive:variant` produces.
-`emit:chakraTheme` maps those three sources onto a minimal three-tier scale:
+`emit:chakraTheme` maps those sources onto a minimal scale:
 
 | Tier | Source |
 |---|---|
