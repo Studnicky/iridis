@@ -15,10 +15,12 @@ import type {
 } from '../types/index.ts';
 
 import { InputEntity } from '../entities/InputEntity.ts';
+import { RoleSchemaEntity } from '../entities/RoleSchemaEntity.ts';
 import { RuntimeOptionsEntity } from '../entities/RuntimeOptionsEntity.ts';
 import { ContrastRatioSchema } from '../model/ContrastRatioSchema.ts';
 import { PaletteStateSchema }  from '../model/PaletteStateSchema.ts';
 import { PluginSchema }        from '../model/PluginSchema.ts';
+import { RoleRelationshipGraphIntegrity } from '../model/RoleRelationshipGraphIntegrity.ts';
 import { RoleSchemaSchema }    from '../model/RoleSchemaSchema.ts';
 import { TaskManifestSchema }  from '../model/TaskManifestSchema.ts';
 import { Validator }           from '../model/Validator.ts';
@@ -422,6 +424,11 @@ export class Engine implements EngineInterface {
       const roleResult = this.validator.validate(RoleSchemaSchema, input.roles);
       if (roleResult.errors.length > 0) {
         this.throwInvalid('input.roles invalid', 'input.roles', roleResult.errors);
+      }
+      const admittedRoleSchema = RoleSchemaEntity.intake(input.roles);
+      const integrityErrors = RoleRelationshipGraphIntegrity.validate(admittedRoleSchema);
+      if (integrityErrors.length > 0) {
+        this.throwInvalid('input.roles invalid', 'input.roles', integrityErrors);
       }
     }
     this.validateContrastPairBounds(input);
