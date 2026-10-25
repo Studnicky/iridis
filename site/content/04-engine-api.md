@@ -67,7 +67,9 @@ Construct `new Engine()`, register the core tasks (`coreTasks`), `adopt()` the p
 
 `enableStrictCompliance` defaults to `false`. A non-strict run returns the closest bounded palette with `disposition: 'best-effort'` when pairs remain unresolved. A strict run preserves the same best-achievable roles and variants, but writes `disposition: 'withheld'`; consumers use that disposition to avoid admitting the palette.
 
-`report:compliance` writes `metadata['contrast:complianceReport']` as `{ compliant, disposition, selected, pairs, problemPairs }`. `problemPairs` is the stable failing subset of `pairs`. Every pair reports `foreground`, `background`, `required`, `actual`, `shortfall`, `passed`, `adjustedRoles`, and `constraints`. A failing pair can also carry `proof`, which identifies the best reachable value and its limiting bounds.
+`report:compliance` writes `metadata['contrast:complianceReport']` as `{ compliant, disposition, selected, pairs, problemPairs }`. `problemPairs` is the stable failing subset of `pairs`. Every pair reports `foreground`, `background`, `required`, `actual`, `shortfall`, `passed`, `adjustedRoles`, and `constraints`. A relationship-constrained pair also carries sorted `relationIds`, which join it to `core:relationshipResolution`. A failing pair can carry `proof`, which identifies the best reachable value and its limiting bounds.
+
+A relationship graph resolves role targets before compliance. Fixed relationships retain their resolved record; tolerant relationships constrain movement to their declared channel deltas. An `alpha-overlay` target is evaluated as its source-over composite. Schema analysis marks an alpha-overlay pair indeterminate with sampled evidence unless interval bounds can certify it.
 
 Schema authors can inspect constraints before running a palette:
 

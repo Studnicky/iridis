@@ -48,8 +48,16 @@ non-strict run has unresolved pairs, and `withheld` when strict compliance
 withholds unresolved roles. Each pair carries `foreground`, `background`,
 `required`, `actual`, `shortfall`, `passed`, `adjustedRoles`, and `constraints`.
 Constraints are `pin`, `range`, `hue-relationship`, `gamut`, `cvd-floor`, or
-`cvd-drop`. `problemPairs` is the stable-sorted subset of the same pair records
-whose `passed` value is false.
+`cvd-drop`. A pair constrained by an authored relationship carries its sorted
+`relationIds`, which join the terminal record to `core:relationshipResolution`.
+`problemPairs` is the stable-sorted subset of the same pair records whose
+`passed` value is false.
+
+A relationship graph resolves its target roles before compliance. Fixed relationships
+require their exact resolved record; tolerant relationships bound compliance movement
+to the declared channel deltas. An `alpha-overlay` relationship uses the emitted
+source-over composite for contrast measurement. Its schema analysis remains
+indeterminate with sampled evidence unless interval bounds can certify the composite.
 
 `ContrastFeasibility.analyzeSchema(schema, options)` evaluates declared pair envelopes for schema authors.
 It reports reachable, unreachable, hue-dependent, or indeterminate reachability without changing a palette.
