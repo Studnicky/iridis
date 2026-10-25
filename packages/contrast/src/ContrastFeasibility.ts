@@ -59,6 +59,7 @@ interface RoleDomainInterface {
   readonly 'fixedRecord'?: ColorRecordEntity.Type;
   readonly 'hints'?: ColorHintsEntity.Type;
   readonly 'hue'?: number;
+  readonly 'hueArcs'?: readonly HueArcInterface[];
   readonly 'lightness': readonly [number, number];
   readonly 'name': string;
   readonly 'relation'?: HueRelationInterface;
@@ -66,7 +67,10 @@ interface RoleDomainInterface {
 }
 
 interface RoleDomainOptionsInterface {
+  readonly 'chroma'?: readonly [number, number];
   readonly 'fixedRecord'?: ColorRecordEntity.Type;
+  readonly 'hueArcs'?: readonly HueArcInterface[];
+  readonly 'lightness'?: readonly [number, number];
   readonly 'relation'?: HueRelationInterface;
   readonly 'relationship'?: RelationshipConstraintDomain;
   readonly 'resolvedHue'?: number;
@@ -196,8 +200,11 @@ class ContrastFeasibilityDomain {
   }
 
   private static relationshipHueArcs(domain: RoleDomainInterface): readonly HueArcInterface[] | undefined {
+    if (domain.hueArcs !== undefined) {
+      return domain.hueArcs;
+    }
     const tolerance = domain.relationship?.tolerance?.hue;
-    const baseline = domain.relationship?.baseline.oklch.h;
+    const baseline = domain.relationship?.baseline?.oklch.h;
     if (tolerance === undefined || tolerance <= 0 || baseline === undefined) {
       return undefined;
     }
@@ -622,19 +629,21 @@ class ContrastFeasibilityDomain {
     options?: RoleDomainOptionsInterface
   ): RoleDomainInterface {
     const relationship = options?.relationship;
+    const baseline = relationship?.baseline;
     const tolerance = relationship?.tolerance;
-    const lightness = relationship === undefined || tolerance === undefined
+    const lightness = options?.lightness ?? (baseline === undefined || tolerance === undefined
       ? role.lightnessRange ?? [0, 1]
-      : ContrastFeasibilityDomain.intersection(role.lightnessRange ?? [0, 1], relationship.baseline.oklch.l, tolerance.lightness);
-    const chroma = relationship === undefined || tolerance === undefined
+      : ContrastFeasibilityDomain.intersection(role.lightnessRange ?? [0, 1], baseline.oklch.l, tolerance.lightness));
+    const chroma = options?.chroma ?? (baseline === undefined || tolerance === undefined
       ? role.chromaRange ?? [0, 0.5]
-      : ContrastFeasibilityDomain.intersection(role.chromaRange ?? [0, 0.5], relationship.baseline.oklch.c, tolerance.chroma);
-    const fixedRecord = options?.fixedRecord ?? (relationship?.tolerance === undefined ? relationship?.baseline : undefined);
-    const hue = relationship?.baseline.oklch.h ?? options?.resolvedHue ?? (role.derivedFrom === undefined ? role.hue : undefined);
+      : ContrastFeasibilityDomain.intersection(role.chromaRange ?? [0, 0.5], baseline.oklch.c, tolerance.chroma));
+    const fixedRecord = options?.fixedRecord ?? (relationship?.tolerance === undefined ? baseline : undefined);
+    const hue = baseline?.oklch.h ?? options?.resolvedHue ?? (role.derivedFrom === undefined ? role.hue : undefined);
     const result: RoleDomainInterface = {
       'chroma': chroma,
       ...(fixedRecord === undefined ? {} : { 'fixedRecord': fixedRecord }),
       ...(hue === undefined ? {} : { 'hue': hue }),
+      ...(options?.hueArcs === undefined ? {} : { 'hueArcs': options.hueArcs }),
       ...(role.intent === undefined ? {} : { 'hints': { 'intent': role.intent } }),
       'lightness': lightness,
       'name': role.name,
@@ -1057,9 +1066,9 @@ export class ContrastFeasibility {
     schema: RoleSchemaEntity.Type,
     options: ContrastOptionsEntity.Type
   ): ContrastFeasibilityReportEntity.Type {
-    const domains = ContrastFeasibility.domains(schema);
-    const roles = ContrastFeasibility.midpointRoles(domains);
     const input = InputEntity.intake({ 'colors': [], 'contrast': options, 'roles': schema });
+    const domains = ContrastFeasibility.domains(schema, { 'input': input, 'metadata': {} });
+    const roles = ContrastFeasibility.midpointRoles(domains);
     const result = ContrastFeasibility.report(domains, input, roles);
     return result;
   }
@@ -1087,14 +1096,37 @@ export class ContrastFeasibility {
   ): ReadonlyMap<string, RoleDomainInterface> {
     const roles = ContrastFeasibility.roleIndex(schema);
     const relations = ContrastFeasibility.hueRelations(roles);
+    const resolving = new Set<string>();
     const result = new Map<string, RoleDomainInterface>();
+    const resolve = (role: RoleSchemaEntity.Type['roles'][number]): RoleDomainInterface => {
+      const existing = result.get(role.name);
+      if (existing !== undefined) {
+        return existing;
+      }
+      if (resolving.has(role.name)) {
+        throw new TypeError(`Relationship domain cycle includes "${role.name}"`);
+      }
+      resolving.add(role.name);
+      const domainOptions = ContrastFeasibility.domainOptions(role, relations, options);
+      const relationship = domainOptions.relationship;
+      let source: RoleDomainInterface | undefined;
+      if (relationship !== undefined && relationship.baseline === undefined) {
+        source = ContrastFeasibility.relationshipSource(relationship, roles, resolve);
+      }
+      const projected = relationship === undefined || source === undefined
+        ? undefined
+        : ContrastFeasibility.projectedOptions(role, relationship, source);
+      const effectiveOptions: RoleDomainOptionsInterface = { ...domainOptions, ...projected };
+      const domain = ContrastFeasibilityDomain.domain(role, effectiveOptions);
+      resolving.delete(role.name);
+      result.set(role.name, domain);
+      return domain;
+    };
     for (let index = 0; index < schema.roles.length; index += 1) {
       const role = schema.roles[index];
-      if (role === undefined) {
-        continue;
+      if (role !== undefined) {
+        resolve(role);
       }
-      const domainOptions = ContrastFeasibility.domainOptions(role, relations, options);
-      result.set(role.name, ContrastFeasibilityDomain.domain(role, domainOptions));
     }
     return result;
   }
@@ -1119,6 +1151,123 @@ export class ContrastFeasibility {
       ...(relationship === undefined ? {} : { 'relationship': relationship }),
       ...(resolvedHue === undefined ? {} : { 'resolvedHue': resolvedHue })
     };
+    return result;
+  }
+
+  private static relationshipSource(
+    relationship: RelationshipConstraintDomain,
+    roles: ReadonlyMap<string, RoleSchemaEntity.Type['roles'][number]>,
+    resolve: (role: RoleSchemaEntity.Type['roles'][number]) => RoleDomainInterface
+  ): RoleDomainInterface | undefined {
+    if (relationship.operation === 'alpha-overlay' || relationship.operation === 'oklch-interpolate') {
+      return undefined;
+    }
+    const sourceName = relationship.sources[0];
+    const source = sourceName === undefined ? undefined : roles.get(sourceName);
+    if (source === undefined) {
+      return undefined;
+    }
+    const result = resolve(source);
+    return result;
+  }
+
+  private static projectedOptions(
+    role: RoleSchemaEntity.Type['roles'][number],
+    relationship: RelationshipConstraintDomain,
+    source: RoleDomainInterface
+  ): RoleDomainOptionsInterface | undefined {
+    if (relationship.operation === 'alpha-overlay' || relationship.operation === 'oklch-interpolate') {
+      return undefined;
+    }
+    const delta = relationship.operation === 'oklch-delta' ? relationship.relationship : undefined;
+    const lightnessOffset = delta?.operation === 'oklch-delta' ? delta.lightnessOffset ?? 0 : 0;
+    const chromaScale = delta?.operation === 'oklch-delta' ? delta.chromaScale ?? 1 : 1;
+    let hueOffset = 0;
+    if (relationship.operation === 'hue-offset') {
+      hueOffset = relationship.hueDegrees ?? 0;
+    } else if (delta?.operation === 'oklch-delta') {
+      hueOffset = delta.hueOffset ?? 0;
+    }
+    const tolerance = relationship.tolerance;
+    const lightness = ContrastFeasibility.projectedRange(
+      role.lightnessRange ?? [0, 1],
+      [source.lightness[0] + lightnessOffset, source.lightness[1] + lightnessOffset],
+      tolerance?.lightness,
+      0,
+      1
+    );
+    const chroma = ContrastFeasibility.projectedRange(
+      role.chromaRange ?? [0, 0.5],
+      [source.chroma[0] * chromaScale, source.chroma[1] * chromaScale],
+      tolerance?.chroma,
+      0,
+      0.5
+    );
+    const sourceHue = source.fixedRecord?.oklch.h ?? source.hue;
+    const resolvedHue = sourceHue === undefined
+      ? undefined
+      : ContrastFeasibility.normalizeHue(sourceHue + hueOffset);
+    const relation = resolvedHue === undefined
+      ? ContrastFeasibility.offsetRelation(source, hueOffset)
+      : undefined;
+    const hueArcs = resolvedHue === undefined || tolerance?.hue === undefined || tolerance.hue <= 0
+      ? undefined
+      : ContrastFeasibility.hueArcsFor(resolvedHue, tolerance.hue);
+    const result: RoleDomainOptionsInterface = {
+      'chroma': chroma,
+      ...(hueArcs === undefined ? {} : { 'hueArcs': hueArcs }),
+      'lightness': lightness,
+      ...(relation === undefined ? {} : { 'relation': relation }),
+      ...(resolvedHue === undefined ? {} : { 'resolvedHue': resolvedHue })
+    };
+    return result;
+  }
+
+  private static projectedRange(
+    authored: readonly [number, number],
+    source: readonly [number, number],
+    tolerance: number | undefined,
+    minimum: number,
+    maximum: number
+  ): readonly [number, number] {
+    const lower = Math.max(authored[0], minimum, source[0] - (tolerance ?? 0));
+    const upper = Math.min(authored[1], maximum, source[1] + (tolerance ?? 0));
+    const result: readonly [number, number] = lower <= upper ? [lower, upper] : [upper, upper];
+    return result;
+  }
+
+  private static offsetRelation(
+    source: RoleDomainInterface,
+    offset: number
+  ): HueRelationInterface {
+    const sourceRelation = source.relation;
+    const affineOffset = sourceRelation === undefined ? 0 : sourceRelation.affineOffset;
+    const result: HueRelationInterface = {
+      ...(affineOffset === undefined ? {} : { 'affineOffset': ContrastFeasibility.normalizeHue(affineOffset + offset) }),
+      'resolve': (rootHue: number): number => {
+        const sourceHue = sourceRelation?.resolve(rootHue) ?? rootHue;
+        const resolved = ContrastFeasibility.normalizeHue(sourceHue + offset);
+        return resolved;
+      },
+      'root': sourceRelation?.root ?? source.name
+    };
+    return result;
+  }
+
+  private static hueArcsFor(hue: number, tolerance: number): readonly HueArcInterface[] {
+    const lower = hue - tolerance;
+    const upper = hue + tolerance;
+    if (lower < 0) {
+      return [{ 'end': upper, 'start': 0 }, { 'end': lower + 360, 'start': 360 }];
+    }
+    if (upper > 360) {
+      return [{ 'end': upper - 360, 'start': 0 }, { 'end': 360, 'start': lower }];
+    }
+    return [{ 'end': upper, 'start': lower }];
+  }
+
+  private static normalizeHue(value: number): number {
+    const result = ((value % 360) + 360) % 360;
     return result;
   }
 
@@ -1212,7 +1361,6 @@ export class ContrastFeasibility {
     input: PaletteStateInterface['input'],
     roles: Record<string, ColorRecordEntity.Type>
   ): ContrastFeasibilityReportEntity.Type {
-    const schema = input.roles === undefined ? undefined : RoleSchemaEntity.intake(input.roles);
     const requirements = ContrastPolicy.normalize(input, PaletteRoleState.admit(roles));
     const pairs: ContrastPairFeasibilityEntity.Type[] = [];
     for (let index = 0; index < requirements.length; index += 1) {
@@ -1223,7 +1371,7 @@ export class ContrastFeasibility {
       const foreground = domains.get(requirement.foreground);
       const background = domains.get(requirement.background);
       if (foreground !== undefined && background !== undefined) {
-        const pair = ContrastFeasibility.requiresCompositeMeasurement(schema, requirement)
+        const pair = ContrastFeasibility.requiresCompositeMeasurement(foreground, background)
           ? ContrastFeasibilityDomain.sampledIndeterminate(foreground, background, requirement)
           : ContrastFeasibilityDomain.analyzePair(foreground, background, requirement);
         pairs.push(pair);
@@ -1234,22 +1382,16 @@ export class ContrastFeasibility {
   }
 
   private static requiresCompositeMeasurement(
-    schema: RoleSchemaEntity.Type | undefined,
-    requirement: ContrastPolicy.RequirementInterface
+    foreground: RoleDomainInterface,
+    background: RoleDomainInterface
   ): boolean {
-    const groups = schema?.relationshipGraph?.groups ?? [];
-    for (let groupIndex = 0; groupIndex < groups.length; groupIndex += 1) {
-      const group = groups[groupIndex];
-      if (group === undefined) {
-        continue;
-      }
-      for (let relationshipIndex = 0; relationshipIndex < group.relationships.length; relationshipIndex += 1) {
-        const relationship = group.relationships[relationshipIndex];
-        if (relationship?.operation === 'alpha-overlay' && (relationship.target === requirement.foreground || relationship.target === requirement.background)) {
-          return true;
-        }
-      }
-    }
-    return false;
+    const foregroundOperation = foreground.relationship?.operation;
+    const backgroundOperation = background.relationship?.operation;
+    const result =
+      foregroundOperation === 'alpha-overlay' ||
+      foregroundOperation === 'oklch-interpolate' ||
+      backgroundOperation === 'alpha-overlay' ||
+      backgroundOperation === 'oklch-interpolate';
+    return result;
   }
 }

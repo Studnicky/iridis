@@ -531,3 +531,97 @@ await test('ContrastFeasibility leaves alpha-overlay schema targets indeterminat
   assert.strictEqual(pair.reachability, 'indeterminate');
   assert.ok(pair.sampled !== undefined, 'source-over targets retain labelled sampled evidence until compositing intervals are bounded');
 });
+
+await test('ContrastFeasibility classifies graph alias, hue-offset, and OKLCH delta targets like legacy hue derivation', () => {
+  const roles = [
+    ContrastFeasibilityFixture.role('background', 0.05, 0.01),
+    ContrastFeasibilityFixture.role('source', 0.85, 0.01),
+    RoleDefinitionEntity.intake({
+      'chromaRange': [0.01, 0.01],
+      'derivedFrom': 'source',
+      'lightnessRange': [0.85, 0.85],
+      'name': 'alias-target'
+    }),
+    RoleDefinitionEntity.intake({
+      'chromaRange': [0.01, 0.01],
+      'derivedFrom': 'source',
+      'hueOffset': 180,
+      'lightnessRange': [0.85, 0.85],
+      'name': 'offset-target'
+    }),
+    RoleDefinitionEntity.intake({
+      'chromaRange': [0.01, 0.01],
+      'derivedFrom': 'source',
+      'lightnessRange': [0.95, 0.95],
+      'name': 'delta-target'
+    })
+  ];
+  const pairs = ['alias-target', 'offset-target', 'delta-target'].map((foreground) => {
+    return {
+      'background': 'background',
+      'foreground': foreground,
+      'minimumContrastRatio': 4.5
+    };
+  });
+  const legacy = RoleSchemaEntity.intake({
+    'contrastPairs': pairs,
+    'name': 'legacy-derived-feasibility',
+    'roles': roles
+  });
+  const graph = RoleSchemaEntity.intake({
+    'contrastPairs': pairs,
+    'name': 'graph-derived-feasibility',
+    'relationshipGraph': {
+      'groups': [{
+        'anchor': 'source',
+        'defaultMode': 'opposite',
+        'id': 'derived',
+        'modes': [{ 'hueOffsets': [{ 'degrees': 180, 'variantId': 'opposite' }], 'id': 'opposite' }],
+        'name': 'Derived',
+        'relationships': [
+          {
+            'id': 'alias',
+            'operation': 'alias',
+            'priority': 0,
+            'relaxability': 'fixed',
+            'source': 'source',
+            'target': 'alias-target'
+          },
+          {
+            'id': 'offset',
+            'operation': 'hue-offset',
+            'priority': 1,
+            'relaxability': 'fixed',
+            'source': 'source',
+            'target': 'offset-target',
+            'variantId': 'opposite'
+          },
+          {
+            'id': 'delta',
+            'lightnessOffset': 0.1,
+            'operation': 'oklch-delta',
+            'priority': 2,
+            'relaxability': 'fixed',
+            'source': 'source',
+            'target': 'delta-target'
+          }
+        ]
+      }]
+    },
+    'roles': roles
+  });
+
+  const legacyPairs = ContrastFeasibility.analyzeSchema(legacy, ContrastFeasibilityFixture.options()).pairs;
+  const graphPairs = ContrastFeasibility.analyzeSchema(graph, ContrastFeasibilityFixture.options()).pairs;
+
+  assert.deepStrictEqual(
+    graphPairs.map((pair) => { return [pair.foreground, pair.reachability]; }),
+    legacyPairs.map((pair) => { return [pair.foreground, pair.reachability]; }),
+    'graph operations preserve the certified classification of equivalent legacy derivations'
+  );
+  const everyGraphPairIsReachable = graphPairs.every((pair) => {
+    const result = pair.reachability === 'always-reachable';
+    return result;
+  });
+  assert.ok(everyGraphPairIsReachable, 'bounded graph targets receive continuous certificates');
+});

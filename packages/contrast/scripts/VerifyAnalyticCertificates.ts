@@ -337,7 +337,47 @@ const verifyRelationshipCertificates = (): { readonly 'certificates': number; re
   if (alpha?.reachability !== 'indeterminate' || alpha.sampled === undefined) {
     throw new Error('Alpha-overlay target must remain sampled and indeterminate.');
   }
-  return { 'certificates': 2, 'indeterminate': 1 };
+
+  const graphSchema = RoleSchemaEntity.intake({
+    'contrastPairs': [
+      { 'background': 'background', 'foreground': 'alias-target', 'minimumContrastRatio': 4.5 },
+      { 'background': 'background', 'foreground': 'offset-target', 'minimumContrastRatio': 4.5 },
+      { 'background': 'background', 'foreground': 'delta-target', 'minimumContrastRatio': 4.5 }
+    ],
+    'name': 'graph-domain-certificate-fixture',
+    'relationshipGraph': {
+      'groups': [{
+        'anchor': 'source',
+        'defaultMode': 'opposite',
+        'id': 'derived',
+        'modes': [{ 'hueOffsets': [{ 'degrees': 180, 'variantId': 'opposite' }], 'id': 'opposite' }],
+        'name': 'Derived',
+        'relationships': [
+          { 'id': 'alias', 'operation': 'alias', 'priority': 0, 'relaxability': 'fixed', 'source': 'source', 'target': 'alias-target' },
+          { 'id': 'offset', 'operation': 'hue-offset', 'priority': 1, 'relaxability': 'fixed', 'source': 'source', 'target': 'offset-target', 'variantId': 'opposite' },
+          { 'id': 'delta', 'lightnessOffset': 0.1, 'operation': 'oklch-delta', 'priority': 2, 'relaxability': 'fixed', 'source': 'source', 'target': 'delta-target' }
+        ]
+      }]
+    },
+    'roles': [
+      RoleDefinitionEntity.intake({ 'chromaRange': [0.01, 0.01], 'lightnessRange': [0.05, 0.05], 'name': 'background' }),
+      RoleDefinitionEntity.intake({ 'chromaRange': [0.01, 0.01], 'lightnessRange': [0.85, 0.85], 'name': 'source' }),
+      RoleDefinitionEntity.intake({ 'chromaRange': [0.01, 0.01], 'lightnessRange': [0.85, 0.85], 'name': 'alias-target' }),
+      RoleDefinitionEntity.intake({ 'chromaRange': [0.01, 0.01], 'lightnessRange': [0.85, 0.85], 'name': 'offset-target' }),
+      RoleDefinitionEntity.intake({ 'chromaRange': [0.01, 0.01], 'lightnessRange': [0.95, 0.95], 'name': 'delta-target' })
+    ]
+  });
+  const graphPairs = ContrastFeasibility.analyzeSchema(
+    graphSchema,
+    ContrastOptionsEntity.intake({ 'algorithm': 'wcag21', 'level': 'AA' })
+  ).pairs;
+  for (let index = 0; index < graphPairs.length; index += 1) {
+    const pair = graphPairs[index];
+    if (pair?.reachability !== 'always-reachable' || pair.sampled !== undefined) {
+      throw new Error('Graph alias, hue-offset, and OKLCH delta targets require continuous certificates.');
+    }
+  }
+  return { 'certificates': 5, 'indeterminate': 1 };
 };
 
 const relationship = verifyRelationshipCertificates();
