@@ -21,12 +21,19 @@ export namespace CvdResultSetEntity {
         'items': CvdCorrectionEntity.Schema,
         'type': 'array'
       },
+      'relationshipCandidateRejections': {
+        'additionalProperties': {
+          'minimum': 0,
+          'type': 'integer'
+        },
+        'type': 'object'
+      },
       'warnings': {
         'items': CvdPairWarningEntity.Schema,
         'type': 'array'
       }
     },
-    'required': ['blocked', 'corrections', 'warnings'],
+    'required': ['blocked', 'corrections', 'relationshipCandidateRejections', 'warnings'],
     'type': 'object'
   } as const;
 

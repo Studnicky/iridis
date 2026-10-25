@@ -19,6 +19,7 @@ import { RuntimeOptionsEntity } from '../entities/RuntimeOptionsEntity.ts';
 import { ContrastRatioSchema } from '../model/ContrastRatioSchema.ts';
 import { PaletteStateSchema }  from '../model/PaletteStateSchema.ts';
 import { PluginSchema }        from '../model/PluginSchema.ts';
+import { RoleRelationshipGraphIntegrity } from '../model/RoleRelationshipGraphIntegrity.ts';
 import { RoleSchemaSchema }    from '../model/RoleSchemaSchema.ts';
 import { TaskManifestSchema }  from '../model/TaskManifestSchema.ts';
 import { Validator }           from '../model/Validator.ts';
@@ -422,6 +423,12 @@ export class Engine implements EngineInterface {
       const roleResult = this.validator.validate(RoleSchemaSchema, input.roles);
       if (roleResult.errors.length > 0) {
         this.throwInvalid('input.roles invalid', 'input.roles', roleResult.errors);
+      }
+      if (input.roles.relationshipGraph !== undefined) {
+        const integrityErrors = RoleRelationshipGraphIntegrity.validate(input.roles);
+        if (integrityErrors.length > 0) {
+          this.throwInvalid('input.roles invalid', 'input.roles', integrityErrors);
+        }
       }
     }
     this.validateContrastPairBounds(input);

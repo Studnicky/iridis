@@ -29,6 +29,11 @@ export namespace CompliancePairEntity {
       'foreground': { 'type': 'string' },
       'passed': { 'type': 'boolean' },
       'proof': ContrastFeasibilityProofEntity.Schema,
+      'relationIds': {
+        'items': { 'minLength': 1, 'type': 'string' },
+        'type': 'array',
+        'uniqueItems': true
+      },
       'required': { 'type': 'number' },
       'shortfall': { 'minimum': 0, 'type': 'number' }
     },

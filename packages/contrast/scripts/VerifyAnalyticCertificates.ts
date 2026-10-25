@@ -1,11 +1,16 @@
-import type { RoleSchemaEntity } from '@studnicky/iridis';
+import type { PaletteStateInterface } from '@studnicky/iridis';
 
 import {
   ColorCoordinate,
   colorRecordFactory,
+  consoleLogger,
   ContrastOptionsEntity,
+  deriveRoleRelations,
   InputEntity,
-  PaletteRoleState
+  PaletteRoleState,
+  RoleDefinitionEntity,
+  RoleSchemaEntity,
+  RuntimeOptionsEntity
 } from '@studnicky/iridis';
 import { ContrastFeasibility } from '@studnicky/iridis-contrast';
 import { ContrastPolicy, RoleGeometry } from '@studnicky/iridis/tasks';
@@ -194,10 +199,194 @@ for (const [schemaName, schemaPair] of Object.entries(roleSchemaByName)) {
   }
 }
 
+interface RelationshipFixture {
+  readonly 'state': PaletteStateInterface;
+  readonly 'tolerance': number | undefined;
+}
+
+const relationshipFixture = (tolerance: number | undefined): RelationshipFixture => {
+  const relationship = tolerance === undefined
+    ? {
+      'id': 'text-alias',
+      'operation': 'alias',
+      'priority': 0,
+      'relaxability': 'fixed',
+      'source': 'source',
+      'target': 'text'
+    }
+    : {
+      'id': 'text-alias',
+      'operation': 'alias',
+      'priority': 0,
+      'relaxability': 'tolerant',
+      'source': 'source',
+      'target': 'text',
+      'tolerance': { 'chroma': 0, 'lightness': tolerance }
+    };
+  const schema = RoleSchemaEntity.intake({
+    'contrastPairs': [{ 'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 7 }],
+    'name': 'relationship-certificate-fixture',
+    'relationshipGraph': {
+      'groups': [{
+        'anchor': 'source',
+        'defaultMode': 'base',
+        'id': 'text-group',
+        'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'base' }], 'id': 'base' }],
+        'name': 'Text',
+        'relationships': [relationship]
+      }]
+    },
+    'roles': [
+      RoleDefinitionEntity.intake({ 'chromaRange': [0, 0], 'lightnessRange': [1, 1], 'name': 'background' }),
+      RoleDefinitionEntity.intake({ 'chromaRange': [0, 0], 'lightnessRange': [0.5, 0.5], 'name': 'source' }),
+      RoleDefinitionEntity.intake({ 'chromaRange': [0, 0.5], 'lightnessRange': [0, 1], 'name': 'text' })
+    ]
+  });
+  const input = InputEntity.intake({
+    'colors': [],
+    'contrast': ContrastOptionsEntity.intake({ 'algorithm': 'wcag21', 'level': 'AA' }),
+    'roles': schema
+  });
+  const state: PaletteStateInterface = {
+    'colors': [],
+    'input': input,
+    'metadata': {},
+    'outputs': {},
+    'roles': {
+      'background': colorRecordFactory.fromHex('#ffffff'),
+      'source': colorRecordFactory.fromHex('#777777')
+    },
+    'runtime': RuntimeOptionsEntity.intake({}),
+    'variants': {}
+  };
+  deriveRoleRelations.run(state, { 'logger': consoleLogger, 'startedAt': 0 });
+  return { state, tolerance };
+};
+
+const contrastAgainstBackground = (state: PaletteStateInterface, lightness: number | undefined): number => {
+  const text = state.roles.text;
+  const background = state.roles.background;
+  if (text === undefined || background === undefined) throw new Error('Relationship fixture lacks resolved roles.');
+  const coordinate = lightness === undefined
+    ? ColorCoordinate.fromRecord(text)
+    : ColorCoordinate.fromOklch(lightness, text.oklch.c, text.oklch.h);
+  return coordinate.wcag21(ColorCoordinate.fromRecord(background));
+};
+
+const verifyRelationshipCertificates = (): { readonly 'certificates': number; readonly 'indeterminate': number } => {
+  const fixed = relationshipFixture(undefined);
+  const fixedPair = ContrastFeasibility.proveRun(fixed.state).pairs[0];
+  const fixedActual = contrastAgainstBackground(fixed.state, undefined);
+  if (
+    fixedPair?.reachability !== 'never-reachable' ||
+    fixedPair.proof === undefined ||
+    Math.abs(fixedPair.proof.bestActual - fixedActual) > 1e-12 ||
+    !fixedPair.proof.limitingBounds.some((bound) => bound.channel === 'hue-relationship')
+  ) {
+    throw new Error('Fixed relationship certificate does not preserve the resolved baseline.');
+  }
+
+  const tolerant = relationshipFixture(0.01);
+  const tolerantPair = ContrastFeasibility.proveRun(tolerant.state).pairs[0];
+  const baseline = tolerant.state.roles.text;
+  if (baseline === undefined || tolerant.tolerance === undefined) throw new Error('Tolerant relationship fixture lacks a baseline.');
+  const lower = contrastAgainstBackground(tolerant.state, baseline.oklch.l - tolerant.tolerance);
+  const upper = contrastAgainstBackground(tolerant.state, baseline.oklch.l + tolerant.tolerance);
+  const best = Math.max(lower, upper);
+  if (
+    tolerantPair?.reachability !== 'never-reachable' ||
+    tolerantPair.proof === undefined ||
+    tolerantPair.proof.bestActual > best + 1e-12
+  ) {
+    throw new Error('Tolerant relationship certificate exceeds its baseline-centred tolerance.');
+  }
+
+  const alphaSchema = RoleSchemaEntity.intake({
+    'contrastPairs': [{ 'background': 'background', 'foreground': 'target', 'minimumContrastRatio': 4.5 }],
+    'name': 'alpha-overlay-certificate-fixture',
+    'relationshipGraph': {
+      'groups': [{
+        'anchor': 'base',
+        'defaultMode': 'base',
+        'id': 'overlay-group',
+        'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'base' }], 'id': 'base' }],
+        'name': 'Overlay',
+        'relationships': [{
+          'alpha': 0.5,
+          'base': 'base',
+          'id': 'target-overlay',
+          'operation': 'alpha-overlay',
+          'overlay': 'overlay',
+          'priority': 0,
+          'relaxability': 'fixed',
+          'target': 'target'
+        }]
+      }]
+    },
+    'roles': [
+      RoleDefinitionEntity.intake({ 'chromaRange': [0, 0], 'lightnessRange': [0.1, 0.1], 'name': 'background' }),
+      RoleDefinitionEntity.intake({ 'chromaRange': [0, 0], 'lightnessRange': [0.2, 0.2], 'name': 'base' }),
+      RoleDefinitionEntity.intake({ 'chromaRange': [0, 0], 'lightnessRange': [0.9, 0.9], 'name': 'overlay' }),
+      RoleDefinitionEntity.intake({ 'chromaRange': [0, 0], 'lightnessRange': [0.9, 0.9], 'name': 'target' })
+    ]
+  });
+  const alpha = ContrastFeasibility.analyzeSchema(
+    alphaSchema,
+    ContrastOptionsEntity.intake({ 'algorithm': 'wcag21', 'level': 'AA' })
+  ).pairs[0];
+  if (alpha?.reachability !== 'indeterminate' || alpha.sampled === undefined) {
+    throw new Error('Alpha-overlay target must remain sampled and indeterminate.');
+  }
+
+  const graphSchema = RoleSchemaEntity.intake({
+    'contrastPairs': [
+      { 'background': 'background', 'foreground': 'alias-target', 'minimumContrastRatio': 4.5 },
+      { 'background': 'background', 'foreground': 'offset-target', 'minimumContrastRatio': 4.5 },
+      { 'background': 'background', 'foreground': 'delta-target', 'minimumContrastRatio': 4.5 }
+    ],
+    'name': 'graph-domain-certificate-fixture',
+    'relationshipGraph': {
+      'groups': [{
+        'anchor': 'source',
+        'defaultMode': 'opposite',
+        'id': 'derived',
+        'modes': [{ 'hueOffsets': [{ 'degrees': 180, 'variantId': 'opposite' }], 'id': 'opposite' }],
+        'name': 'Derived',
+        'relationships': [
+          { 'id': 'alias', 'operation': 'alias', 'priority': 0, 'relaxability': 'fixed', 'source': 'source', 'target': 'alias-target' },
+          { 'id': 'offset', 'operation': 'hue-offset', 'priority': 1, 'relaxability': 'fixed', 'source': 'source', 'target': 'offset-target', 'variantId': 'opposite' },
+          { 'id': 'delta', 'lightnessOffset': 0.1, 'operation': 'oklch-delta', 'priority': 2, 'relaxability': 'fixed', 'source': 'source', 'target': 'delta-target' }
+        ]
+      }]
+    },
+    'roles': [
+      RoleDefinitionEntity.intake({ 'chromaRange': [0.01, 0.01], 'lightnessRange': [0.05, 0.05], 'name': 'background' }),
+      RoleDefinitionEntity.intake({ 'chromaRange': [0.01, 0.01], 'lightnessRange': [0.85, 0.85], 'name': 'source' }),
+      RoleDefinitionEntity.intake({ 'chromaRange': [0.01, 0.01], 'lightnessRange': [0.85, 0.85], 'name': 'alias-target' }),
+      RoleDefinitionEntity.intake({ 'chromaRange': [0.01, 0.01], 'lightnessRange': [0.85, 0.85], 'name': 'offset-target' }),
+      RoleDefinitionEntity.intake({ 'chromaRange': [0.01, 0.01], 'lightnessRange': [0.95, 0.95], 'name': 'delta-target' })
+    ]
+  });
+  const graphPairs = ContrastFeasibility.analyzeSchema(
+    graphSchema,
+    ContrastOptionsEntity.intake({ 'algorithm': 'wcag21', 'level': 'AA' })
+  ).pairs;
+  for (let index = 0; index < graphPairs.length; index += 1) {
+    const pair = graphPairs[index];
+    if (pair?.reachability !== 'always-reachable' || pair.sampled !== undefined) {
+      throw new Error('Graph alias, hue-offset, and OKLCH delta targets require continuous certificates.');
+    }
+  }
+  return { 'certificates': 5, 'indeterminate': 1 };
+};
+
+const relationship = verifyRelationshipCertificates();
+
 console.log(JSON.stringify({
   certificates,
   cells: Object.fromEntries(cells),
   checked: Object.fromEntries(checked),
-  failures
+  failures,
+  relationship
 }));
 if (failures > 0) process.exitCode = 1;

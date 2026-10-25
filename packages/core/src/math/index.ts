@@ -1,3 +1,4 @@
+export { alphaOverlay     } from './AlphaOverlay.ts';
 export { clamp            } from './Clamp.ts';
 export { clamp01          } from './Clamp01.ts';
 export { clusterDeltaEMerge       } from './ClusterDeltaEMerge.ts';

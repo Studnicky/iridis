@@ -45,11 +45,21 @@ roles and writes `state.metadata['contrast:complianceReport']`:
 `{ compliant, disposition, selected: { algorithm, level }, pairs, problemPairs }`.
 `disposition` is `resolved` when every pair passes, `best-effort` when a
 non-strict run has unresolved pairs, and `withheld` when strict compliance
-withholds unresolved roles. Each pair carries `foreground`, `background`,
+withholds palette admission while preserving its best-achievable roles and variants.
+Each pair carries `foreground`, `background`,
 `required`, `actual`, `shortfall`, `passed`, `adjustedRoles`, and `constraints`.
 Constraints are `pin`, `range`, `hue-relationship`, `gamut`, `cvd-floor`, or
-`cvd-drop`. `problemPairs` is the stable-sorted subset of the same pair records
-whose `passed` value is false.
+`cvd-drop`. A pair constrained by an authored relationship carries its sorted
+`relationIds`, which join the terminal record to `core:relationshipResolution`.
+`problemPairs` is the stable-sorted subset of the same pair records whose
+`passed` value is false.
+
+A relationship graph resolves each target through one authored relationship before
+compliance. Fixed relationships require their exact resolved record; tolerant
+relationships bound compliance movement to the declared channel deltas. An
+`alpha-overlay` relationship uses the emitted source-over composite for contrast
+measurement. Its schema analysis remains
+indeterminate with sampled evidence unless interval bounds can certify the composite.
 
 `ContrastFeasibility.analyzeSchema(schema, options)` evaluates declared pair envelopes for schema authors.
 It reports reachable, unreachable, hue-dependent, or indeterminate reachability without changing a palette.
@@ -64,9 +74,13 @@ Safety: stated roles are never mutated, `enableStrictCompliance` withholds throu
 The CVD record lands in `state.metadata['contrast:cvd']`.
 `warnings` retain `belowFloor` and `exceedsDrop` evidence for every mode;
 `corrections[].adjustedRoles` lists roles changed by `nudge` or `enforce`;
-and `blocked` is populated only by unresolved `enforce` constraints. Each
+and `blocked` is populated only by unresolved `enforce` constraints.
+`relationshipCandidateRejections` maps each CVD mover group to candidates
+rejected by relationship constraints; it is diagnostic evidence only. Each
 per-pair CVD evaluation carries `belowFloor`, `exceedsDrop`, and `fail`;
-`fail` is true only for unresolved `enforce` evidence.
+`fail` is true only for unresolved `enforce` evidence. `relationIds` names
+relationships incident to a pair rather than a CVD cause; `hue-relationship`
+names only standard-compliance bounds that prevent the selected target.
 
 ## Install
 

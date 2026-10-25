@@ -2,6 +2,7 @@ import type { TaskInterface } from '../types/index.ts';
 
 export { clampCount } from './clamp/ClampCount.ts';
 export { clampOklch } from './clamp/ClampOklch.ts';
+export { deriveRoleRelations } from './derive/DeriveRoleRelations.ts';
 export { deriveVariant } from './derive/DeriveVariant.ts';
 export { emitJson } from './emit/EmitJson.ts';
 export { ContrastPolicy } from './enforce/ContrastPolicy.ts';
@@ -21,6 +22,7 @@ export { RoleGeometry } from './RoleGeometry.ts';
 
 import { clampCount } from './clamp/ClampCount.ts';
 import { clampOklch } from './clamp/ClampOklch.ts';
+import { deriveRoleRelations } from './derive/DeriveRoleRelations.ts';
 import { deriveVariant } from './derive/DeriveVariant.ts';
 import { emitJson } from './emit/EmitJson.ts';
 import { enforceContrast } from './enforce/EnforceContrast.ts';
@@ -56,6 +58,7 @@ export const coreTasks: readonly TaskInterface[] = [
   clampCount,
   clampOklch,
   resolveRoles,
+  deriveRoleRelations,
   expandFamily,
   enforceContrast,
   deriveVariant,

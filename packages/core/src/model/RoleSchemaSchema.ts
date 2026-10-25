@@ -10,6 +10,7 @@ export const RoleSchemaSchema = {
     },
     'description': { 'type': 'string' },
     'name':        { 'type': 'string' },
+    'relationshipGraph': { 'type': 'object' },
     'roles': {
       'items': {
         'additionalProperties': false,
