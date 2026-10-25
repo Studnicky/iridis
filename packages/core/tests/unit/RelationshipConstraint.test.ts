@@ -188,6 +188,22 @@ void test('RelationshipConstraint applies only declared tolerant lightness chrom
   );
 });
 
+void test('RelationshipConstraint exposes the resolved relationship domain without duplicating graph lookup', () => {
+  const baseline = colorRecordFactory.fromHex('#77777780');
+  const input = RelationshipConstraintFixture.input({ 'tolerance': {
+    'alpha': 0.1,
+    'chroma': 0.02,
+    'hue': 8,
+    'lightness': 0.03
+  } });
+  const domain = RelationshipConstraint.domain(input, RelationshipConstraintFixture.metadata(baseline), 'text');
+
+  assert.equal(domain?.baseline.hex, baseline.hex);
+  assert.equal(domain?.relationId, 'text-from-source');
+  assert.equal(domain?.tolerance?.lightness, 0.03);
+  assert.equal(RelationshipConstraint.domain(input, {}, 'text'), undefined);
+});
+
 void test('enforce:contrast retains a relationship-fixed role and reports its relation constraint', () => {
   const baseline = colorRecordFactory.fromHex('#777777');
   const input = RelationshipConstraintFixture.input();
