@@ -38,8 +38,8 @@ import { packagePipeline } from './package-pipeline.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const EXPECTED_PACKAGES = 18;
-const EXPECTED_SOURCES = 359;
-const EXPECTED_ARTIFACTS = 1436;
+const EXPECTED_SOURCES = 366;
+const EXPECTED_ARTIFACTS = 1464;
 const EXPECTED_EXPORTS = 40;
 const METADATA_FILES = ['README.md', 'LICENSE', 'CHANGELOG.md', 'package.json'];
 const DEPENDENCY_FIELDS = ['dependencies', 'optionalDependencies', 'peerDependencies'];
