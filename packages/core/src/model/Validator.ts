@@ -39,6 +39,17 @@ class CoreRegistry {
   }
 }
 
+class CoreSchemaIdentifier {
+  static readonly #ids: ReadonlyMap<JsonSchemaObjectType, typeof CORE_SCHEMAS[number]['$id']> = new Map(
+    CORE_SCHEMAS.map((schema) => { return [schema, schema.$id]; })
+  );
+
+  static find(schema: JsonSchemaObjectType): typeof CORE_SCHEMAS[number]['$id'] | undefined {
+    const result = CoreSchemaIdentifier.#ids.get(schema);
+    return result;
+  }
+}
+
 /**
  * Assigns a stable synthetic `$id` (by object identity) to schemas that
  * arrive without one — every ad-hoc/inline schema literal used by tests and
@@ -816,10 +827,13 @@ class ValidatorClass {
   }
 
   validate<T>(schema: JsonSchemaObjectType, value: T): { readonly 'errors': ValidationErrorEntity.Type[] } {
+    const coreSchemaId = CoreSchemaIdentifier.find(schema);
     const withId = SyntheticId.assign(schema);
     const pruned = value === undefined ? undefined : UndefinedPruner.prune(value);
 
-    const errors = this.#jt.validate(withId, pruned);
+    const errors = coreSchemaId === undefined
+      ? this.#jt.validate(withId, pruned)
+      : this.#jt.validate(coreSchemaId, pruned);
 
     if (errors.length === 0) {
       return { 'errors': [] };
