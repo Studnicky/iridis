@@ -2,6 +2,7 @@ import type { ColorRecordEntity } from '../../entities/ColorRecordEntity.ts';
 import type { PaletteStateInterface } from '../../interfaces/PaletteStateInterface.ts';
 import type { PipelineContextInterface } from '../../interfaces/PipelineContextInterface.ts';
 import type { TaskInterface } from '../../interfaces/TaskInterface.ts';
+import type { RelationshipGraphShape } from '../../model/RelationshipGraphShape.ts';
 
 import { RelationshipResolutionEntity } from '../../entities/RelationshipResolutionEntity.ts';
 import { RoleProvenanceEntity } from '../../entities/RoleProvenanceEntity.ts';
@@ -16,12 +17,12 @@ import { Metadata } from '../../types/metadata.ts';
 import { RoleGeometry } from '../RoleGeometry.ts';
 
 class RelationshipWorkItem {
-  readonly group: NonNullable<NonNullable<PaletteStateInterface['input']['roles']>['relationshipGraph']>['groups'][number];
-  readonly relationship: NonNullable<NonNullable<PaletteStateInterface['input']['roles']>['relationshipGraph']>['groups'][number]['relationships'][number];
+  readonly group: RelationshipGraphShape.GroupInterface;
+  readonly relationship: RelationshipGraphShape.GroupInterface['relationships'][number];
 
   constructor(
-    group: NonNullable<NonNullable<PaletteStateInterface['input']['roles']>['relationshipGraph']>['groups'][number],
-    relationship: NonNullable<NonNullable<PaletteStateInterface['input']['roles']>['relationshipGraph']>['groups'][number]['relationships'][number]
+    group: RelationshipGraphShape.GroupInterface,
+    relationship: RelationshipGraphShape.GroupInterface['relationships'][number]
   ) {
     this.group = group;
     this.relationship = relationship;
@@ -30,8 +31,8 @@ class RelationshipWorkItem {
 
 class RelationshipOperation {
   static apply(
-    group: NonNullable<NonNullable<PaletteStateInterface['input']['roles']>['relationshipGraph']>['groups'][number],
-    relationship: NonNullable<NonNullable<PaletteStateInterface['input']['roles']>['relationshipGraph']>['groups'][number]['relationships'][number],
+    group: RelationshipGraphShape.GroupInterface,
+    relationship: RelationshipGraphShape.GroupInterface['relationships'][number],
     sources: readonly ColorRecordEntity.Type[]
   ): ColorRecordEntity.Type {
     if (relationship.operation === 'alias') {
@@ -111,7 +112,7 @@ class DeriveRoleRelations implements TaskInterface {
   }
 
   private static workItems(
-    groups: readonly NonNullable<NonNullable<PaletteStateInterface['input']['roles']>['relationshipGraph']>['groups'][number][]
+    groups: readonly RelationshipGraphShape.GroupInterface[]
   ): RelationshipWorkItem[] {
     const result = groups.flatMap((group) => {
       const items = group.relationships.map((relationship) => {
@@ -159,7 +160,7 @@ class DeriveRoleRelations implements TaskInterface {
 
   private static sourceColors(
     roles: PaletteRoleState,
-    relationship: NonNullable<NonNullable<PaletteStateInterface['input']['roles']>['relationshipGraph']>['groups'][number]['relationships'][number]
+    relationship: RelationshipGraphShape.GroupInterface['relationships'][number]
   ): readonly ColorRecordEntity.Type[] | undefined {
     const names = RelationshipSources.names(relationship);
     const colors: ColorRecordEntity.Type[] = [];

@@ -112,17 +112,19 @@ void test('derive:roleRelations resolves every canonical relationship operation'
   assert.equal(resolution.get('brand-overlay')?.after?.hex, overlay.hex);
 });
 
-void test('derive:roleRelations orders same-target relationships by priority then id', () => {
+void test('derive:roleRelations resolves dependent targets after their sources become available', () => {
   const relationships = [
-    RoleRelationshipEntity.create({ 'id': 'later', 'lightnessOffset': 0.1, 'operation': 'oklch-delta', 'priority': 2, 'relaxability': 'fixed', 'source': 'brand', 'target': 'accent' }),
-    RoleRelationshipEntity.create({ 'id': 'first', 'operation': 'alias', 'priority': 1, 'relaxability': 'fixed', 'source': 'brand', 'target': 'accent' })
+    RoleRelationshipEntity.create({ 'id': 'accent-delta', 'lightnessOffset': 0.1, 'operation': 'oklch-delta', 'priority': 2, 'relaxability': 'fixed', 'source': 'brand', 'target': 'accent' }),
+    RoleRelationshipEntity.create({ 'id': 'highlight-alias', 'operation': 'alias', 'priority': 1, 'relaxability': 'fixed', 'source': 'accent', 'target': 'highlight' })
   ];
   const brand = DeriveRoleRelationsFixture.color('#7c3aed', 'brand');
-  const state = DeriveRoleRelationsFixture.run(relationships, ['brand', 'accent'], [brand]);
+  const state = DeriveRoleRelationsFixture.run(relationships, ['brand', 'accent', 'highlight'], [brand]);
   const accent = state.roles.accent;
+  const highlight = state.roles.highlight;
   assert.ok(accent !== undefined);
+  assert.ok(highlight !== undefined);
   assert.ok(accent.oklch.l > brand.oklch.l);
-  assert.equal(Metadata.relationshipResolution(state.metadata).get('accent')?.relationshipId, 'later');
+  assert.equal(Metadata.relationshipResolution(state.metadata).get('highlight')?.relationshipId, 'highlight-alias');
 });
 
 void test('derive:roleRelations preserves caller-stated targets', () => {

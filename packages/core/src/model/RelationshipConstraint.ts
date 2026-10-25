@@ -1,6 +1,7 @@
 import type { JSONSchema7Type } from 'json-schema';
 
 import type { InputEntity } from '../entities/InputEntity.ts';
+import type { RelationshipGraphShape } from './RelationshipGraphShape.ts';
 
 import { ColorRecordEntity } from '../entities/ColorRecordEntity.ts';
 import { RelationshipResolutionEntity } from '../entities/RelationshipResolutionEntity.ts';
@@ -132,12 +133,12 @@ export class RelationshipConstraint {
   }
 
   private static selectedRelation(
-    groups: NonNullable<NonNullable<InputEntity.Type['roles']>['relationshipGraph']>['groups'],
+    groups: RelationshipGraphShape.GraphInterface['groups'],
     resolution: ReturnType<typeof Metadata.relationshipResolution> extends Map<string, infer Value> ? Value | undefined : never,
     roleName: string
   ): Readonly<{
-    'group': NonNullable<NonNullable<InputEntity.Type['roles']>['relationshipGraph']>['groups'][number];
-    'relationship': NonNullable<NonNullable<InputEntity.Type['roles']>['relationshipGraph']>['groups'][number]['relationships'][number];
+    'group': RelationshipGraphShape.GroupInterface;
+    'relationship': RelationshipGraphShape.GroupInterface['relationships'][number];
   }> | undefined {
     if (resolution !== undefined) {
       const group = groups.find((candidate) => {

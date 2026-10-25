@@ -1,9 +1,9 @@
-import type { PaletteStateInterface } from '../interfaces/PaletteStateInterface.ts';
+import type { RelationshipGraphShape } from './RelationshipGraphShape.ts';
 
 /** Lists the authored source roles required by a relationship operation. */
 export class RelationshipSources {
   static names(
-    relationship: NonNullable<NonNullable<PaletteStateInterface['input']['roles']>['relationshipGraph']>['groups'][number]['relationships'][number]
+    relationship: RelationshipGraphShape.GroupInterface['relationships'][number]
   ): [string, ...string[]] {
     if (relationship.operation === 'alpha-overlay') {
       return [relationship.base, relationship.overlay];

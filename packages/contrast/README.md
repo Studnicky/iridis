@@ -54,10 +54,11 @@ Constraints are `pin`, `range`, `hue-relationship`, `gamut`, `cvd-floor`, or
 `problemPairs` is the stable-sorted subset of the same pair records whose
 `passed` value is false.
 
-A relationship graph resolves its target roles before compliance. Fixed relationships
-require their exact resolved record; tolerant relationships bound compliance movement
-to the declared channel deltas. An `alpha-overlay` relationship uses the emitted
-source-over composite for contrast measurement. Its schema analysis remains
+A relationship graph resolves each target through one authored relationship before
+compliance. Fixed relationships require their exact resolved record; tolerant
+relationships bound compliance movement to the declared channel deltas. An
+`alpha-overlay` relationship uses the emitted source-over composite for contrast
+measurement. Its schema analysis remains
 indeterminate with sampled evidence unless interval bounds can certify the composite.
 
 `ContrastFeasibility.analyzeSchema(schema, options)` evaluates declared pair envelopes for schema authors.

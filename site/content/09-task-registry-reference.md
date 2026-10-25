@@ -21,7 +21,7 @@ Every task registered by the core engine and by each official plugin, grouped by
 | `clamp:oklch` | `colors`, `input.roles` | `colors` | — | Clamps each color's OKLCH lightness and chroma into role-defined (or default) ranges. |
 | `clamp:count` | `colors`, `input.maxColors`, `input.bypass` | `colors` | — | Reduces colors to `maxColors` through weighted median-cut clustering when exceeded. |
 | `resolve:roles` | `colors`, `input.roles`, `metadata` | `roles`, `metadata` | — | Assigns colors to schema roles by hint match then OKLCH distance, then nudges into declared ranges. |
-| `derive:roleRelations` | `roles`, `input.roles`, `metadata` | `roles`, `metadata['core:relationshipResolution']` | — | Resolves the authored relationship graph before family expansion and records typed per-role relationship resolution metadata. |
+| `derive:roleRelations` | `roles`, `input.roles`, `metadata` | `roles`, `metadata['core:relationshipResolution']` | — | Resolves each authored relationship target before family expansion and records typed per-role relationship resolution metadata. |
 | `expand:family` | `roles`, `input.roles`, `metadata` | `roles` | — | Derives missing roles with `derivedFrom` set, applying OKLCH deltas from the source role. |
 | `enforce:contrast` | `roles`, `input.roles`, `input.contrast` | `roles`, `metadata['core:contrastReport']` | — | Core stage over the shared contrast policy: enforces every declared contrast pair, including `minRatio` and optional `maxRatio` bounds, moves only derived endpoints, preserves stated roles, and writes the typed `{compliant, pairs}` object to `core:contrastReport`. |
 | `derive:variant` | `roles`, `metadata['core:variantConfig']` | `variants` | — | Produces light/dark variants by transforming all roles. |

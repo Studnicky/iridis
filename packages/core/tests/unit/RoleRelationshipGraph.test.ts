@@ -321,7 +321,7 @@ void test('relationship graph integrity rejects incoherent authored references',
     { 'graph': RelationshipGraphFixture.withAbsentToward(), 'message': 'must name a declared role', 'path': 'relationshipGraph.groups[0].relationships[3].toward' },
     { 'graph': RelationshipGraphFixture.withAbsentBase(), 'message': 'must name a declared role', 'path': 'relationshipGraph.groups[0].relationships[4].base' },
     { 'graph': RelationshipGraphFixture.withAbsentOverlay(), 'message': 'must name a declared role', 'path': 'relationshipGraph.groups[0].relationships[4].overlay' },
-    { 'graph': RelationshipGraphFixture.withAmbiguousTargetPriority(), 'message': 'must be distinct for relationships with the same target in its group', 'path': 'relationshipGraph.groups[0].relationships[2].priority' }
+    { 'graph': RelationshipGraphFixture.withAmbiguousTargetPriority(), 'message': 'must be derived by one relationship in the graph', 'path': 'relationshipGraph.groups[0].relationships[2].target' }
   ];
 
   for (let index = 0; index < cases.length; index += 1) {
@@ -330,6 +330,35 @@ void test('relationship graph integrity rejects incoherent authored references',
       RelationshipGraphFixture.assertIntegrityError(scenario.graph, scenario.path, scenario.message);
     }
   }
+});
+
+void test('relationship graph integrity rejects a target derived in another group', () => {
+  const graph = RoleRelationshipGraphEntity.create({
+    'groups': [
+      RelationshipGraphFixture.group(),
+      {
+        'anchor': 'background',
+        'defaultMode': 'base',
+        'id': 'background-family',
+        'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'base' }], 'id': 'base' }],
+        'name': 'Background family',
+        'relationships': [{
+          'id': 'second-alias',
+          'operation': 'alias',
+          'priority': 0,
+          'relaxability': 'fixed',
+          'source': 'background',
+          'target': 'accent'
+        }]
+      }
+    ]
+  });
+
+  RelationshipGraphFixture.assertIntegrityError(
+    graph,
+    'relationshipGraph.groups[1].relationships[0].target',
+    'must be derived by one relationship in the graph'
+  );
 });
 
 void test('engine rejects graph integrity errors at role-schema admission', () => {

@@ -1,10 +1,10 @@
-import type { PaletteStateInterface } from '../interfaces/PaletteStateInterface.ts';
+import type { RelationshipGraphShape } from './RelationshipGraphShape.ts';
 
 /** Resolves authored hue-offset degrees from a direct value or a named mode variant. */
 export class RelationshipHueDegrees {
   static resolve(
-    group: NonNullable<NonNullable<PaletteStateInterface['input']['roles']>['relationshipGraph']>['groups'][number],
-    relationship: Extract<NonNullable<NonNullable<PaletteStateInterface['input']['roles']>['relationshipGraph']>['groups'][number]['relationships'][number], { readonly 'operation': 'hue-offset' }>
+    group: RelationshipGraphShape.GroupInterface,
+    relationship: Extract<RelationshipGraphShape.GroupInterface['relationships'][number], { readonly 'operation': 'hue-offset' }>
   ): number {
     if (relationship.degrees !== undefined) {
       return relationship.degrees;
