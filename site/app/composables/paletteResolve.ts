@@ -1,7 +1,8 @@
 import type { PaletteStateInterface, RoleProvenanceEntity } from '@studnicky/iridis';
+import type { ContrastFeasibilityReportEntity } from '@studnicky/iridis-contrast';
 
-import { colorRecordFactory, InputEntity, Metadata } from '@studnicky/iridis';
-import { ComplianceReportEntity, CvdResultSetEntity } from '@studnicky/iridis-contrast';
+import { colorRecordFactory, ContrastOptionsEntity, InputEntity, Metadata, RoleSchemaEntity } from '@studnicky/iridis';
+import { ComplianceReportEntity, ContrastFeasibility, CvdResultSetEntity } from '@studnicky/iridis-contrast';
 import { JsonValue } from '@studnicky/types/browser';
 
 import type { PaletteResolveRequestEntity } from './entities/PaletteResolveRequestEntity.ts';
@@ -101,6 +102,15 @@ export class PaletteResolve {
       'roles': roleSchemaFor(selected),
       'runtime': { 'colorSpace': request.colorSpace, 'framing': request.framing }
     });
+    return result;
+  }
+
+  public static feasibility(request: PaletteResolveRequestEntity.Type): ContrastFeasibilityReportEntity.Type {
+    const input = PaletteResolve.input(request);
+    if (input.roles === undefined || input.contrast === undefined) {
+      throw new RangeError('Schema feasibility requires role definitions and contrast options');
+    }
+    const result = ContrastFeasibility.analyzeSchema(RoleSchemaEntity.intake(input.roles), ContrastOptionsEntity.intake(input.contrast));
     return result;
   }
 

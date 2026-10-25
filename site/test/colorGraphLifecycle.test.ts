@@ -11,6 +11,7 @@ class ColorGraphLifecycleBrowser {
   static readonly wheelAttemptMs = 3_000;
   static readonly wheelAttempts = 12;
   static readonly wheelZoomInDelta = -420;
+  static readonly wheelZoomRatio = 1.5;
 
   static activeGraph(page: Page, states: readonly string[]): Locator {
     const selector = states
@@ -68,11 +69,11 @@ class ColorGraphLifecycleBrowser {
       target = await ColorGraphLifecycleBrowser.wheelTarget(canvas);
       await page.mouse.move(target[0], target[1]);
       await page.mouse.wheel(0, ColorGraphLifecycleBrowser.wheelZoomInDelta);
-      if (await ColorGraphLifecycleBrowser.zoomRaised(page, floor)) {
+      if (await ColorGraphLifecycleBrowser.zoomRaised(page, floor * ColorGraphLifecycleBrowser.wheelZoomRatio)) {
         return;
       }
     }
-    throw new Error(`The wheel never raised the zoom above ${floor}; last target ${JSON.stringify(target)}.`);
+    throw new Error(`The wheel never raised the zoom well above ${floor}; last target ${JSON.stringify(target)}.`);
   }
 
   static async zoomRaised(page: Page, floor: number): Promise<boolean> {

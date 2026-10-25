@@ -82,7 +82,7 @@ export function generateStylesheet(roleSchema: RoleSchemaEntity.Type) {
 }
 ```
 
-`enforce:compliance` applies the selected standard (WCAG 2.1 AA, WCAG 2.1 AAA, or APCA, chosen through `input.contrast`) to every declared contrast pair. Roles you state are never changed; unstated roles are recalculated around them. A set of stated roles that cannot meet the standard is reported instead of rendered. `report:compliance` writes the typed `contrast:complianceReport`.
+`enforce:compliance` applies the selected standard (WCAG 2.1 AA, WCAG 2.1 AAA, or APCA, chosen through `input.contrast`) to every declared contrast pair. Roles you state are never changed; unstated roles are recalculated around them. A set of stated roles that cannot meet the standard yields the closest palette and a report whose `problemPairs` name each failing pair; `input.contrast.enableStrictCompliance` marks such a report `withheld`. `report:compliance` writes the typed `contrast:complianceReport`.
 
 Two optional settings in `input.contrast` choose how strictly the engine applies the rest of the checks:
 

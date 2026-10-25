@@ -13,9 +13,14 @@ export class EngineWorkerHost {
 
   private static failure(envelope: WorkerEnvelopeEntity.Type, failure: string): WorkerReplyEntity.Type {
     const message = envelope.message;
-    const reply = message.kind === 'extract' || message.kind === 'combine'
-      ? WorkerReplyEntity.create({ 'failure': failure, 'id': envelope.id, 'kind': message.kind })
-      : WorkerReplyEntity.create({ 'failure': failure, 'id': envelope.id, 'kind': 'palette' });
+    let reply: WorkerReplyEntity.Type;
+    if (message.kind === 'extract' || message.kind === 'combine') {
+      reply = WorkerReplyEntity.create({ 'failure': failure, 'id': envelope.id, 'kind': message.kind });
+    } else if (message.kind === 'schema-feasibility') {
+      reply = WorkerReplyEntity.create({ 'failure': failure, 'id': envelope.id, 'kind': 'schema-feasibility' });
+    } else {
+      reply = WorkerReplyEntity.create({ 'failure': failure, 'id': envelope.id, 'kind': 'palette' });
+    }
     return reply;
   }
 
@@ -24,6 +29,8 @@ export class EngineWorkerHost {
     let reply: WorkerReplyEntity.Type;
     if (message.kind === 'palette') {
       reply = WorkerReplyEntity.create({ 'id': id, 'kind': 'palette', 'snapshot': PaletteResolve.run(message.request) });
+    } else if (message.kind === 'schema-feasibility') {
+      reply = WorkerReplyEntity.create({ 'id': id, 'kind': 'schema-feasibility', 'report': PaletteResolve.feasibility(message.request) });
     } else if (message.kind === 'extract') {
       const pixels = EngineWorkerHost.pixels.get(message.imageId);
       if (pixels === undefined) {

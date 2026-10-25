@@ -17,7 +17,7 @@ class RequestLane {
   }
 }
 
-/** Sends messages to the engine worker with latest-wins sequencing per lane (`palette`, `combine`, and one `extract` lane per image); a superseded or cancelled reply is discarded. */
+/** Client-side latest-wins sequencing per request lane; worker messages still execute serially. */
 export class WorkerRequestClient {
   #alive = true;
   readonly #flights = new Map<number, string>();
@@ -38,7 +38,7 @@ export class WorkerRequestClient {
     let lane: string | undefined;
     if (message.kind === 'extract') {
       lane = `extract:${message.imageId}`;
-    } else if (message.kind === 'palette' || message.kind === 'combine') {
+    } else if (message.kind === 'palette' || message.kind === 'combine' || message.kind === 'schema-feasibility') {
       lane = message.kind;
     }
     return lane;

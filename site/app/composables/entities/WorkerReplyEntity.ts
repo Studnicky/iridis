@@ -1,6 +1,7 @@
 import type { CanonicalShapeType, NominalSchemaType } from '@studnicky/json-tology/types';
 
 import { EntityCompiler } from '@studnicky/entity/browser';
+import { ContrastFeasibilityReportEntity } from '@studnicky/iridis-contrast';
 
 import { ImageCombineResultEntity } from './ImageCombineResultEntity.ts';
 import { ImageExtractionResultEntity } from './ImageExtractionResultEntity.ts';
@@ -38,6 +39,17 @@ export namespace WorkerReplyEntity {
         'properties': {
           'failure': { 'type': 'string' },
           'id': { 'type': 'integer' },
+          'kind': { 'const': 'schema-feasibility', 'type': 'string' },
+          'report': ContrastFeasibilityReportEntity.Schema
+        },
+        'required': ['id', 'kind'],
+        'type': 'object'
+      },
+      {
+        'additionalProperties': false,
+        'properties': {
+          'failure': { 'type': 'string' },
+          'id': { 'type': 'integer' },
           'kind': { 'const': 'combine', 'type': 'string' },
           'result': ImageCombineResultEntity.Schema
         },
@@ -50,6 +62,7 @@ export namespace WorkerReplyEntity {
   export type Type = NominalSchemaType<typeof Schema> & (
     | { 'kind': 'combine'; 'result'?: ImageCombineResultEntity.Type }
     | { 'kind': 'extract'; 'result'?: ImageExtractionResultEntity.Type }
+    | { 'kind': 'schema-feasibility'; 'report'?: ContrastFeasibilityReportEntity.Type }
     | { 'kind': 'palette'; 'snapshot'?: PaletteSnapshotEntity.Type }
   );
 

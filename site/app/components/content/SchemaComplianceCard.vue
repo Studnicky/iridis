@@ -5,6 +5,7 @@ import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
 import { useNavigationTargets } from '~/composables/useNavigationTargets.ts';
 import { buildSchemaComplianceSummaries } from './schema/buildSchemaComplianceSummaries.ts';
+import { buildSchemaFeasibilityRows } from './schema/buildSchemaFeasibilityRows.ts';
 import { ContrastChoiceModels } from './contrastChoiceModels.ts';
 import SchemaSelector from './SchemaSelector.vue';
 
@@ -18,7 +19,7 @@ import SchemaSelector from './SchemaSelector.vue';
  */
 const {
   schemaName, contrastStrictness, cvdMode, enableStrictCompliance, nonMandatoryLevel, colorSpace,
-  contrastReport
+  contrastReport, schemaFeasibilityChecking, schemaFeasibilityReport
 } = useIridis();
 const { send } = useIridisUiMachine();
 const { activateTarget } = useNavigationTargets();
@@ -30,6 +31,11 @@ const stageSummaries = computed(() => {
     'strictCompliance': enableStrictCompliance.value ? 'on' : 'off',
     'nonMandatoryLevel': nonMandatoryLevel.value
   });
+  return result;
+});
+
+const feasibilityRows = computed(() => {
+  const result = buildSchemaFeasibilityRows.build(schemaFeasibilityReport.value);
   return result;
 });
 
@@ -125,5 +131,51 @@ function updateNonMandatoryLevel(value: string): void {
     </div>
 
     <SchemaComplianceFooter :stage-summaries="stageSummaries" />
+
+    <SectionIntro
+      title="Schema reachability"
+      body="Checks whether each declared pair is reachable inside its authored constraints."
+    >
+      <p
+        v-if="schemaFeasibilityChecking"
+        class="text-sm text-muted"
+        aria-live="polite"
+      >
+        Checking schema reachability…
+      </p>
+      <ul
+        v-if="feasibilityRows.length > 0"
+        class="space-y-2"
+      >
+        <li
+          v-for="row in feasibilityRows"
+          :key="row.id"
+          class="rounded-md border border-default px-3 py-2"
+        >
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-sm text-highlighted">{{ row.label }}</span>
+            <UBadge
+              :color="row.color"
+              variant="soft"
+              size="xs"
+            >
+              {{ row.status }}
+            </UBadge>
+          </div>
+          <p
+            v-if="row.detail !== ''"
+            class="mt-1 text-xs text-muted"
+          >
+            {{ row.detail }}
+          </p>
+        </li>
+      </ul>
+      <p
+        v-else-if="!schemaFeasibilityChecking"
+        class="text-sm text-muted"
+      >
+        Schema reachability is pending.
+      </p>
+    </SectionIntro>
   </div>
 </template>
