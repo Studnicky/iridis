@@ -20,6 +20,7 @@ import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 import { contrastApca } from '../../math/ContrastApca.ts';
 import { contrastWcag21 } from '../../math/ContrastWcag21.ts';
 import { ensureContrast } from '../../math/EnsureContrast.ts';
+import { RelationshipConstraint } from '../../model/RelationshipConstraint.ts';
 import { Metadata } from '../../types/metadata.ts';
 import { contrastCoordinateCounters } from './ContrastCoordinateCounters.ts';
 import { ContrastPolicy } from './ContrastPolicy.ts';
@@ -411,10 +412,11 @@ class ContrastExecution {
         if (current === undefined) {
           continue;
         }
+        const relationEntry = ContrastExecution.withRelationIds(current, state);
         const previous = entries[index];
-        const entry = ContrastExecution.mergeEntry(previous, current);
+        const entry = ContrastExecution.mergeEntry(previous, relationEntry);
         entries[index] = entry;
-        adjusted = adjusted || current.adjustmentDisposition === 'applied';
+        adjusted = adjusted || relationEntry.adjustmentDisposition === 'applied';
       }
       if (!adjusted) {
         break;
@@ -606,9 +608,13 @@ class ContrastExecution {
           coordinate,
           { 'alpha': original.alpha, 'hints': original.hints, 'origin': original }
         );
+      if (!RelationshipConstraint.allows(state.input, state.metadata, roleName, resolved)) {
+        continue;
+      }
       roles.set(roleName, resolved);
       if (!ContrastMeasurement.sameRecord(original, resolved)) {
         ContrastProvenance.recordAdjustment(state, roleName, original.hex, resolved.hex);
+        RelationshipConstraint.recordDeviation(state.input, state.metadata, roleName, resolved);
       }
     }
   }
@@ -740,7 +746,8 @@ class ContrastExecution {
           continue;
         }
         const candidate = ColorCoordinate.fromOklch(lightness, chroma, current.h);
-        if (ContrastRangeCache.allows(state.input, roleName, candidate)) {
+        if (ContrastRangeCache.allows(state.input, roleName, candidate) &&
+          ContrastExecution.allowsRelationshipCandidate(state, roleName, candidate)) {
           result.push(candidate);
         }
       }
@@ -887,6 +894,7 @@ class ContrastExecution {
         : { 'maximumContrastRatio': current.maximumContrastRatio }),
       'minimumContrastRatio': current.minimumContrastRatio,
       'pair': current.pair,
+      ...(current.relationIds === undefined ? {} : { 'relationIds': current.relationIds }),
       'target': current.target
     });
     return result;
@@ -1021,14 +1029,22 @@ class ContrastExecution {
       maximumRatio
     );
     const allowed = ContrastRangeCache.allows(state.input, mover.roleName, resolved.oklch);
-    if (!resolvedPassed || !allowed || ContrastMeasurement.sameRecord(resolved, mover.record)) {
+    const relationshipAllowed = RelationshipConstraint.allows(
+      state.input,
+      state.metadata,
+      mover.roleName,
+      resolved
+    );
+    if (!resolvedPassed || !allowed || !relationshipAllowed ||
+      ContrastMeasurement.sameRecord(resolved, mover.record)) {
       const result = ContrastExecution.unresolvedEntry(
         requirement,
         algorithm,
         minimumRatio,
         maximumRatio,
         mover.roleName,
-        state.input
+        state,
+        resolved
       );
       return result;
     }
@@ -1039,6 +1055,7 @@ class ContrastExecution {
       mover.record.hex,
       resolved.hex
     );
+    RelationshipConstraint.recordDeviation(state.input, state.metadata, mover.roleName, resolved);
     const result = ContrastExecution.pendingEntry(
       requirement,
       algorithm,
@@ -1098,34 +1115,17 @@ class ContrastExecution {
     minimumRatio: number,
     maximumRatio: number | undefined,
     roleName: string,
-    input: PaletteStateInterface['input']
+    state: PaletteStateInterface,
+    candidate: ColorRecordEntity.Type
   ): PendingContrastEntryEntity.Type {
-    const range = ContrastRangeCache.range(input, roleName);
+    const range = ContrastRangeCache.range(state.input, roleName);
+    const constraints: PendingContrastEntryEntity.Type['constraints'][number][] = [];
     if (range.chromaRange !== undefined || range.lightnessRange !== undefined) {
-      const result = ContrastExecution.rangeEntry(
-        requirement,
-        algorithm,
-        minimumRatio,
-        maximumRatio
-      );
-      return result;
+      constraints.push('range');
     }
-    const result = ContrastExecution.pendingEntry(
-      requirement,
-      algorithm,
-      minimumRatio,
-      ContrastAdjustment.unresolved,
-      { ...(maximumRatio === undefined ? {} : { 'maximumRatio': maximumRatio }) }
-    );
-    return result;
-  }
-
-  private static rangeEntry(
-    requirement: ContrastPolicy.RequirementInterface,
-    algorithm: ContrastAlgorithmTypeEntity.Type,
-    minimumRatio: number,
-    maximumRatio: number | undefined
-  ): PendingContrastEntryEntity.Type {
+    if (!RelationshipConstraint.allows(state.input, state.metadata, roleName, candidate)) {
+      constraints.push('hue-relationship');
+    }
     const entry = ContrastExecution.pendingEntry(
       requirement,
       algorithm,
@@ -1133,10 +1133,9 @@ class ContrastExecution {
       ContrastAdjustment.unresolved,
       { ...(maximumRatio === undefined ? {} : { 'maximumRatio': maximumRatio }) }
     );
-    const result = PendingContrastEntryEntity.create({
-      ...entry,
-      'constraints': ['range']
-    });
+    const result = constraints.length === 0
+      ? entry
+      : PendingContrastEntryEntity.create({ ...entry, 'constraints': constraints });
     return result;
   }
 
@@ -1174,6 +1173,43 @@ class ContrastExecution {
       }),
       'target': requirement.target
     });
+    return result;
+  }
+
+  private static withRelationIds(
+    entry: PendingContrastEntryEntity.Type,
+    state: PaletteStateInterface
+  ): PendingContrastEntryEntity.Type {
+    const relationIds = RelationshipConstraint.relationIds(
+      state.input,
+      state.metadata,
+      [entry.pair.foreground, entry.pair.background]
+    );
+    const result = relationIds.length === 0
+      ? entry
+      : PendingContrastEntryEntity.create({ ...entry, 'relationIds': relationIds });
+    return result;
+  }
+
+  private static allowsRelationshipCandidate(
+    state: PaletteStateInterface,
+    roleName: string,
+    coordinate: ColorCoordinate
+  ): boolean {
+    const role = state.roles[roleName];
+    if (role === undefined) {
+      return true;
+    }
+    const candidate = colorRecordFactory.fromCoordinate(
+      coordinate,
+      { 'alpha': role.alpha, 'hints': role.hints, 'origin': role }
+    );
+    const result = RelationshipConstraint.allows(
+      state.input,
+      state.metadata,
+      roleName,
+      candidate
+    );
     return result;
   }
 
@@ -1248,6 +1284,7 @@ class ContrastExecution {
       'constraints': passed ? [] : entry.constraints,
       'foreground': entry.pair.foreground,
       'passed': passed,
+      ...(entry.relationIds === undefined ? {} : { 'relationIds': entry.relationIds }),
       'required': entry.minimumContrastRatio,
       'shortfall': ContrastBand.shortfall(
         actual,
@@ -1298,12 +1335,14 @@ class EnforceContrast implements TaskInterface {
         'roles',
         'input.roles',
         'input.contrast',
+        "metadata['core:relationshipResolution']",
         "metadata['core:roleProvenance']"
       ],
       'requires': ['contrastWcag21', 'contrastApca', 'ensureContrast'],
       'writes': [
         'roles',
         "metadata['core:contrastReport']",
+        "metadata['core:relationshipResolution']",
         "metadata['core:roleProvenance']"
       ]
     });

@@ -7,6 +7,7 @@ export { PaletteMetadataSlot }  from './PaletteMetadataSlot.ts';
 export { PaletteOutputSlot }    from './PaletteOutputSlot.ts';
 export { PaletteStateSchema }   from './PaletteStateSchema.ts';
 export { PluginSchema }         from './PluginSchema.ts';
+export { RelationshipConstraint } from './RelationshipConstraint.ts';
 export { RoleSchemaSchema }     from './RoleSchemaSchema.ts';
 export { TaskManifestSchema }   from './TaskManifestSchema.ts';
 export { Validator } from './Validator.ts';

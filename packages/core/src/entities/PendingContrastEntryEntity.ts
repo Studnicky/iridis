@@ -59,6 +59,11 @@ export namespace PendingContrastEntryEntity {
       'maximumContrastRatio': ContrastRatioSchema.permissive,
       'minimumContrastRatio': ContrastRatioSchema.permissive,
       'pair': ContrastPairEntity.Schema,
+      'relationIds': {
+        'items': { 'minLength': 1, 'type': 'string' },
+        'type': 'array',
+        'uniqueItems': true
+      },
       'target': { 'type': 'string' }
     },
     'required': [
