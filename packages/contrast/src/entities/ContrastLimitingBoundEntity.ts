@@ -9,7 +9,7 @@ export namespace ContrastLimitingBoundEntity {
   export const Schema = {
     'additionalProperties': false,
     'properties': {
-      'channel': { 'enum': ['lightness', 'chroma', 'pin', 'gamut'], 'type': 'string' },
+      'channel': { 'enum': ['lightness', 'chroma', 'pin', 'gamut', 'hue-relationship'], 'type': 'string' },
       'edge':    { 'enum': ['minimum', 'maximum', 'fixed'], 'type': 'string' },
       'role':    { 'type': 'string' },
       'value':   { 'type': 'number' }
