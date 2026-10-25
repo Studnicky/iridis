@@ -1,6 +1,19 @@
+import type { PaletteStateInterface } from '@studnicky/iridis';
 import type { JSONSchema7Type } from 'json-schema';
 
-import { colorRecordFactory, ContrastPairEntity, ContrastPolicy, contrastWcag21, InputEntity, PaletteRoleState, RoleSchemaEntity } from '@studnicky/iridis';
+import {
+  colorRecordFactory,
+  ContrastPairEntity,
+  ContrastPolicy,
+  contrastWcag21,
+  InputEntity,
+  Metadata,
+  PaletteRoleState,
+  RelationshipResolutionEntity,
+  RoleProvenanceEntity,
+  RoleSchemaEntity,
+  RuntimeOptionsEntity
+} from '@studnicky/iridis';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
@@ -46,6 +59,8 @@ export class CvdProbeScenarioSuite {
       await test('CVD refinement records exact fixed and remaining deficiency sets for a partial correction', CvdProbeScenarioSuite.partialCorrection);
       await test('CVD refinement moves a derived background when the foreground is stated', CvdProbeScenarioSuite.statedForeground);
       await test('CVD refinement does not move a derived endpoint outside its role range', CvdProbeScenarioSuite.rangeBoundedMover);
+      await test('CVD refinement rejects fixed relationship candidates without changing CVD blocker attribution', CvdProbeScenarioSuite.fixedRelationship);
+      await test('CVD refinement records a tolerant relationship deviation after an accepted correction', CvdProbeScenarioSuite.tolerantRelationship);
       await test('CVD refinement moves a derived foreground when the background is stated', CvdProbeScenarioSuite.statedBackground);
       await test('CVD refinement blocks a pair when both semantic endpoints are stated', CvdProbeScenarioSuite.statedBoth);
       await test('CVD terminal compliance reports a CVD-only stated-both block', CvdProbeScenarioSuite.terminalStatedBoth);
@@ -670,6 +685,193 @@ export class CvdProbeScenarioSuite {
       'background': colorRecordFactory.fromHex('#46092e'),
       'text': colorRecordFactory.fromHex('#0b375d')
     };
+  }
+
+  private static fixedRelationship(): void {
+    const enforced = CvdProbeScenarioSuite.relationshipState();
+    const nudged = CvdProbeScenarioSuite.nudgedRelationshipState();
+    const original = CvdProbeScenarioSuite.statedPairRoles().background;
+    const enforcedCvd = ContrastMetadataAssertionPort.cvd(enforced);
+    const nudgedCvd = ContrastMetadataAssertionPort.cvd(nudged);
+
+    assert.ok(
+      enforcedCvd !== undefined && nudgedCvd !== undefined,
+      '[cvd-relationship-fixed] metadata present'
+    );
+    assert.strictEqual(
+      enforced.roles.background?.hex,
+      original.hex,
+      '[cvd-relationship-fixed] fixed background remains at its relationship baseline'
+    );
+    assert.strictEqual(
+      nudged.roles.background?.hex,
+      original.hex,
+      '[cvd-relationship-fixed] nudge preserves the fixed relationship baseline'
+    );
+    assert.deepStrictEqual(
+      enforcedCvd.blocked,
+      [{
+        'background': 'background',
+        'cvdTypes': ['protanopia', 'deuteranopia', 'tritanopia', 'achromatopsia'],
+        'foreground': 'text',
+        'reason': 'solver-exhausted'
+      }],
+      '[cvd-relationship-fixed] enforce keeps the terminal CVD reason'
+    );
+    assert.deepStrictEqual(
+      nudgedCvd.blocked,
+      [],
+      '[cvd-relationship-fixed] nudge keeps unresolved evidence advisory'
+    );
+    assert.ok(
+      (enforcedCvd.relationshipCandidateRejections.background ?? 0) > 0,
+      '[cvd-relationship-fixed] enforced metadata records rejected relationship candidates'
+    );
+    assert.ok(
+      (nudgedCvd.relationshipCandidateRejections.background ?? 0) > 0,
+      '[cvd-relationship-fixed] nudged metadata records rejected relationship candidates'
+    );
+  }
+
+  private static tolerantRelationship(): void {
+    const state = CvdProbeScenarioSuite.relationshipState({
+      'alpha': 1,
+      'chroma': 0.5,
+      'hue': 360,
+      'lightness': 1
+    });
+    const original = CvdProbeScenarioSuite.statedPairRoles().background;
+    const cvd = ContrastMetadataAssertionPort.cvd(state);
+    const resolution = Metadata.relationshipResolution(state.metadata).get('background');
+    const deviation = resolution?.deviation;
+
+    assert.ok(cvd !== undefined, '[cvd-relationship-tolerant] metadata present');
+    assert.notStrictEqual(
+      state.roles.background?.hex,
+      original.hex,
+      '[cvd-relationship-tolerant] tolerant background accepts its CVD correction'
+    );
+    assert.deepStrictEqual(
+      cvd.blocked,
+      [],
+      '[cvd-relationship-tolerant] accepted correction has no terminal blocker'
+    );
+    assert.ok(
+      (deviation?.alpha ?? 0) > 0 ||
+        (deviation?.chroma ?? 0) > 0 ||
+        (deviation?.hue ?? 0) > 0 ||
+        (deviation?.lightness ?? 0) > 0,
+      '[cvd-relationship-tolerant] accepted correction records its relationship deviation'
+    );
+  }
+
+  private static relationshipState(
+    tolerance?: Readonly<Record<string, number>>
+  ): PaletteStateInterface {
+    const original = CvdProbeScenarioSuite.statedPairRoles();
+    const input = InputEntity.intake({
+      'colors': [],
+      'contrast': { 'cvdMode': 'enforce' },
+      'roles': CvdProbeScenarioSuite.relationshipSchema(tolerance)
+    });
+    const result = CvdProbeScenarioSuite.relationshipStateFor(input, original);
+    return result;
+  }
+
+  private static nudgedRelationshipState(): PaletteStateInterface {
+    const original = CvdProbeScenarioSuite.statedPairRoles();
+    const input = InputEntity.intake({
+      'colors': [],
+      'contrast': { 'cvdMode': 'nudge' },
+      'roles': CvdProbeScenarioSuite.relationshipSchema()
+    });
+    const result = CvdProbeScenarioSuite.relationshipStateFor(input, original);
+    return result;
+  }
+
+  private static relationshipSchema(
+    tolerance?: Readonly<Record<string, number>>
+  ): ReturnType<typeof RoleSchemaEntity.intake> {
+    const relationship = {
+      'id': 'background-from-source',
+      'operation': 'alias',
+      'priority': 0,
+      'relaxability': tolerance === undefined ? 'fixed' : 'tolerant',
+      'source': 'source',
+      'target': 'background',
+      ...(tolerance === undefined ? {} : { 'tolerance': tolerance })
+    };
+    const result = RoleSchemaEntity.intake({
+      'contrastPairs': [ContrastPairEntity.create({
+        'background': 'background',
+        'foreground': 'text',
+        'minimumContrastRatio': 1
+      })],
+      'name': 'cvd-relationship-constraint',
+      'relationshipGraph': {
+        'groups': [{
+          'anchor': 'source',
+          'defaultMode': 'default',
+          'id': 'background-group',
+          'modes': [{
+            'hueOffsets': [{ 'degrees': 0, 'variantId': 'base' }],
+            'id': 'default'
+          }],
+          'name': 'Background',
+          'relationships': [relationship]
+        }]
+      },
+      'roles': [
+        { 'name': 'background', 'required': true },
+        { 'name': 'source', 'required': true },
+        { 'name': 'text', 'required': true }
+      ]
+    });
+    return result;
+  }
+
+  private static relationshipStateFor(
+    input: ReturnType<typeof InputEntity.intake>,
+    original: ReturnType<typeof CvdProbeScenarioSuite.statedPairRoles>
+  ): PaletteStateInterface {
+    const state: PaletteStateInterface = {
+      'colors': [],
+      'input': input,
+      'metadata': {},
+      'outputs': {},
+      'roles': {
+        'background': original.background,
+        'source': original.background,
+        'text': original.text
+      },
+      'runtime': RuntimeOptionsEntity.intake({
+        'colorSpace': 'srgb',
+        'extra': {},
+        'framing': 'dark'
+      }),
+      'variants': {}
+    };
+    Metadata.writeRoleProvenance(state.metadata, new Map([
+      ['background', RoleProvenanceEntity.create({ 'adjustments': [], 'origin': 'derived' })],
+      ['source', RoleProvenanceEntity.create({ 'adjustments': [], 'origin': 'derived' })],
+      ['text', RoleProvenanceEntity.create({ 'adjustments': [], 'origin': 'stated' })]
+    ]));
+    Metadata.writeRelationshipResolution(
+      state.metadata,
+      new Map([['background', RelationshipResolutionEntity.create({
+        'after': original.background,
+        'disposition': 'applied',
+        'groupId': 'background-group',
+        'operation': 'alias',
+        'relationshipId': 'background-from-source',
+        'sources': ['source']
+      })]])
+    );
+    enforceCvdSimulate.run(state, {
+      'logger': new RecordingLogger(),
+      'startedAt': Date.now()
+    });
+    return state;
   }
 
   private static correctionMetadata(): void {

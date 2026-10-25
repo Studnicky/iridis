@@ -15,6 +15,7 @@ import {
   PaletteRoleState,
   rgbToHex
 } from '@studnicky/iridis';
+import { RelationshipConstraint } from '@studnicky/iridis/model';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
 import type { CvdEvalEntity } from '../entities/CvdEvalEntity.ts';
@@ -75,17 +76,89 @@ class CvdMoverGroup {
   readonly original: ColorRecordEntity.Type;
   readonly roleRange: ContrastPolicy.RoleRangeInterface;
 
+  private relationshipCandidateRejections = 0;
+  private readonly state: PaletteStateInterface;
+
   constructor(
     mover: string,
     original: ColorRecordEntity.Type,
     failurePolicy: CvdFailurePolicy,
-    roleRange: ContrastPolicy.RoleRangeInterface
+    roleRange: ContrastPolicy.RoleRangeInterface,
+    state: PaletteStateInterface
   ) {
     this.constraints = [];
     this.failurePolicy = failurePolicy;
     this.mover = mover;
     this.original = original;
     this.roleRange = roleRange;
+    this.state = state;
+  }
+
+  get relationshipCandidateRejectionCount(): number {
+    const result = this.relationshipCandidateRejections;
+    return result;
+  }
+
+  allows(record: ColorRecordEntity.Type): boolean {
+    const result = RelationshipConstraint.allows(
+      this.state.input,
+      this.state.metadata,
+      this.mover,
+      record
+    );
+    return result;
+  }
+
+  cachedCorrection(
+    budget: CvdSearchBudget,
+    constraints: readonly CvdPairConstraint[]
+  ): CvdCorrectionCandidate | undefined {
+    if (this.limitsMovement()) {
+      return undefined;
+    }
+    const result = budget.cachedCorrection(
+      this.original,
+      constraints,
+      this.roleRange
+    );
+    return result;
+  }
+
+  recordCandidateRejection(): void {
+    this.relationshipCandidateRejections += 1;
+  }
+
+  private limitsMovement(): boolean {
+    const result = RelationshipConstraint.limitsMovement(
+      this.state.input,
+      this.state.metadata,
+      this.mover
+    );
+    return result;
+  }
+
+  recordDeviation(record: ColorRecordEntity.Type): void {
+    RelationshipConstraint.recordDeviation(
+      this.state.input,
+      this.state.metadata,
+      this.mover,
+      record
+    );
+  }
+
+  storeCorrection(
+    budget: CvdSearchBudget,
+    constraints: readonly CvdPairConstraint[],
+    correction: CvdCorrectionCandidate
+  ): void {
+    if (!this.limitsMovement()) {
+      budget.storeCorrection(
+        this.original,
+        constraints,
+        this.roleRange,
+        correction
+      );
+    }
   }
 
   add(
@@ -597,11 +670,7 @@ class CvdSimulation {
     budget: CvdSearchBudget
   ): ColorRecordEntity.Type {
     const fgRecord = group.original;
-    const cachedCorrection = budget.cachedCorrection(
-      fgRecord,
-      constraints,
-      group.roleRange
-    );
+    const cachedCorrection = group.cachedCorrection(budget, constraints);
     if (cachedCorrection !== undefined) {
       const result = CvdSimulation.materializeCorrection(
         cachedCorrection,
@@ -627,7 +696,8 @@ class CvdSimulation {
     const selection = new CvdCandidateSelection(
       fgRecord,
       CvdSimulation.originalFailureCount(constraints),
-      group.roleRange
+      group.roleRange,
+      group
     );
 
     if (CvdCandidateSelection.clearsAll(originalCandidate)) {
@@ -657,7 +727,7 @@ class CvdSimulation {
     if (!initialSearchComplete) {
       const partial = selection.result();
       if (partial !== undefined && CvdCandidateSelection.clearsAll(partial)) {
-        budget.storeCorrection(fgRecord, constraints, group.roleRange, partial);
+        group.storeCorrection(budget, constraints, partial);
         const result = CvdSimulation.materializeCorrection(partial, fgRecord);
         return result;
       }
@@ -683,7 +753,7 @@ class CvdSimulation {
       return fgRecord;
     }
 
-    budget.storeCorrection(fgRecord, constraints, group.roleRange, best);
+    group.storeCorrection(budget, constraints, best);
     const result = CvdSimulation.materializeCorrection(best, fgRecord);
     return result;
   }
@@ -1252,13 +1322,15 @@ class CvdCandidateSelection {
   private readonly originalFailureCount: number;
   private readonly originalC: number;
   private readonly originalL: number;
+  private readonly group: CvdMoverGroup;
   private readonly originalRgb: ColorRecordEntity.Type['rgb'];
   private readonly roleRange: ContrastPolicy.RoleRangeInterface;
 
   constructor(
     original: ColorRecordEntity.Type,
     originalFailureCount: number,
-    roleRange: ContrastPolicy.RoleRangeInterface
+    roleRange: ContrastPolicy.RoleRangeInterface,
+    group: CvdMoverGroup
   ) {
     this.bestAny = undefined;
     this.bestNonExtreme = undefined;
@@ -1267,6 +1339,7 @@ class CvdCandidateSelection {
     this.originalL = original.oklch.l;
     this.originalRgb = original.rgb;
     this.roleRange = roleRange;
+    this.group = group;
   }
 
   static clearsAll(candidate: CvdCorrectionCandidate): boolean {
@@ -1330,14 +1403,21 @@ class CvdCandidateSelection {
   }
 
   canConsider(record: ColorRecordEntity.Type): boolean {
-    const result =
+    const withinRange =
       (this.roleRange.chromaRange === undefined ||
         (record.oklch.c >= this.roleRange.chromaRange[0] &&
           record.oklch.c <= this.roleRange.chromaRange[1])) &&
       (this.roleRange.lightnessRange === undefined ||
         (record.oklch.l >= this.roleRange.lightnessRange[0] &&
           record.oklch.l <= this.roleRange.lightnessRange[1]));
-    return result;
+    if (!withinRange) {
+      return false;
+    }
+    const allowed = this.group.allows(record);
+    if (!allowed) {
+      this.group.recordCandidateRejection();
+    }
+    return allowed;
   }
 
   private isEligible(
@@ -1536,14 +1616,15 @@ class CvdCorrectionCoordinator {
     const group = component.length === 1 ? component[0] : undefined;
     if (group !== undefined && !group.dependsOn(group.mover)) {
       const constraints = group.resolve(resolvedRoles);
+      const corrected = CvdSimulation.correctForeground(
+        group,
+        constraints,
+        emittedColors,
+        budget
+      );
       resolvedRoles.set(
         group.mover,
-        CvdSimulation.correctForeground(
-          group,
-          constraints,
-          emittedColors,
-          budget
-        )
+        group.allows(corrected) ? corrected : group.original
       );
       return;
     }
@@ -1668,6 +1749,7 @@ class CvdCorrectionCoordinator {
     const result =
       CvdSimulation.preservesBaselines(foreground, constraints) &&
       CvdSimulation.preservesFailureSets(foreground, constraints) &&
+      group.allows(foreground) &&
       (foreground === group.original ||
         CvdSimulation.improves(foreground, constraints));
     return result;
@@ -1726,7 +1808,10 @@ class CvdCorrectionCoordinator {
       ) {
         unchangedCount += 1;
       }
-      resolvedRoles.set(group.mover, corrected);
+      resolvedRoles.set(
+        group.mover,
+        group.allows(corrected) ? corrected : group.original
+      );
     }
     const result = unchangedCount === component.length;
     return result;
@@ -1893,6 +1978,7 @@ class EnforceCvdSimulate {
     requirements: readonly ContrastPolicy.RequirementInterface[],
     baseline: ReadonlyMap<string, ColorRecordEntity.Type>
   ): void {
+    const prior = CvdResultSetEntity.intake(state.metadata['contrast:cvd']);
     const failurePolicy = CvdFailurePolicy.resolve(state.input.contrast);
     const results = this.reportCorrected(
       requirements,
@@ -1909,7 +1995,8 @@ class EnforceCvdSimulate {
       context,
       blocked,
       results.corrections,
-      results.warnings
+      results.warnings,
+      prior.relationshipCandidateRejections
     );
   }
 
@@ -1923,13 +2010,14 @@ class EnforceCvdSimulate {
       state.metadata['contrast:cvd'] = {
         'blocked': [],
         'corrections': [],
+        'relationshipCandidateRejections': {},
         'warnings': []
       };
       return;
     }
     const originals = this.snapshotRoles(state);
     const budget = this.createSearchBudget();
-    const blocked = this.correctRoles(
+    const grouped = this.correctRoles(
       requirements,
       originals,
       state,
@@ -1947,14 +2035,15 @@ class EnforceCvdSimulate {
       failurePolicy
     );
     const terminalBlocked = failurePolicy.emitsBlockers()
-      ? this.terminalBlocked(blocked, requirements, state, failurePolicy)
+      ? this.terminalBlocked(grouped.blocked, requirements, state, failurePolicy)
       : [];
     this.writeMetadata(
       state,
       context,
       terminalBlocked,
       results.corrections,
-      results.warnings
+      results.warnings,
+      this.relationshipCandidateRejections(grouped.groups)
     );
   }
 
@@ -1969,6 +2058,7 @@ class EnforceCvdSimulate {
       state.metadata['contrast:cvd'] = {
         'blocked': [],
         'corrections': [],
+        'relationshipCandidateRejections': {},
         'warnings': []
       };
       return;
@@ -1986,7 +2076,8 @@ class EnforceCvdSimulate {
       context,
       [],
       results.corrections,
-      results.warnings
+      results.warnings,
+      {}
     );
   }
 
@@ -2109,11 +2200,13 @@ class EnforceCvdSimulate {
     context: PipelineContextInterface,
     blocked: readonly CvdBlockedPairEntity.Type[],
     corrections: readonly CvdCorrectionEntity.Type[],
-    warnings: readonly CvdPairWarningEntity.Type[]
+    warnings: readonly CvdPairWarningEntity.Type[],
+    relationshipCandidateRejections: Record<string, number>
   ): void {
     const metadata = CvdResultSetEntity.intake({
       'blocked': [...blocked],
       'corrections': [...corrections],
+      'relationshipCandidateRejections': relationshipCandidateRejections,
       'warnings': [...warnings]
     });
     state.metadata['contrast:cvd'] = metadata;
@@ -2190,7 +2283,7 @@ class EnforceCvdSimulate {
     state: PaletteStateInterface,
     budget: CvdSearchBudget,
     failurePolicy: CvdFailurePolicy
-  ): CvdBlockedPairEntity.Type[] {
+  ): CvdGroups {
     const grouped = this.groupsFor(pairs, originals, state, failurePolicy);
     const resolved = CvdCorrectionCoordinator.resolve(
       grouped.groups,
@@ -2207,7 +2300,8 @@ class EnforceCvdSimulate {
       if (
         corrected !== undefined &&
         corrected !== group.original &&
-        ContrastPolicy.allowsRoleRecord(state.input, group.mover, corrected)
+        ContrastPolicy.allowsRoleRecord(state.input, group.mover, corrected) &&
+        group.allows(corrected)
       ) {
         Object.defineProperty(state.roles, group.mover, {
           'configurable': true,
@@ -2215,9 +2309,10 @@ class EnforceCvdSimulate {
           'value': corrected,
           'writable': true
         });
+        group.recordDeviation(corrected);
       }
     }
-    return grouped.blocked;
+    return grouped;
   }
 
   private createSearchBudget(): CvdSearchBudget {
@@ -2319,7 +2414,8 @@ class EnforceCvdSimulate {
         mover.roleName,
         moverRecord,
         failurePolicy,
-        ContrastPolicy.roleRange(state.input, mover.roleName)
+        ContrastPolicy.roleRange(state.input, mover.roleName),
+        state
       );
       groups.set(mover.roleName, group);
     }
@@ -2329,6 +2425,23 @@ class EnforceCvdSimulate {
       pair.foreground,
       pair.cvdMinimumContrastRatio
     );
+  }
+
+  private relationshipCandidateRejections(
+    groups: ReadonlyMap<string, CvdMoverGroup>
+  ): Record<string, number> {
+    const result: Record<string, number> = {};
+    for (const [roleName, group] of groups) {
+      if (group.relationshipCandidateRejectionCount > 0) {
+        Object.defineProperty(result, roleName, {
+          'configurable': true,
+          'enumerable': true,
+          'value': group.relationshipCandidateRejectionCount,
+          'writable': true
+        });
+      }
+    }
+    return result;
   }
 
   private reportCorrected(
