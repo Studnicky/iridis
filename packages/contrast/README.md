@@ -45,7 +45,8 @@ roles and writes `state.metadata['contrast:complianceReport']`:
 `{ compliant, disposition, selected: { algorithm, level }, pairs, problemPairs }`.
 `disposition` is `resolved` when every pair passes, `best-effort` when a
 non-strict run has unresolved pairs, and `withheld` when strict compliance
-withholds unresolved roles. Each pair carries `foreground`, `background`,
+withholds palette admission while preserving its best-achievable roles and variants.
+Each pair carries `foreground`, `background`,
 `required`, `actual`, `shortfall`, `passed`, `adjustedRoles`, and `constraints`.
 Constraints are `pin`, `range`, `hue-relationship`, `gamut`, `cvd-floor`, or
 `cvd-drop`. A pair constrained by an authored relationship carries its sorted
