@@ -83,6 +83,12 @@ interface DomainsOptionsInterface {
   readonly 'roles'?: Readonly<Record<string, ColorRecordEntity.Type>>;
 }
 
+interface CoordinateProjectionOptionsInterface {
+  readonly 'maximum': number;
+  readonly 'minimum': number;
+  readonly 'tolerance': number | undefined;
+}
+
 interface HueProjectionInterface {
   readonly 'hueArcs'?: readonly HueArcInterface[];
   readonly 'relation'?: HueRelationInterface;
@@ -1181,29 +1187,29 @@ export class ContrastFeasibility {
     }
     const definition = relationship.relationship;
     if (source === undefined) {
-      if (definition.operation !== 'hue-target' || (definition.clamp ?? RoleGeometry.DEFAULT_HUE_CLAMP) < 180) {
-        return undefined;
-      }
-      return { 'resolvedHue': definition.hue };
+      const result = ContrastFeasibility.sourceLessOptions(role.name, definition);
+      return result;
     }
     const delta = definition.operation === 'oklch-delta' ? definition : undefined;
     const lightnessOffset = delta?.lightnessOffset ?? 0;
     const chromaScale = delta?.chromaScale ?? 1;
     const hueOffset = ContrastFeasibility.hueOffset(relationship, delta);
     const tolerance = relationship.tolerance;
-    const lightness = ContrastFeasibility.projectedRange(
-      role.lightnessRange ?? [0, 1],
+    const lightnessProjector = delta?.lightnessOffset === undefined
+      ? ContrastFeasibility.preservedCoordinateRange
+      : ContrastFeasibility.projectedCoordinateRange;
+    const chromaProjector = delta?.chromaScale === undefined
+      ? ContrastFeasibility.preservedCoordinateRange
+      : ContrastFeasibility.projectedCoordinateRange;
+    const lightness = lightnessProjector(
+      role.lightnessRange,
       [source.lightness[0] + lightnessOffset, source.lightness[1] + lightnessOffset],
-      tolerance?.lightness,
-      0,
-      1
+      { 'maximum': 1, 'minimum': 0, 'tolerance': tolerance?.lightness }
     );
-    const chroma = ContrastFeasibility.projectedRange(
-      role.chromaRange ?? [0, 0.5],
+    const chroma = chromaProjector(
+      role.chromaRange,
       [source.chroma[0] * chromaScale, source.chroma[1] * chromaScale],
-      tolerance?.chroma,
-      0,
-      0.5
+      { 'maximum': 0.5, 'minimum': 0, 'tolerance': tolerance?.chroma }
     );
     const hue = ContrastFeasibility.projectedHue(source, relationship, hueOffset);
     const result: RoleDomainOptionsInterface = {
@@ -1271,16 +1277,71 @@ export class ContrastFeasibility {
     return { 'hueArcs': hueArcs, 'relation': relation };
   }
 
-  private static projectedRange(
-    authored: readonly [number, number],
+  private static preservedCoordinateRange(
+    authored: readonly [number, number] | undefined,
     source: readonly [number, number],
-    tolerance: number | undefined,
-    minimum: number,
-    maximum: number
+    options: CoordinateProjectionOptionsInterface
   ): readonly [number, number] {
-    const lower = Math.max(authored[0], minimum, source[0] - (tolerance ?? 0));
-    const upper = Math.min(authored[1], maximum, source[1] + (tolerance ?? 0));
-    const result: readonly [number, number] = lower <= upper ? [lower, upper] : [upper, upper];
+    const baseline = authored === undefined
+      ? source
+      : [RoleGeometry.rangeCenter(authored), RoleGeometry.rangeCenter(authored)] as const;
+    const result = ContrastFeasibility.projectedCoordinateRange(authored, baseline, options);
+    return result;
+  }
+
+  private static projectedCoordinateRange(
+    authored: readonly [number, number] | undefined,
+    baseline: readonly [number, number],
+    options: CoordinateProjectionOptionsInterface
+  ): readonly [number, number] {
+    const lower = Math.min(baseline[0], baseline[1]) - (options.tolerance ?? 0);
+    const upper = Math.max(baseline[0], baseline[1]) + (options.tolerance ?? 0);
+    const envelope = authored ?? [options.minimum, options.maximum] as const;
+    const clampedLower = Math.max(options.minimum, envelope[0], lower);
+    const clampedUpper = Math.min(options.maximum, envelope[1], upper);
+    if (clampedLower <= clampedUpper) {
+      const result: readonly [number, number] = [clampedLower, clampedUpper];
+      return result;
+    }
+    const edge = upper < envelope[0] ? envelope[0] : envelope[1];
+    const result: readonly [number, number] = [edge, edge];
+    return result;
+  }
+
+  private static sourceLessOptions(
+    roleName: string,
+    definition: RelationshipConstraintDomain['relationship']
+  ): RoleDomainOptionsInterface | undefined {
+    if (definition.operation !== 'hue-target') {
+      return undefined;
+    }
+    const clamp = definition.clamp ?? RoleGeometry.DEFAULT_HUE_CLAMP;
+    const hue = clamp >= 180
+      ? { 'resolvedHue': definition.hue }
+      : {
+        'hueArcs': ContrastFeasibility.hueArcsFor(definition.hue, clamp),
+        'relation': ContrastFeasibility.targetOwnRelation(roleName, definition.hue, clamp)
+      };
+    const result: RoleDomainOptionsInterface = {
+      ...(hue.hueArcs === undefined ? {} : { 'hueArcs': hue.hueArcs }),
+      ...(hue.relation === undefined ? {} : { 'relation': hue.relation }),
+      ...(hue.resolvedHue === undefined ? {} : { 'resolvedHue': hue.resolvedHue })
+    };
+    return result;
+  }
+
+  private static targetOwnRelation(
+    root: string,
+    hue: number,
+    clamp: number
+  ): HueRelationInterface {
+    const result: HueRelationInterface = {
+      'resolve': (rootHue: number): number => {
+        const resolved = RoleGeometry.hueTowards(rootHue, hue, clamp);
+        return resolved;
+      },
+      'root': root
+    };
     return result;
   }
 

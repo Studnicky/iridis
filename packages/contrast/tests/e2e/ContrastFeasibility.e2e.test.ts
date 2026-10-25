@@ -1,3 +1,5 @@
+import type { RoleRelationshipEntity } from '@studnicky/iridis';
+
 import {
   colorRecordFactory,
   ContrastOptionsEntity,
@@ -591,6 +593,115 @@ await test('ContrastFeasibility certifies a source-derived hue-target arc across
   assert.ok(pair !== undefined, 'source-derived hue-target pair receives a feasibility result');
   assert.strictEqual(pair.reachability, 'always-reachable');
   assert.strictEqual(pair.sampled, undefined, 'the bounded target arc is certified through both wrapped segments');
+});
+
+
+await test('ContrastFeasibility matches midpoint and clamped graph coordinate envelopes', () => {
+  const schemaFor = (
+    relationship: RoleRelationshipEntity.Type,
+    target: RoleDefinitionEntity.Type,
+    sourceLightness: readonly [number, number]
+  ): RoleSchemaEntity.Type => {
+    const result = RoleSchemaEntity.intake({
+      'contrastPairs': [{ 'background': 'background', 'foreground': 'target', 'minimumContrastRatio': 7 }],
+      'name': 'graph-coordinate-envelope-parity',
+      'relationshipGraph': {
+        'groups': [{
+          'anchor': 'source',
+          'defaultMode': 'base',
+          'id': 'relationships',
+          'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'base' }], 'id': 'base' }],
+          'name': 'Relationships',
+          'relationships': [
+            { 'clamp': 180, 'hue': 0, 'id': 'background-hue', 'operation': 'hue-target', 'priority': 0, 'relaxability': 'fixed', 'target': 'background' },
+            { 'clamp': 180, 'hue': 0, 'id': 'source-hue', 'operation': 'hue-target', 'priority': 1, 'relaxability': 'fixed', 'target': 'source' },
+            relationship
+          ]
+        }]
+      },
+      'roles': [
+        ContrastFeasibilityFixture.role('background', 0.05, 0, 0),
+        RoleDefinitionEntity.intake({ 'chromaRange': [0.1, 0.3], 'lightnessRange': sourceLightness, 'name': 'source' }),
+        target
+      ]
+    });
+    return result;
+  };
+  const fixedTarget = (lightness: number): RoleDefinitionEntity.Type => {
+    const result = RoleDefinitionEntity.intake({
+      'chromaRange': [0.03, 0.03],
+      'lightnessRange': [lightness, lightness],
+      'name': 'target'
+    });
+    return result;
+  };
+  const midpointGraph = schemaFor(
+    { 'id': 'target-alias', 'operation': 'alias', 'priority': 2, 'relaxability': 'fixed', 'source': 'source', 'target': 'target' },
+    RoleDefinitionEntity.intake({ 'chromaRange': [0.01, 0.05], 'lightnessRange': [0.7, 0.9], 'name': 'target' }),
+    [0.3, 0.7]
+  );
+  const midpointLegacyEquivalent = schemaFor(
+    { 'clamp': 180, 'hue': 0, 'id': 'target-hue', 'operation': 'hue-target', 'priority': 2, 'relaxability': 'fixed', 'target': 'target' },
+    fixedTarget(0.8),
+    [0.3, 0.7]
+  );
+  const clampedGraph = schemaFor(
+    { 'id': 'target-delta', 'lightnessOffset': 0.1, 'operation': 'oklch-delta', 'priority': 2, 'relaxability': 'fixed', 'source': 'source', 'target': 'target' },
+    RoleDefinitionEntity.intake({ 'chromaRange': [0.01, 0.05], 'lightnessRange': [0.7, 0.9], 'name': 'target' }),
+    [0.1, 0.2]
+  );
+  const clampedLegacyEquivalent = schemaFor(
+    { 'clamp': 180, 'hue': 0, 'id': 'target-hue', 'operation': 'hue-target', 'priority': 2, 'relaxability': 'fixed', 'target': 'target' },
+    fixedTarget(0.7),
+    [0.1, 0.2]
+  );
+  const midpointGraphPair = ContrastFeasibility.analyzeSchema(midpointGraph, ContrastFeasibilityFixture.options()).pairs[0];
+  const midpointLegacyPair = ContrastFeasibility.analyzeSchema(midpointLegacyEquivalent, ContrastFeasibilityFixture.options()).pairs[0];
+  const clampedGraphPair = ContrastFeasibility.analyzeSchema(clampedGraph, ContrastFeasibilityFixture.options()).pairs[0];
+  const clampedLegacyPair = ContrastFeasibility.analyzeSchema(clampedLegacyEquivalent, ContrastFeasibilityFixture.options()).pairs[0];
+
+  assert.ok(midpointGraphPair !== undefined, 'preserved graph target receives a feasibility result');
+  assert.ok(midpointLegacyPair !== undefined, 'legacy midpoint equivalent receives a feasibility result');
+  assert.strictEqual(
+    midpointGraphPair.reachability,
+    midpointLegacyPair.reachability,
+    'preserved graph coordinates use the declared target range midpoint'
+  );
+  assert.deepStrictEqual(
+    clampedGraphPair,
+    clampedLegacyPair,
+    'explicit graph coordinates clamp into the declared target envelope'
+  );
+});
+
+
+await test('ContrastFeasibility preserves source-less hue-target coordinate domains', () => {
+  const schema = RoleSchemaEntity.intake({
+    'contrastPairs': [{ 'background': 'background', 'foreground': 'target', 'minimumContrastRatio': 7 }],
+    'name': 'source-less-hue-target-domain',
+    'relationshipGraph': {
+      'groups': [{
+        'anchor': 'target',
+        'defaultMode': 'fixed',
+        'id': 'fixed-hues',
+        'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'fixed' }], 'id': 'fixed' }],
+        'name': 'Fixed hues',
+        'relationships': [
+          { 'clamp': 180, 'hue': 0, 'id': 'background-hue', 'operation': 'hue-target', 'priority': 0, 'relaxability': 'fixed', 'target': 'background' },
+          { 'clamp': 180, 'hue': 0, 'id': 'target-hue', 'operation': 'hue-target', 'priority': 1, 'relaxability': 'fixed', 'target': 'target' }
+        ]
+      }]
+    },
+    'roles': [
+      ContrastFeasibilityFixture.role('background', 0.05, 0, 0),
+      RoleDefinitionEntity.intake({ 'chromaRange': [0, 0], 'lightnessRange': [0.1, 0.9], 'name': 'target' })
+    ]
+  });
+
+  const pair = ContrastFeasibility.analyzeSchema(schema, ContrastFeasibilityFixture.options()).pairs[0];
+
+  assert.ok(pair !== undefined, 'source-less hue-target receives a feasibility result');
+  assert.strictEqual(pair.reachability, 'always-reachable', 'target keeps its independently resolved coordinate domain');
 });
 
 await test('ContrastFeasibility certifies graph alias, hue-offset, and OKLCH delta targets', () => {
