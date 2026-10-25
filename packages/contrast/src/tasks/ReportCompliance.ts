@@ -230,8 +230,20 @@ class ComplianceSerialization {
         }),
       'foreground': pair.foreground,
       'passed': passed,
+      ...(pair.relationIds === undefined
+        ? {}
+        : { 'relationIds': ComplianceSerialization.relationIds(pair.relationIds) }),
       'required': pair.required,
       'shortfall': pair.shortfall
+    });
+    return result;
+  }
+
+  private static relationIds(relationIds: readonly string[]): string[] {
+    const result = Array.from(new Set(relationIds));
+    result.sort((left, right) => {
+      const comparison = left.localeCompare(right);
+      return comparison;
     });
     return result;
   }
