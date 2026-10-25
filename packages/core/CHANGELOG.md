@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.14.0
+
+### Minor Changes
+
+- 0ac5b09: Expose provenance-aware selected-standard compliance through the canonical enforce:compliance and report:compliance stages. input.contrast.cvdMode selects warn, nudge, or enforce CVD behavior, and nonMandatoryLevel selects AA or AAA requirements for non-mandatory pairs. APCA derives non-mandatory status from a declared pair minimum below 4.5:1. CVD evidence, corrections, and enforce-mode blockers are recorded separately at metadata['contrast:cvd'], not on the compliance report.
+- 4b6918d: Failing pairs in the contrast:complianceReport carry an optional `proof` that states whether the pair is reachable at the run's resolved hues, and `analyzeSchema` reports the same reachability for a schema before any run. `analyzeSchema` certifies neutral envelopes and bounded authored hue arcs with conservative luminance witnesses. A pair whose hue is not fixed is reported as indeterminate with its sampled evidence kept separate from the proof.
+- 6eb117b: Contrast repair, feasibility proofs, and the color-vision search measure candidates as plain numeric coordinates, build validated color records only for selected results, and skip CVD candidates outside the mover’s authored lightness and chroma ranges. `ColorCoordinate` is exported from `@studnicky/iridis/math`.
+  
+  `HueIntervalBounds` is exported from `@studnicky/iridis/math` for conservative emitted-sRGB luminance and APCA bounds over non-wrapping OKLCH hue arcs, and `RoleGeometry` is exported from `@studnicky/iridis/tasks` for consumers that apply the engine’s canonical hue-target clamp.
+- f904046: The contrast:complianceReport is `{compliant, disposition, selected, pairs, problemPairs}`, where `disposition` is resolved, best-effort or withheld and `problemPairs` is the failing subset of `pairs`. Each pair carries foreground, background, required, actual, shortfall, passed, adjustedRoles and constraints, plus an optional proof; constraints are pin, range, hue-relationship, gamut, cvd-floor or cvd-drop. The report has no blockedPairs, cvdCompliant or causes field. When withhold:compliance runs after report:compliance, input.contrast.enableStrictCompliance marks an unresolved report withheld. Connected roles are optimized jointly inside their authored ranges.
+
+### Patch Changes
+
+- 13ca891: The joint contrast optimizer scores candidates as plain numeric coordinates and builds a validated color record only for the selected candidate, which keeps the resolved palette identical and shortens the slowest solves.
+- fda1be3: The shared core validator registry skips duplicate-shape scans, so repeated engine runs in one process hold a steady per-run cost instead of one that grows with the number of runs.
+
 ## 0.13.2
 
 ### Patch Changes
