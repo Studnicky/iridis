@@ -1180,6 +1180,9 @@ class ContrastExecution {
     entry: PendingContrastEntryEntity.Type,
     state: PaletteStateInterface
   ): PendingContrastEntryEntity.Type {
+    if (state.input.roles?.relationshipGraph === undefined) {
+      return entry;
+    }
     const relationIds = RelationshipConstraint.relationIds(
       state.input,
       state.metadata,
@@ -1196,6 +1199,9 @@ class ContrastExecution {
     roleName: string,
     coordinate: ColorCoordinate
   ): boolean {
+    if (state.input.roles?.relationshipGraph === undefined) {
+      return true;
+    }
     const role = state.roles[roleName];
     if (role === undefined) {
       return true;
