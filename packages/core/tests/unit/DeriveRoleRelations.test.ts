@@ -226,6 +226,74 @@ void test('derive:roleRelations applies target envelopes and source-less hue tar
   assert.ok(Math.abs(deltaAccent.oklch.c - 0.02) < 1e-12);
   assert.ok(Math.abs((Metadata.relationshipResolution(delta.metadata).get('accent')?.after?.oklch.l ?? 0) - 0.40) < 1e-12);
 
+  const interpolationRelationship = RoleRelationshipEntity.create({
+    'id': 'accent-interpolate',
+    'operation': 'oklch-interpolate',
+    'priority': 0,
+    'relaxability': 'fixed',
+    'source': 'brand',
+    'target': 'accent',
+    'toward': 'background',
+    'weight': 0.5
+  });
+  const interpolationSchema = DeriveRoleRelationsFixture.schemaWithRoles(
+    [interpolationRelationship],
+    [
+      RoleDefinitionEntity.create({ 'name': 'brand' }),
+      RoleDefinitionEntity.create({ 'name': 'background' }),
+      RoleDefinitionEntity.create({
+        'chromaRange': [0.01, 0.03],
+        'lightnessRange': [0.20, 0.40],
+        'name': 'accent'
+      })
+    ]
+  );
+  const interpolation = DeriveRoleRelationsFixture.runSchema(
+    interpolationSchema,
+    [
+      DeriveRoleRelationsFixture.color('#000000', 'brand'),
+      DeriveRoleRelationsFixture.color('#ffffff', 'background')
+    ]
+  );
+  const interpolatedAccent = interpolation.roles.accent;
+  assert.ok(interpolatedAccent !== undefined);
+  assert.ok(Math.abs(interpolatedAccent.oklch.l - 0.40) < 1e-12);
+  assert.ok(Math.abs(interpolatedAccent.oklch.c - 0.01) < 1e-12);
+
+  const overlayRelationship = RoleRelationshipEntity.create({
+    'alpha': 0.5,
+    'base': 'background',
+    'id': 'accent-overlay',
+    'operation': 'alpha-overlay',
+    'overlay': 'brand',
+    'priority': 0,
+    'relaxability': 'fixed',
+    'target': 'accent'
+  });
+  const overlaySchema = DeriveRoleRelationsFixture.schemaWithRoles(
+    [overlayRelationship],
+    [
+      RoleDefinitionEntity.create({ 'name': 'brand' }),
+      RoleDefinitionEntity.create({ 'name': 'background' }),
+      RoleDefinitionEntity.create({
+        'chromaRange': [0.01, 0.03],
+        'lightnessRange': [0.20, 0.40],
+        'name': 'accent'
+      })
+    ]
+  );
+  const overlay = DeriveRoleRelationsFixture.runSchema(
+    overlaySchema,
+    [
+      DeriveRoleRelationsFixture.color('#ffffff', 'brand'),
+      DeriveRoleRelationsFixture.color('#000000', 'background')
+    ]
+  );
+  const overlaidAccent = overlay.roles.accent;
+  assert.ok(overlaidAccent !== undefined);
+  assert.ok(Math.abs(overlaidAccent.oklch.l - 0.40) < 1e-12);
+  assert.ok(Math.abs(overlaidAccent.oklch.c - 0.01) < 1e-12);
+
   const selfRelationship = RoleRelationshipEntity.create({
     'clamp': 25,
     'hue': 120,

@@ -162,6 +162,7 @@ class RelationshipOperation {
     return result;
   }
 }
+
 class DeriveRoleRelations implements TaskInterface {
   readonly 'name' = 'derive:roleRelations';
 
