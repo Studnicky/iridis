@@ -45,7 +45,7 @@ const VSCODE_PLUGIN_SCHEMAS = {
  * tiered palette resolved by the engine's core role tasks.
  *
  * Pipeline dependency order:
- *   vscode:seedRoles → resolve:roles → expand:family
+ *   vscode:seedRoles → resolve:roles → derive:roleRelations
  *   → vscode:deriveUiRoles
  *   → vscode:expandTokens
  *   → vscode:applyModifiers

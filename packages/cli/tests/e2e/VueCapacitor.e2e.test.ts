@@ -67,12 +67,12 @@ class VueCapacitorTestFixture {
   static misorderedPipeline(pipeline: readonly string[]): string[] {
     const result = [...pipeline];
     const resolveIndex = result.indexOf('resolve:roles');
-    const expandIndex = result.indexOf('expand:family');
-    if (resolveIndex < 0 || expandIndex < 0) {
-      throw new Error('Canonical pipeline must contain resolve:roles and expand:family.');
+    const deriveIndex = result.indexOf('derive:roleRelations');
+    if (resolveIndex < 0 || deriveIndex < 0) {
+      throw new Error('Canonical pipeline must contain resolve:roles and derive:roleRelations.');
     }
-    result[resolveIndex] = 'expand:family';
-    result[expandIndex] = 'resolve:roles';
+    result[resolveIndex] = 'derive:roleRelations';
+    result[deriveIndex] = 'resolve:roles';
     return result;
   }
 }

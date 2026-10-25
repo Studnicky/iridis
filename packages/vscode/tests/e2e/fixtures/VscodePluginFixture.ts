@@ -12,7 +12,7 @@ export class VscodePluginFixture {
   static readonly pipelineAny = [
     'intake:any',
     'resolve:roles',
-    'expand:family',
+    'derive:roleRelations',
     'vscode:deriveUiRoles',
     'enforce:contrast',
     'derive:variant',
@@ -25,7 +25,7 @@ export class VscodePluginFixture {
   static readonly pipelineHex = [
     'intake:hex',
     'resolve:roles',
-    'expand:family',
+    'derive:roleRelations',
     'vscode:deriveUiRoles',
     'enforce:contrast',
     'derive:variant',

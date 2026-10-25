@@ -32,7 +32,7 @@ engine.adopt(contrastPlugin);
 engine.pipeline([
   'vscode:seedRoles',
   'resolve:roles',
-  'expand:family',
+  'derive:roleRelations',
   'vscode:deriveUiRoles',
   'enforce:compliance',
   'derive:variant',

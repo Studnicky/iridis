@@ -1,4 +1,11 @@
-import { ContrastPairEntity, RoleDefinitionEntity, RoleSchemaEntity } from '@studnicky/iridis';
+import {
+  ContrastPairEntity, RoleDefinitionEntity, RoleRelationshipEntity, RoleRelationshipGraphEntity, RoleSchemaEntity
+} from '@studnicky/iridis';
+
+type VscodeRoleDraft = Readonly<{
+  'definition': RoleDefinitionEntity.Type;
+  'relationship'?: RoleRelationshipEntity.Type;
+}>;
 
 class VscodeRoleSchemas64 {
   static readonly #darkFraming = {
@@ -13,19 +20,17 @@ class VscodeRoleSchemas64 {
     'surfaceLightnessOffset': -0.06
   };
 
-  static readonly dark: RoleSchemaEntity.Type = RoleSchemaEntity.create({
-    'contrastPairs': VscodeRoleSchemas64.contrastPairs(),
-    'description': '64-role VS Code schema for dark editor themes.',
-    'name': 'vscode-64-dark',
-    'roles': [...VscodeRoleSchemas64.baseRoles(VscodeRoleSchemas64.#darkFraming), ...VscodeRoleSchemas64.extensionRoles(VscodeRoleSchemas64.#darkFraming)]
-  });
+  static readonly dark: RoleSchemaEntity.Type = VscodeRoleSchemas64.schema(
+    'vscode-64-dark',
+    '64-role VS Code schema for dark editor themes.',
+    VscodeRoleSchemas64.#darkFraming
+  );
 
-  static readonly light: RoleSchemaEntity.Type = RoleSchemaEntity.create({
-    'contrastPairs': VscodeRoleSchemas64.contrastPairs(),
-    'description': '64-role VS Code schema for light editor themes.',
-    'name': 'vscode-64-light',
-    'roles': [...VscodeRoleSchemas64.baseRoles(VscodeRoleSchemas64.#lightFraming), ...VscodeRoleSchemas64.extensionRoles(VscodeRoleSchemas64.#lightFraming)]
-  });
+  static readonly light: RoleSchemaEntity.Type = VscodeRoleSchemas64.schema(
+    'vscode-64-light',
+    '64-role VS Code schema for light editor themes.',
+    VscodeRoleSchemas64.#lightFraming
+  );
 
   static contrastPairs(): ContrastPairEntity.Type[] {
     const rawPairs = [
@@ -57,7 +62,7 @@ class VscodeRoleSchemas64 {
     readonly 'accentLightnessOffset': number;
     readonly 'range': (dark: [number, number], light: [number, number]) => [number, number];
     readonly 'surfaceLightnessOffset': number;
-  }): RoleDefinitionEntity.Type[] {
+  }): VscodeRoleDraft[] {
     const semanticChroma = framing.range([0.06, 0.18], [0.05, 0.16]);
     const semanticLightness = framing.range([0.60, 0.80], [0.28, 0.48]);
     const accentChroma = framing.range([0.06, 0.18], [0.05, 0.16]);
@@ -88,7 +93,7 @@ class VscodeRoleSchemas64 {
     readonly 'accentLightnessOffset': number;
     readonly 'range': (dark: [number, number], light: [number, number]) => [number, number];
     readonly 'surfaceLightnessOffset': number;
-  }): RoleDefinitionEntity.Type[] {
+  }): VscodeRoleDraft[] {
     const uiChroma: [number, number] = [0.04, 0.14];
     const uiLightness = framing.range([0.42, 0.62], [0.44, 0.62]);
     const surfaceLightness = framing.range([0.10, 0.30], [0.70, 0.94]);
@@ -160,22 +165,101 @@ class VscodeRoleSchemas64 {
     chromaRange: [number, number],
     lightnessRange: [number, number],
     ...derivation: readonly [string | undefined, number | undefined, { readonly 'chromaScale'?: number; readonly 'lightnessOffset'?: number }?]
-  ): RoleDefinitionEntity.Type {
-    const [derivedFrom, hueOffset, options = {}] = derivation;
+  ): VscodeRoleDraft {
+    const [sourceRole, hueOffset, options = {}] = derivation;
     const definition = RoleDefinitionEntity.create({
       'chromaRange': chromaRange,
       'description': description,
       ...(classification.length === 0 ? {} : { 'intent': classification }),
       'lightnessRange': lightnessRange,
       'name': name,
-      'required': true,
-      ...(derivedFrom === undefined ? {} : { 'derivedFrom': derivedFrom }),
-      ...(hueOffset === undefined ? {} : { 'hueOffset': hueOffset }),
-      ...(options.lightnessOffset === undefined ? {} : { 'lightnessOffset': options.lightnessOffset }),
-      ...(options.chromaScale === undefined ? {} : { 'chromaScale': options.chromaScale })
+      'required': true
     });
-    return definition;
+    const relationship = VscodeRoleSchemas64.relationship(name, {
+      ...(sourceRole === undefined ? {} : { 'source': sourceRole }),
+      ...(hueOffset === undefined ? {} : { 'hueOffset': hueOffset }),
+      ...(options.chromaScale === undefined ? {} : { 'chromaScale': options.chromaScale }),
+      ...(options.lightnessOffset === undefined ? {} : { 'lightnessOffset': options.lightnessOffset })
+    });
+    const result = relationship === undefined ? { 'definition': definition } : { 'definition': definition, 'relationship': relationship };
+    return result;
   }
+
+  private static schema(
+    name: string,
+    description: string,
+    framing: {
+      readonly 'accentLightnessOffset': number;
+      readonly 'range': (dark: [number, number], light: [number, number]) => [number, number];
+      readonly 'surfaceLightnessOffset': number;
+    }
+  ): RoleSchemaEntity.Type {
+    const drafts = [...VscodeRoleSchemas64.baseRoles(framing), ...VscodeRoleSchemas64.extensionRoles(framing)];
+    const roles: RoleDefinitionEntity.Type[] = [];
+    const relationships: RoleRelationshipEntity.Type[] = [];
+    for (let index = 0; index < drafts.length; index += 1) {
+      const draft = drafts[index];
+      if (draft === undefined) {
+        continue;
+      }
+      roles.push(draft.definition);
+      if (draft.relationship !== undefined) {
+        relationships.push(draft.relationship);
+      }
+    }
+    const result = RoleSchemaEntity.create({
+      'contrastPairs': VscodeRoleSchemas64.contrastPairs(),
+      'description': description,
+      'name': name,
+      'relationshipGraph': RoleRelationshipGraphEntity.create({
+        'groups': [{
+          'anchor': 'background',
+          'defaultMode': 'default',
+          'id': 'vscode-derived-roles',
+          'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'default' }], 'id': 'default' }],
+          'name': 'VS Code derived roles',
+          'relationships': relationships
+        }]
+      }),
+      'roles': roles
+    });
+    return result;
+  }
+
+
+  private static relationship(
+    target: string,
+    options: Readonly<{
+      'chromaScale'?: number;
+      'hueOffset'?: number;
+      'lightnessOffset'?: number;
+      'source'?: string;
+    }>
+  ): RoleRelationshipEntity.Type | undefined {
+    const source = options.source;
+    if (source === undefined) {
+      return undefined;
+    }
+    const identifier = [source, 'to', target].join('-');
+    const shared = { 'id': identifier, 'priority': 0, 'relaxability': 'fixed' as const, 'source': source, 'target': target };
+    if (options.chromaScale !== undefined || options.lightnessOffset !== undefined) {
+      const result = RoleRelationshipEntity.create({
+        ...shared,
+        ...(options.hueOffset === undefined ? {} : { 'hueOffset': options.hueOffset }),
+        ...(options.chromaScale === undefined ? {} : { 'chromaScale': options.chromaScale }),
+        ...(options.lightnessOffset === undefined ? {} : { 'lightnessOffset': options.lightnessOffset }),
+        'operation': 'oklch-delta'
+      });
+      return result;
+    }
+    if (options.hueOffset === undefined) {
+      const result = RoleRelationshipEntity.create({ ...shared, 'operation': 'alias' });
+      return result;
+    }
+    const result = RoleRelationshipEntity.create({ ...shared, 'degrees': options.hueOffset, 'operation': 'hue-offset' });
+    return result;
+  }
+
 }
 
 export const VSCODE_ROLE_SCHEMAS_64 = VscodeRoleSchemas64;
