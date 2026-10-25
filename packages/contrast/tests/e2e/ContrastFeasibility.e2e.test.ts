@@ -733,3 +733,62 @@ await test('ContrastFeasibility classifies graph alias, hue-offset, and OKLCH de
   });
   assert.ok(everyGraphPairIsReachable, 'bounded graph targets receive continuous certificates');
 });
+
+await test('ContrastFeasibility classifies an active target-envelope graph clamp like legacy derivation', () => {
+  const background = ContrastFeasibilityFixture.role('background', 0.05, 0, 0);
+  const source = RoleDefinitionEntity.intake({
+    'chromaRange': [0, 0],
+    'lightnessRange': [0.5, 0.95],
+    'name': 'source'
+  });
+  const legacyTarget = RoleDefinitionEntity.intake({
+    'chromaRange': [0, 0],
+    'derivedFrom': 'source',
+    'lightnessRange': [0.8, 0.9],
+    'name': 'target'
+  });
+  const graphTarget = RoleDefinitionEntity.intake({
+    'chromaRange': [0, 0],
+    'lightnessRange': [0.8, 0.9],
+    'name': 'target'
+  });
+  const pairs = [{ 'background': 'background', 'foreground': 'target', 'minimumContrastRatio': 4.5 }];
+  const legacy = RoleSchemaEntity.intake({
+    'contrastPairs': pairs,
+    'name': 'legacy-envelope-clamp',
+    'roles': [background, source, legacyTarget]
+  });
+  const graph = RoleSchemaEntity.intake({
+    'contrastPairs': pairs,
+    'name': 'graph-envelope-clamp',
+    'relationshipGraph': {
+      'groups': [{
+        'anchor': 'source',
+        'defaultMode': 'base',
+        'id': 'derived',
+        'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'base' }], 'id': 'base' }],
+        'name': 'Derived',
+        'relationships': [{
+          'id': 'target',
+          'operation': 'alias',
+          'priority': 0,
+          'relaxability': 'fixed',
+          'source': 'source',
+          'target': 'target'
+        }]
+      }]
+    },
+    'roles': [background, source, graphTarget]
+  });
+
+  const legacyPair = ContrastFeasibility.analyzeSchema(legacy, ContrastFeasibilityFixture.options()).pairs[0];
+  const graphPair = ContrastFeasibility.analyzeSchema(graph, ContrastFeasibilityFixture.options()).pairs[0];
+
+  assert.ok(legacyPair !== undefined, 'legacy derived pair is analyzed');
+  assert.ok(graphPair !== undefined, 'graph derived pair is analyzed');
+  assert.strictEqual(
+    graphPair.reachability,
+    legacyPair.reachability,
+    'the graph source domain intersects the target envelope when the envelope actively narrows it'
+  );
+});
