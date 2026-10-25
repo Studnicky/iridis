@@ -354,16 +354,18 @@ const verifyRelationshipCertificates = (): { readonly 'certificates': number; re
         'modes': [{ 'hueOffsets': [{ 'degrees': 180, 'variantId': 'opposite' }], 'id': 'opposite' }],
         'name': 'Derived',
         'relationships': [
-          { 'id': 'alias', 'operation': 'alias', 'priority': 0, 'relaxability': 'fixed', 'source': 'source', 'target': 'alias-target' },
-          { 'id': 'offset', 'operation': 'hue-offset', 'priority': 1, 'relaxability': 'fixed', 'source': 'source', 'target': 'offset-target', 'variantId': 'opposite' },
-          { 'id': 'delta', 'lightnessOffset': 0.1, 'operation': 'oklch-delta', 'priority': 2, 'relaxability': 'fixed', 'source': 'source', 'target': 'delta-target' },
-          { 'clamp': 90, 'hue': 25, 'id': 'target-hue', 'operation': 'hue-target', 'priority': 3, 'relaxability': 'fixed', 'source': 'source', 'target': 'target-hue' }
+          { 'clamp': 180, 'hue': 0, 'id': 'background-hue', 'operation': 'hue-target', 'priority': 0, 'relaxability': 'fixed', 'target': 'background' },
+          { 'clamp': 180, 'hue': 120, 'id': 'source-hue', 'operation': 'hue-target', 'priority': 1, 'relaxability': 'fixed', 'target': 'source' },
+          { 'id': 'alias', 'operation': 'alias', 'priority': 2, 'relaxability': 'fixed', 'source': 'source', 'target': 'alias-target' },
+          { 'id': 'offset', 'operation': 'hue-offset', 'priority': 3, 'relaxability': 'fixed', 'source': 'source', 'target': 'offset-target', 'variantId': 'opposite' },
+          { 'id': 'delta', 'lightnessOffset': 0.1, 'operation': 'oklch-delta', 'priority': 4, 'relaxability': 'fixed', 'source': 'source', 'target': 'delta-target' },
+          { 'clamp': 90, 'hue': 25, 'id': 'target-hue', 'operation': 'hue-target', 'priority': 5, 'relaxability': 'fixed', 'source': 'source', 'target': 'target-hue' }
         ]
       }]
     },
     'roles': [
-      RoleDefinitionEntity.intake({ 'chromaRange': [0.01, 0.01], 'hue': 0, 'lightnessRange': [0.05, 0.05], 'name': 'background' }),
-      RoleDefinitionEntity.intake({ 'chromaRange': [0.01, 0.01], 'hue': 120, 'lightnessRange': [0.85, 0.85], 'name': 'source' }),
+      RoleDefinitionEntity.intake({ 'chromaRange': [0.01, 0.01], 'lightnessRange': [0.05, 0.05], 'name': 'background' }),
+      RoleDefinitionEntity.intake({ 'chromaRange': [0.01, 0.01], 'lightnessRange': [0.85, 0.85], 'name': 'source' }),
       RoleDefinitionEntity.intake({ 'chromaRange': [0.01, 0.01], 'lightnessRange': [0.85, 0.85], 'name': 'alias-target' }),
       RoleDefinitionEntity.intake({ 'chromaRange': [0.01, 0.01], 'lightnessRange': [0.85, 0.85], 'name': 'offset-target' }),
       RoleDefinitionEntity.intake({ 'chromaRange': [0.01, 0.01], 'lightnessRange': [0.95, 0.95], 'name': 'delta-target' }),
