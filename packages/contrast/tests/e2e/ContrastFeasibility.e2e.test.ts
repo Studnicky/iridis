@@ -4,6 +4,7 @@ import {
   contrastWcag21,
   InputEntity,
   Metadata,
+  RelationshipResolutionEntity,
   RoleDefinitionEntity,
   RoleProvenanceEntity,
   RoleSchemaEntity,
@@ -374,4 +375,159 @@ await test('ContrastFeasibility uses resolved run hues without unanchored sampli
   assert.strictEqual(pair.reachability, 'never-reachable', 'resolved schema hues make the run certifiable');
   assert.ok(pair.proof !== undefined, 'resolved-hue failure retains its exact proof');
   assert.strictEqual(pair.sampled, undefined, 'terminal run never samples unanchored hue domains');
+});
+
+
+await test('ContrastFeasibility proves a fixed relationship against its resolved baseline', () => {
+  const baseline = colorRecordFactory.fromHex('#777777');
+  const schema = RoleSchemaEntity.intake({
+    'contrastPairs': [{ 'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 7 }],
+    'name': 'fixed-relationship-feasibility',
+    'relationshipGraph': {
+      'groups': [{
+        'anchor': 'source',
+        'defaultMode': 'base',
+        'id': 'text-group',
+        'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'base' }], 'id': 'base' }],
+        'name': 'Text',
+        'relationships': [{
+          'id': 'text-alias',
+          'operation': 'alias',
+          'priority': 0,
+          'relaxability': 'fixed',
+          'source': 'source',
+          'target': 'text'
+        }]
+      }]
+    },
+    'roles': [
+      ContrastFeasibilityFixture.role('background', 1, 0, 0),
+      ContrastFeasibilityFixture.role('source', 0.5, 0, 0),
+      ContrastFeasibilityFixture.role('text', 0.9, 0, 0)
+    ]
+  });
+  const metadata = {};
+  Metadata.writeRelationshipResolution(metadata, new Map([['text', RelationshipResolutionEntity.create({
+    'after': baseline,
+    'disposition': 'applied',
+    'groupId': 'text-group',
+    'operation': 'alias',
+    'relationshipId': 'text-alias',
+    'sources': ['source']
+  })]]));
+  const state = {
+    'colors': [],
+    'input': InputEntity.intake({ 'colors': [], 'contrast': ContrastFeasibilityFixture.options(), 'roles': schema }),
+    'metadata': metadata,
+    'outputs': {},
+    'roles': { 'background': colorRecordFactory.fromHex('#ffffff'), 'source': baseline, 'text': baseline },
+    'runtime': RuntimeOptionsEntity.intake({}),
+    'variants': {}
+  };
+
+  const pair = ContrastFeasibility.proveRun(state).pairs[0];
+
+  assert.ok(pair !== undefined, 'relationship pair receives a proof');
+  assert.strictEqual(pair.reachability, 'never-reachable');
+  const channels = pair.proof?.limitingBounds.map((bound): string => { return bound.channel; }) ?? [];
+  assert.ok(channels.includes('hue-relationship'), 'fixed relationship baselines are attributed to their relation');
+  assert.equal(channels.includes('pin'), false, 'fixed relationship baselines are not attributed to stated pins');
+});
+
+await test('ContrastFeasibility bounds tolerant relationships by their baseline-centred tolerance', () => {
+  const baseline = colorRecordFactory.fromHex('#777777');
+  const schema = RoleSchemaEntity.intake({
+    'contrastPairs': [{ 'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 7 }],
+    'name': 'tolerant-relationship-feasibility',
+    'relationshipGraph': {
+      'groups': [{
+        'anchor': 'source',
+        'defaultMode': 'base',
+        'id': 'text-group',
+        'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'base' }], 'id': 'base' }],
+        'name': 'Text',
+        'relationships': [{
+          'id': 'text-alias',
+          'operation': 'alias',
+          'priority': 0,
+          'relaxability': 'tolerant',
+          'source': 'source',
+          'target': 'text',
+          'tolerance': { 'chroma': 0, 'lightness': 0.01 }
+        }]
+      }]
+    },
+    'roles': [
+      ContrastFeasibilityFixture.role('background', 1, 0, 0),
+      ContrastFeasibilityFixture.role('source', 0.5, 0, 0),
+      RoleDefinitionEntity.intake({
+        'chromaRange': [0, 0.5],
+        'lightnessRange': [0, 1],
+        'name': 'text'
+      })
+    ]
+  });
+  const metadata = {};
+  Metadata.writeRelationshipResolution(metadata, new Map([['text', RelationshipResolutionEntity.create({
+    'after': baseline,
+    'disposition': 'applied',
+    'groupId': 'text-group',
+    'operation': 'alias',
+    'relationshipId': 'text-alias',
+    'sources': ['source']
+  })]]));
+  const state = {
+    'colors': [],
+    'input': InputEntity.intake({ 'colors': [], 'contrast': ContrastFeasibilityFixture.options(), 'roles': schema }),
+    'metadata': metadata,
+    'outputs': {},
+    'roles': { 'background': colorRecordFactory.fromHex('#ffffff'), 'source': baseline, 'text': baseline },
+    'runtime': RuntimeOptionsEntity.intake({}),
+    'variants': {}
+  };
+
+  const pair = ContrastFeasibility.proveRun(state).pairs[0];
+
+  assert.ok(pair !== undefined, 'tolerant relationship pair receives a proof');
+  assert.strictEqual(pair.reachability, 'never-reachable');
+  assert.ok(pair.proof !== undefined, 'the constrained tolerance produces limiting evidence');
+  assert.ok(pair.proof.bestActual < pair.proof.required, 'the proof excludes the role range outside its relationship tolerance');
+});
+
+await test('ContrastFeasibility leaves alpha-overlay schema targets indeterminate with sampled evidence', () => {
+  const schema = RoleSchemaEntity.intake({
+    'contrastPairs': [{ 'background': 'background', 'foreground': 'overlay-target', 'minimumContrastRatio': 4.5 }],
+    'name': 'alpha-overlay-feasibility',
+    'relationshipGraph': {
+      'groups': [{
+        'anchor': 'base',
+        'defaultMode': 'base',
+        'id': 'overlay-group',
+        'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'base' }], 'id': 'base' }],
+        'name': 'Overlay',
+        'relationships': [{
+          'alpha': 0.5,
+          'base': 'base',
+          'id': 'overlay-target',
+          'operation': 'alpha-overlay',
+          'overlay': 'overlay',
+          'priority': 0,
+          'relaxability': 'fixed',
+          'target': 'overlay-target'
+        }]
+      }]
+    },
+    'roles': [
+      ContrastFeasibilityFixture.role('background', 0.1, 0, 0),
+      ContrastFeasibilityFixture.role('base', 0.2, 0, 0),
+      ContrastFeasibilityFixture.role('overlay', 0.9, 0, 0),
+      ContrastFeasibilityFixture.role('overlay-target', 0.9, 0, 0)
+    ]
+  });
+
+  const pair = ContrastFeasibility.analyzeSchema(schema, ContrastFeasibilityFixture.options()).pairs[0];
+
+  assert.ok(pair !== undefined, 'overlay pair receives a feasibility result');
+  assert.strictEqual(pair.reachability, 'indeterminate');
+  assert.ok(pair.sampled !== undefined, 'source-over targets retain labelled sampled evidence until compositing intervals are bounded');
 });

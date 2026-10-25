@@ -2,7 +2,8 @@ import type {
   ColorHintsEntity,
   ColorRecordEntity,
   ContrastOptionsEntity,
-  PaletteStateInterface
+  PaletteStateInterface,
+  RelationshipConstraintDomain
 } from '@studnicky/iridis';
 
 import {
@@ -12,6 +13,7 @@ import {
   InputEntity,
   Metadata,
   PaletteRoleState,
+  RelationshipConstraint,
   RoleSchemaEntity
 } from '@studnicky/iridis';
 import { ContrastPolicy, RoleGeometry } from '@studnicky/iridis/tasks';
@@ -60,12 +62,21 @@ interface RoleDomainInterface {
   readonly 'lightness': readonly [number, number];
   readonly 'name': string;
   readonly 'relation'?: HueRelationInterface;
+  readonly 'relationship'?: RelationshipConstraintDomain;
 }
 
 interface RoleDomainOptionsInterface {
   readonly 'fixedRecord'?: ColorRecordEntity.Type;
   readonly 'relation'?: HueRelationInterface;
+  readonly 'relationship'?: RelationshipConstraintDomain;
   readonly 'resolvedHue'?: number;
+}
+
+interface DomainsOptionsInterface {
+  readonly 'input'?: PaletteStateInterface['input'];
+  readonly 'metadata'?: PaletteStateInterface['metadata'];
+  readonly 'provenance'?: ReadonlyMap<string, { readonly 'origin': string }>;
+  readonly 'roles'?: Readonly<Record<string, ColorRecordEntity.Type>>;
 }
 
 interface SearchCellInterface {
@@ -143,6 +154,23 @@ class ContrastFeasibilityDomain {
       'reachableHueRanges': reachesRequirement
         ? [HueRangeEntity.intake({ 'end': 360, 'start': 0 })]
         : []
+    });
+    return result;
+  }
+
+  static sampledIndeterminate(
+    foreground: RoleDomainInterface,
+    background: RoleDomainInterface,
+    requirement: ContrastPolicy.RequirementInterface
+  ): ContrastPairFeasibilityEntity.Type {
+    const evaluations = ContrastFeasibilityDomain.representativeEvaluations(foreground, background, requirement);
+    const best = ContrastFeasibilityDomain.bestEvaluation(evaluations);
+    const result = ContrastPairFeasibilityEntity.intake({
+      'background': background.name,
+      'foreground': foreground.name,
+      'reachability': 'indeterminate',
+      'reachableHueRanges': [],
+      'sampled': ContrastFeasibilityDomain.sampled(evaluations, best)
     });
     return result;
   }
@@ -485,16 +513,37 @@ class ContrastFeasibilityDomain {
     role: RoleSchemaEntity.Type['roles'][number],
     options?: RoleDomainOptionsInterface
   ): RoleDomainInterface {
-    const hue = options?.resolvedHue ?? (role.derivedFrom === undefined ? role.hue : undefined);
+    const relationship = options?.relationship;
+    const tolerance = relationship?.tolerance;
+    const lightness = relationship === undefined || tolerance === undefined
+      ? role.lightnessRange ?? [0, 1]
+      : ContrastFeasibilityDomain.intersection(role.lightnessRange ?? [0, 1], relationship.baseline.oklch.l, tolerance.lightness);
+    const chroma = relationship === undefined || tolerance === undefined
+      ? role.chromaRange ?? [0, 0.5]
+      : ContrastFeasibilityDomain.intersection(role.chromaRange ?? [0, 0.5], relationship.baseline.oklch.c, tolerance.chroma);
+    const fixedRecord = options?.fixedRecord ?? (relationship?.tolerance === undefined ? relationship?.baseline : undefined);
+    const hue = relationship?.baseline.oklch.h ?? options?.resolvedHue ?? (role.derivedFrom === undefined ? role.hue : undefined);
     const result: RoleDomainInterface = {
-      'chroma': role.chromaRange ?? [0, 0.5],
-      ...(options?.fixedRecord === undefined ? {} : { 'fixedRecord': options.fixedRecord }),
+      'chroma': chroma,
+      ...(fixedRecord === undefined ? {} : { 'fixedRecord': fixedRecord }),
       ...(hue === undefined ? {} : { 'hue': hue }),
       ...(role.intent === undefined ? {} : { 'hints': { 'intent': role.intent } }),
-      'lightness': role.lightnessRange ?? [0, 1],
+      'lightness': lightness,
       'name': role.name,
-      ...(options?.relation === undefined ? {} : { 'relation': options.relation })
+      ...(options?.relation === undefined ? {} : { 'relation': options.relation }),
+      ...(relationship === undefined ? {} : { 'relationship': relationship })
     };
+    return result;
+  }
+
+  private static intersection(
+    authored: readonly [number, number],
+    baseline: number,
+    tolerance: number | undefined
+  ): readonly [number, number] {
+    const lower = Math.max(authored[0], baseline - (tolerance ?? 0));
+    const upper = Math.min(authored[1], baseline + (tolerance ?? 0));
+    const result: readonly [number, number] = lower <= upper ? [lower, upper] : [lower, lower];
     return result;
   }
   static record(
@@ -718,7 +767,7 @@ class ContrastFeasibilityDomain {
   ): readonly ContrastFeasibilityProofEntity.Type['limitingBounds'][number][] {
     if (domain.fixedRecord !== undefined) {
       return [{
-        'channel': 'pin',
+        'channel': domain.relationship === undefined ? 'pin' : 'hue-relationship',
         'edge': 'fixed',
         'role': domain.name,
         'value': coordinate.l
@@ -914,17 +963,19 @@ export class ContrastFeasibility {
       return result;
     }
     const provenance = Metadata.roleProvenance(state.metadata);
-    const domains = ContrastFeasibility.domains(RoleSchemaEntity.intake(schema), { 'provenance': provenance, 'roles': state.roles });
+    const domains = ContrastFeasibility.domains(RoleSchemaEntity.intake(schema), {
+      'input': state.input,
+      'metadata': state.metadata,
+      'provenance': provenance,
+      'roles': state.roles
+    });
     const result = ContrastFeasibility.report(domains, state.input, state.roles);
     return result;
   }
 
   private static domains(
     schema: RoleSchemaEntity.Type,
-    options?: {
-      readonly 'provenance'?: ReadonlyMap<string, { readonly 'origin': string }>;
-      readonly 'roles'?: Readonly<Record<string, ColorRecordEntity.Type>>;
-    }
+    options?: DomainsOptionsInterface
   ): ReadonlyMap<string, RoleDomainInterface> {
     const roles = ContrastFeasibility.roleIndex(schema);
     const relations = ContrastFeasibility.hueRelations(roles);
@@ -934,19 +985,32 @@ export class ContrastFeasibility {
       if (role === undefined) {
         continue;
       }
-      const resolved = options?.roles?.[role.name];
-      const fixed = options?.provenance?.get(role.name)?.origin === 'stated' ? resolved : undefined;
-      const resolvedHue = resolved?.oklch.h;
-      const relation = resolvedHue === undefined && role.derivedFrom !== undefined
-        ? relations.get(role.name)
-        : undefined;
-      const domainOptions: RoleDomainOptionsInterface = {
-        ...(fixed === undefined ? {} : { 'fixedRecord': fixed }),
-        ...(relation === undefined ? {} : { 'relation': relation }),
-        ...(resolvedHue === undefined ? {} : { 'resolvedHue': resolvedHue })
-      };
+      const domainOptions = ContrastFeasibility.domainOptions(role, relations, options);
       result.set(role.name, ContrastFeasibilityDomain.domain(role, domainOptions));
     }
+    return result;
+  }
+
+  private static domainOptions(
+    role: RoleSchemaEntity.Type['roles'][number],
+    relations: ReadonlyMap<string, HueRelationInterface>,
+    options: DomainsOptionsInterface | undefined
+  ): RoleDomainOptionsInterface {
+    const resolved = options?.roles?.[role.name];
+    const fixed = options?.provenance?.get(role.name)?.origin === 'stated' ? resolved : undefined;
+    const resolvedHue = resolved?.oklch.h;
+    const relation = resolvedHue === undefined && role.derivedFrom !== undefined
+      ? relations.get(role.name)
+      : undefined;
+    const relationship = fixed === undefined && options?.input !== undefined && options.metadata !== undefined
+      ? RelationshipConstraint.domain(options.input, options.metadata, role.name)
+      : undefined;
+    const result: RoleDomainOptionsInterface = {
+      ...(fixed === undefined ? {} : { 'fixedRecord': fixed }),
+      ...(relation === undefined ? {} : { 'relation': relation }),
+      ...(relationship === undefined ? {} : { 'relationship': relationship }),
+      ...(resolvedHue === undefined ? {} : { 'resolvedHue': resolvedHue })
+    };
     return result;
   }
 
@@ -1040,6 +1104,7 @@ export class ContrastFeasibility {
     input: PaletteStateInterface['input'],
     roles: Record<string, ColorRecordEntity.Type>
   ): ContrastFeasibilityReportEntity.Type {
+    const schema = input.roles === undefined ? undefined : RoleSchemaEntity.intake(input.roles);
     const requirements = ContrastPolicy.normalize(input, PaletteRoleState.admit(roles));
     const pairs: ContrastPairFeasibilityEntity.Type[] = [];
     for (let index = 0; index < requirements.length; index += 1) {
@@ -1050,10 +1115,33 @@ export class ContrastFeasibility {
       const foreground = domains.get(requirement.foreground);
       const background = domains.get(requirement.background);
       if (foreground !== undefined && background !== undefined) {
-        pairs.push(ContrastFeasibilityDomain.analyzePair(foreground, background, requirement));
+        const pair = ContrastFeasibility.requiresCompositeMeasurement(schema, requirement)
+          ? ContrastFeasibilityDomain.sampledIndeterminate(foreground, background, requirement)
+          : ContrastFeasibilityDomain.analyzePair(foreground, background, requirement);
+        pairs.push(pair);
       }
     }
     const result = ContrastFeasibilityReportEntity.create({ 'pairs': pairs });
     return result;
+  }
+
+  private static requiresCompositeMeasurement(
+    schema: RoleSchemaEntity.Type | undefined,
+    requirement: ContrastPolicy.RequirementInterface
+  ): boolean {
+    const groups = schema?.relationshipGraph?.groups ?? [];
+    for (let groupIndex = 0; groupIndex < groups.length; groupIndex += 1) {
+      const group = groups[groupIndex];
+      if (group === undefined) {
+        continue;
+      }
+      for (let relationshipIndex = 0; relationshipIndex < group.relationships.length; relationshipIndex += 1) {
+        const relationship = group.relationships[relationshipIndex];
+        if (relationship?.operation === 'alpha-overlay' && (relationship.target === requirement.foreground || relationship.target === requirement.background)) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 }
