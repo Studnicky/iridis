@@ -416,3 +416,14 @@ void test('hue-target admits a bounded absolute hue and rejects values outside i
   assert.equal(RoleRelationshipEntity.validate({ ...relationship, 'hue': 361 }), false);
   assert.equal(RoleRelationshipEntity.validate({ ...relationship, 'clamp': 181 }), false);
 });
+
+void test('hue-target permits an omitted source for a target-own resolved candidate', () => {
+  assert.equal(RoleRelationshipEntity.validate({
+    'hue': 120,
+    'id': 'semantic-self',
+    'operation': 'hue-target',
+    'priority': 0,
+    'relaxability': 'fixed',
+    'target': 'success'
+  }), true);
+});

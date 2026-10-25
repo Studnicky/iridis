@@ -57,7 +57,7 @@ export namespace RoleRelationshipEntity {
           'source': { 'minLength': 1, 'type': 'string' },
           'target': { 'minLength': 1, 'type': 'string' }
         },
-        'required': ['hue', 'id', 'operation', 'priority', 'relaxability', 'source', 'target'],
+        'required': ['hue', 'id', 'operation', 'priority', 'relaxability', 'target'],
         'type': 'object'
       },
       {

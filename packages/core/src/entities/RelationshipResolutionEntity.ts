@@ -31,7 +31,6 @@ export namespace RelationshipResolutionEntity {
       'relationshipId': { 'minLength': 1, 'type': 'string' },
       'sources': {
         'items': { 'minLength': 1, 'type': 'string' },
-        'minItems': 1,
         'type': 'array'
       },
       'variantId': { 'minLength': 1, 'type': 'string' }

@@ -2,10 +2,12 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import type { ColorRecordEntity } from '../../src/entities/ColorRecordEntity.ts';
+import type { RoleDefinitionEntity } from '../../src/entities/RoleDefinitionEntity.ts';
 import type { PaletteStateInterface } from '../../src/interfaces/PaletteStateInterface.ts';
 
 import { Engine } from '../../src/engine/Engine.ts';
 import { InputEntity } from '../../src/entities/InputEntity.ts';
+import { RoleDefinitionEntity } from '../../src/entities/RoleDefinitionEntity.ts';
 import { RoleRelationshipEntity } from '../../src/entities/RoleRelationshipEntity.ts';
 import { RoleRelationshipGraphEntity } from '../../src/entities/RoleRelationshipGraphEntity.ts';
 import { RoleSchemaEntity } from '../../src/entities/RoleSchemaEntity.ts';
@@ -70,11 +72,44 @@ class DeriveRoleRelationsFixture {
     roleNames: readonly string[],
     colors: readonly ColorRecordEntity.Type[]
   ) {
+    const result = this.runSchema(this.schema(relationships, roleNames), colors);
+    return result;
+  }
+
+  static runSchema(
+    schema: RoleSchemaEntity.Type,
+    colors: readonly ColorRecordEntity.Type[]
+  ) {
     const engine = this.engine(colors);
     const result = engine.run(InputEntity.intake({
       'colors': [],
-      'roles': this.schema(relationships, roleNames)
+      'roles': schema
     }));
+    return result;
+  }
+
+  static schemaWithRoles(
+    relationships: RoleRelationshipEntity.Type[],
+    roles: readonly RoleDefinitionEntity.Type[]
+  ): RoleSchemaEntity.Type {
+    const graph = RoleRelationshipGraphEntity.create({
+      'groups': [{
+        'anchor': 'brand',
+        'defaultMode': 'analogous',
+        'id': 'brand-family',
+        'modes': [{
+          'hueOffsets': [{ 'degrees': 30, 'variantId': 'near' }],
+          'id': 'analogous'
+        }],
+        'name': 'Brand family',
+        'relationships': relationships
+      }]
+    });
+    const result = RoleSchemaEntity.create({
+      'name': 'relationship-resolver-ranges',
+      'relationshipGraph': graph,
+      'roles': roles
+    });
     return result;
   }
 }
@@ -134,6 +169,71 @@ void test('derive:roleRelations resolves dependent targets after their sources b
   assert.ok(highlight !== undefined);
   assert.ok(accent.oklch.l > brand.oklch.l);
   assert.equal(Metadata.relationshipResolution(state.metadata).get('highlight')?.relationshipId, 'highlight-alias');
+});
+
+void test('derive:roleRelations applies target envelopes and source-less hue targets', () => {
+  const rangeRelationship = RoleRelationshipEntity.create({
+    'id': 'alias',
+    'operation': 'alias',
+    'priority': 0,
+    'relaxability': 'fixed',
+    'source': 'brand',
+    'target': 'accent'
+  });
+  const rangeSchema = DeriveRoleRelationsFixture.schemaWithRoles(
+    [rangeRelationship],
+    [
+      RoleDefinitionEntity.create({ 'name': 'brand' }),
+      RoleDefinitionEntity.create({
+        'chromaRange': [0.01, 0.03],
+        'lightnessRange': [0.20, 0.40],
+        'name': 'accent'
+      })
+    ]
+  );
+  const brand = DeriveRoleRelationsFixture.color('#7c3aed80', 'brand');
+  const ranged = DeriveRoleRelationsFixture.runSchema(rangeSchema, [brand]);
+  const accent = ranged.roles.accent;
+  assert.ok(accent !== undefined);
+  assert.ok(Math.abs(accent.oklch.l - 0.30) < 1e-12);
+  assert.ok(Math.abs(accent.oklch.c - 0.02) < 1e-12);
+  assert.ok(Math.abs((Metadata.relationshipResolution(ranged.metadata).get('accent')?.after?.oklch.l ?? 0) - 0.30) < 1e-12);
+
+  const selfRelationship = RoleRelationshipEntity.create({
+    'clamp': 25,
+    'hue': 120,
+    'id': 'error-hue',
+    'operation': 'hue-target',
+    'priority': 0,
+    'relaxability': 'fixed',
+    'target': 'error'
+  });
+  const selfSchema = DeriveRoleRelationsFixture.schemaWithRoles(
+    [selfRelationship],
+    [
+      RoleDefinitionEntity.create({ 'name': 'brand' }),
+      RoleDefinitionEntity.create({
+        'chromaRange': [0.10, 0.20],
+        'lightnessRange': [0.40, 0.60],
+        'name': 'error',
+        'required': true
+      })
+    ]
+  );
+  const self = DeriveRoleRelationsFixture.runSchema(selfSchema, []);
+  const entry = Metadata.relationshipResolution(self.metadata).get('error');
+  assert.equal(entry?.disposition, 'applied');
+  assert.ok(entry?.before !== undefined);
+  assert.ok(entry?.after !== undefined);
+  assert.equal(entry?.after?.oklch.l, entry?.before?.oklch.l);
+  assert.equal(entry?.after?.oklch.c, entry?.before?.oklch.c);
+  assert.equal(entry?.after?.alpha, entry?.before?.alpha);
+  assert.equal(entry?.after?.oklch.h, RoleGeometry.hueTowards(entry.before.oklch.h, 120, 25));
+
+  const statedError = DeriveRoleRelationsFixture.color('#d93448', 'error');
+  const stated = DeriveRoleRelationsFixture.runSchema(selfSchema, [statedError]);
+  assert.strictEqual(stated.roles.error, statedError);
+  assert.equal(Metadata.relationshipResolution(stated.metadata).get('error')?.disposition, 'preserved-stated');
 });
 
 void test('derive:roleRelations preserves caller-stated targets', () => {

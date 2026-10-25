@@ -39,26 +39,17 @@ class RoleDerivation {
     const derivesFromSource = role.lightnessOffset !== undefined || role.chromaScale !== undefined;
     const sourceL = l + (role.lightnessOffset ?? 0);
     const sourceC = c * (role.chromaScale ?? 1);
-    let targetL = l;
-    let targetC = c;
-
-    if (derivesFromSource) {
-      targetL = sourceL;
-      targetC = sourceC;
-      if (role.lightnessRange !== undefined) {
-        targetL = clamp.apply(role.lightnessRange[0], role.lightnessRange[1], sourceL);
-      }
-      if (role.chromaRange !== undefined) {
-        targetC = clamp.apply(role.chromaRange[0], role.chromaRange[1], sourceC);
-      }
-    } else {
-      if (role.lightnessRange !== undefined) {
-        targetL = RoleGeometry.rangeCenter(role.lightnessRange);
-      }
-      if (role.chromaRange !== undefined) {
-        targetC = RoleGeometry.rangeCenter(role.chromaRange);
-      }
-    }
+    const envelope = derivesFromSource
+      ? RoleGeometry.clampToTargetEnvelope(sourceL, sourceC, {
+        'chromaRange': role.chromaRange,
+        'lightnessRange': role.lightnessRange
+      })
+      : RoleGeometry.targetEnvelope(sourceL, sourceC, {
+        'chromaRange': role.chromaRange,
+        'lightnessRange': role.lightnessRange
+      });
+    const targetL = envelope.lightness;
+    const targetC = envelope.chroma;
 
     let targetH = h;
     if (role.hue !== undefined) {
