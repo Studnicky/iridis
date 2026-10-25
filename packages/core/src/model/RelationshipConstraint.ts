@@ -5,10 +5,14 @@ import type { InputEntity } from '../entities/InputEntity.ts';
 import { ColorRecordEntity } from '../entities/ColorRecordEntity.ts';
 import { RelationshipResolutionEntity } from '../entities/RelationshipResolutionEntity.ts';
 import { RelationshipToleranceEntity } from '../entities/RelationshipToleranceEntity.ts';
+import { RoleRelationshipEntity } from '../entities/RoleRelationshipEntity.ts';
+import { RoleRelationshipGroupEntity } from '../entities/RoleRelationshipGroupEntity.ts';
 import { Metadata } from '../types/metadata.ts';
 import { RelationshipConstraintDomain } from './RelationshipConstraintDomain.ts';
+import { RelationshipHueDegrees } from './RelationshipHueDegrees.ts';
+import { RelationshipSources } from './RelationshipSources.ts';
 
-/** Reads authored graph tolerances against their exact relationship-resolution baselines. */
+/** Reads authored graph relationships and their optional exact runtime constraint baselines. */
 export class RelationshipConstraint {
   static allows(
     input: InputEntity.Type,
@@ -17,10 +21,11 @@ export class RelationshipConstraint {
     candidate: ColorRecordEntity.Type
   ): boolean {
     const state = RelationshipConstraint.domain(input, metadata, roleName);
-    if (state === undefined) {
+    const baseline = state?.baseline;
+    if (state === undefined || baseline === undefined) {
       return true;
     }
-    const result = RelationshipConstraint.allowsState(state, candidate);
+    const result = RelationshipConstraint.allowsState(state, baseline, candidate);
     return result;
   }
 
@@ -29,32 +34,38 @@ export class RelationshipConstraint {
     metadata: Record<string, JSONSchema7Type>,
     roleName: string
   ): RelationshipConstraintDomain | undefined {
-    const resolution = Metadata.relationshipResolution(metadata).get(roleName);
-    const baseline = resolution?.after;
     const graph = input.roles?.relationshipGraph;
-    if (resolution === undefined || baseline === undefined || graph === undefined) {
+    if (graph === undefined) {
       return undefined;
     }
-    const group = graph.groups.find((candidate) => {
-      const result = candidate.id === resolution.groupId;
-      return result;
-    });
-    const relationship = group?.relationships.find((candidate) => {
-      const result = candidate.id === resolution.relationshipId;
-      return result;
-    });
-    if (relationship === undefined) {
+    const resolution = Metadata.relationshipResolution(metadata).get(roleName);
+    const selected = RelationshipConstraint.selectedRelation(graph.groups, resolution, roleName);
+    if (selected === undefined) {
       return undefined;
     }
+    const group = RoleRelationshipGroupEntity.intake(selected.group);
+    const relationship = RoleRelationshipEntity.intake(selected.relationship);
+    const baseline = resolution?.after === undefined
+      ? undefined
+      : ColorRecordEntity.intake(resolution.after);
+    const modeId = resolution?.modeId ?? (relationship.operation === 'hue-offset'
+      ? relationship.modeId ?? group.defaultMode
+      : group.defaultMode);
+    const hueDegrees = relationship.operation === 'hue-offset'
+      ? RelationshipHueDegrees.resolve(group, relationship)
+      : undefined;
     const tolerance = relationship.relaxability === 'tolerant'
       ? RelationshipToleranceEntity.intake(relationship.tolerance)
       : undefined;
-    const normalizedBaseline = ColorRecordEntity.intake(baseline);
-    const result = new RelationshipConstraintDomain(
-      normalizedBaseline,
-      relationship.id,
-      tolerance
-    );
+    const result = new RelationshipConstraintDomain({
+      'baseline': baseline,
+      'groupId': group.id,
+      'hueDegrees': hueDegrees,
+      'modeId': modeId,
+      'relationship': relationship,
+      'sources': RelationshipSources.names(relationship),
+      'tolerance': tolerance
+    });
     return result;
   }
 
@@ -70,7 +81,7 @@ export class RelationshipConstraint {
         continue;
       }
       const state = RelationshipConstraint.domain(input, metadata, roleName);
-      if (state !== undefined) {
+      if (state?.baseline !== undefined) {
         relationIds.add(state.relationId);
       }
     }
@@ -89,7 +100,8 @@ export class RelationshipConstraint {
     candidate: ColorRecordEntity.Type
   ): void {
     const state = RelationshipConstraint.domain(input, metadata, roleName);
-    if (state?.tolerance === undefined) {
+    const baseline = state?.baseline;
+    if (state?.tolerance === undefined || baseline === undefined) {
       return;
     }
     const resolutions = Metadata.relationshipResolution(metadata);
@@ -98,10 +110,10 @@ export class RelationshipConstraint {
       return;
     }
     const deviation = RelationshipToleranceEntity.create({
-      'alpha': Math.abs(candidate.alpha - state.baseline.alpha),
-      'chroma': Math.abs(candidate.oklch.c - state.baseline.oklch.c),
-      'hue': RelationshipConstraint.hueDifference(candidate.oklch.h, state.baseline.oklch.h),
-      'lightness': Math.abs(candidate.oklch.l - state.baseline.oklch.l)
+      'alpha': Math.abs(candidate.alpha - baseline.alpha),
+      'chroma': Math.abs(candidate.oklch.c - baseline.oklch.c),
+      'hue': RelationshipConstraint.hueDifference(candidate.oklch.h, baseline.oklch.h),
+      'lightness': Math.abs(candidate.oklch.l - baseline.oklch.l)
     });
     resolutions.set(roleName, RelationshipResolutionEntity.create({
       ...resolution,
@@ -115,24 +127,63 @@ export class RelationshipConstraint {
     metadata: Record<string, JSONSchema7Type>,
     roleName: string
   ): boolean {
-    const result = RelationshipConstraint.domain(input, metadata, roleName) !== undefined;
+    const result = RelationshipConstraint.domain(input, metadata, roleName)?.baseline !== undefined;
     return result;
+  }
+
+  private static selectedRelation(
+    groups: NonNullable<NonNullable<InputEntity.Type['roles']>['relationshipGraph']>['groups'],
+    resolution: ReturnType<typeof Metadata.relationshipResolution> extends Map<string, infer Value> ? Value | undefined : never,
+    roleName: string
+  ): Readonly<{
+    'group': NonNullable<NonNullable<InputEntity.Type['roles']>['relationshipGraph']>['groups'][number];
+    'relationship': NonNullable<NonNullable<InputEntity.Type['roles']>['relationshipGraph']>['groups'][number]['relationships'][number];
+  }> | undefined {
+    if (resolution !== undefined) {
+      const group = groups.find((candidate) => {
+        const result = candidate.id === resolution.groupId;
+        return result;
+      });
+      const relationship = group?.relationships.find((candidate) => {
+        const result = candidate.id === resolution.relationshipId;
+        return result;
+      });
+      if (group !== undefined && relationship !== undefined) {
+        return { 'group': group, 'relationship': relationship };
+      }
+      return undefined;
+    }
+    for (let groupIndex = 0; groupIndex < groups.length; groupIndex += 1) {
+      const group = groups[groupIndex];
+      if (group === undefined) {
+        continue;
+      }
+      const relationship = group.relationships.find((candidate) => {
+        const result = candidate.target === roleName;
+        return result;
+      });
+      if (relationship !== undefined) {
+        return { 'group': group, 'relationship': relationship };
+      }
+    }
+    return undefined;
   }
 
   private static allowsState(
     state: RelationshipConstraintDomain,
+    baseline: ColorRecordEntity.Type,
     candidate: ColorRecordEntity.Type
   ): boolean {
     const tolerance = state.tolerance;
     if (tolerance === undefined) {
-      const result = RelationshipConstraint.sameColor(candidate, state.baseline);
+      const result = RelationshipConstraint.sameColor(candidate, baseline);
       return result;
     }
     const result =
-      RelationshipConstraint.within(candidate.alpha, state.baseline.alpha, tolerance.alpha) &&
-      RelationshipConstraint.within(candidate.oklch.c, state.baseline.oklch.c, tolerance.chroma) &&
-      RelationshipConstraint.withinHue(candidate.oklch.h, state.baseline.oklch.h, tolerance.hue) &&
-      RelationshipConstraint.within(candidate.oklch.l, state.baseline.oklch.l, tolerance.lightness);
+      RelationshipConstraint.within(candidate.alpha, baseline.alpha, tolerance.alpha) &&
+      RelationshipConstraint.within(candidate.oklch.c, baseline.oklch.c, tolerance.chroma) &&
+      RelationshipConstraint.withinHue(candidate.oklch.h, baseline.oklch.h, tolerance.hue) &&
+      RelationshipConstraint.within(candidate.oklch.l, baseline.oklch.l, tolerance.lightness);
     return result;
   }
 

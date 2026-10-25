@@ -198,10 +198,103 @@ void test('RelationshipConstraint exposes the resolved relationship domain witho
   } });
   const domain = RelationshipConstraint.domain(input, RelationshipConstraintFixture.metadata(baseline), 'text');
 
-  assert.equal(domain?.baseline.hex, baseline.hex);
-  assert.equal(domain?.relationId, 'text-from-source');
-  assert.equal(domain?.tolerance?.lightness, 0.03);
-  assert.equal(RelationshipConstraint.domain(input, {}, 'text'), undefined);
+  assert.ok(domain?.baseline !== undefined);
+  assert.equal(domain.baseline.hex, baseline.hex);
+  assert.equal(domain.relationId, 'text-from-source');
+  assert.equal(domain.tolerance?.lightness, 0.03);
+
+  const authored = RelationshipConstraint.domain(input, {}, 'text');
+  assert.ok(authored !== undefined);
+  assert.equal(authored.baseline, undefined);
+  assert.equal(authored.operation, 'alias');
+  assert.equal(authored.groupId, 'text-group');
+  assert.equal(authored.modeId, 'default');
+  assert.deepEqual(authored.sources, ['source']);
+  assert.equal(RelationshipConstraint.allows(
+    input,
+    {},
+    'text',
+    RelationshipConstraintFixture.candidate(baseline, { 'lightness': baseline.oklch.l + 0.1 })
+  ), true);
+  assert.equal(RelationshipConstraint.limitsMovement(input, {}, 'text'), false);
+  assert.deepEqual(RelationshipConstraint.relationIds(input, {}, ['text']), []);
+});
+
+void test('RelationshipConstraint resolves authored default hue-offset degrees without a runtime baseline', () => {
+  const roles = RoleSchemaEntity.intake({
+    'contrastPairs': [],
+    'name': 'hue-domain',
+    'relationshipGraph': {
+      'groups': [{
+        'anchor': 'source',
+        'defaultMode': 'triadic',
+        'id': 'hue-group',
+        'modes': [{ 'hueOffsets': [{ 'degrees': 120, 'variantId': 'primary' }], 'id': 'triadic' }],
+        'name': 'Hue',
+        'relationships': [{
+          'id': 'target-hue',
+          'operation': 'hue-offset',
+          'priority': 0,
+          'relaxability': 'fixed',
+          'source': 'source',
+          'target': 'target',
+          'variantId': 'primary'
+        }]
+      }]
+    },
+    'roles': [{ 'name': 'source' }, { 'name': 'target' }]
+  });
+  const input = InputEntity.intake({ 'colors': [], 'roles': roles });
+  const domain = RelationshipConstraint.domain(input, {}, 'target');
+
+  assert.ok(domain !== undefined);
+  assert.equal(domain.operation, 'hue-offset');
+  assert.equal(domain.modeId, 'triadic');
+  assert.equal(domain.hueDegrees, 120);
+  assert.deepEqual(domain.sources, ['source']);
+  assert.equal(domain.baseline, undefined);
+});
+
+void test('RelationshipConstraint exposes authored OKLCH delta data without a runtime baseline', () => {
+  const roles = RoleSchemaEntity.intake({
+    'contrastPairs': [],
+    'name': 'delta-domain',
+    'relationshipGraph': {
+      'groups': [{
+        'anchor': 'source',
+        'defaultMode': 'default',
+        'id': 'delta-group',
+        'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'base' }], 'id': 'default' }],
+        'name': 'Delta',
+        'relationships': [{
+          'chromaScale': 0.7,
+          'hueOffset': -24,
+          'id': 'target-delta',
+          'lightnessOffset': 0.1,
+          'operation': 'oklch-delta',
+          'priority': 0,
+          'relaxability': 'tolerant',
+          'source': 'source',
+          'target': 'target',
+          'tolerance': { 'chroma': 0.02, 'lightness': 0.03 }
+        }]
+      }]
+    },
+    'roles': [{ 'name': 'source' }, { 'name': 'target' }]
+  });
+  const input = InputEntity.intake({ 'colors': [], 'roles': roles });
+  const domain = RelationshipConstraint.domain(input, {}, 'target');
+
+  assert.ok(domain !== undefined);
+  assert.equal(domain.operation, 'oklch-delta');
+  if (domain.relationship.operation !== 'oklch-delta') {
+    throw new TypeError('RelationshipConstraint domain must retain the OKLCH delta operation');
+  }
+  assert.equal(domain.relationship.lightnessOffset, 0.1);
+  assert.equal(domain.relationship.chromaScale, 0.7);
+  assert.equal(domain.relationship.hueOffset, -24);
+  assert.equal(domain.tolerance?.lightness, 0.03);
+  assert.equal(domain.baseline, undefined);
 });
 
 void test('enforce:contrast retains a relationship-fixed role and reports its relation constraint', () => {

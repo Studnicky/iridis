@@ -10,6 +10,8 @@ import { PaletteRoleState } from '../../interfaces/PaletteStateInterface.ts';
 import { alphaOverlay } from '../../math/AlphaOverlay.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 import { mixOklch } from '../../math/MixOklch.ts';
+import { RelationshipHueDegrees } from '../../model/RelationshipHueDegrees.ts';
+import { RelationshipSources } from '../../model/RelationshipSources.ts';
 import { Metadata } from '../../types/metadata.ts';
 import { RoleGeometry } from '../RoleGeometry.ts';
 
@@ -23,37 +25,6 @@ class RelationshipWorkItem {
   ) {
     this.group = group;
     this.relationship = relationship;
-  }
-}
-
-class RelationshipSources {
-  static names(
-    relationship: NonNullable<NonNullable<PaletteStateInterface['input']['roles']>['relationshipGraph']>['groups'][number]['relationships'][number]
-  ): [string, ...string[]] {
-    if (relationship.operation === 'alpha-overlay') {
-      return [relationship.base, relationship.overlay];
-    }
-    if (relationship.operation === 'oklch-interpolate') {
-      return [relationship.source, relationship.toward];
-    }
-    return [relationship.source];
-  }
-
-  static resolve(
-    roles: PaletteRoleState,
-    relationship: NonNullable<NonNullable<PaletteStateInterface['input']['roles']>['relationshipGraph']>['groups'][number]['relationships'][number]
-  ): readonly ColorRecordEntity.Type[] | undefined {
-    const names = this.names(relationship);
-    const colors: ColorRecordEntity.Type[] = [];
-    for (let index = 0; index < names.length; index += 1) {
-      const name = names[index];
-      const color = name === undefined ? undefined : roles.get(name);
-      if (color === undefined) {
-        return undefined;
-      }
-      colors.push(color);
-    }
-    return colors;
   }
 }
 
@@ -102,7 +73,7 @@ class RelationshipOperation {
       );
       return result;
     }
-    const degrees = RelationshipOperation.hueDegrees(group, relationship);
+    const degrees = RelationshipHueDegrees.resolve(group, relationship);
     const result = colorRecordFactory.fromOklch(
       source.oklch.l,
       source.oklch.c,
@@ -110,28 +81,6 @@ class RelationshipOperation {
       { 'alpha': source.alpha }
     );
     return result;
-  }
-
-  private static hueDegrees(
-    group: NonNullable<NonNullable<PaletteStateInterface['input']['roles']>['relationshipGraph']>['groups'][number],
-    relationship: Extract<NonNullable<NonNullable<PaletteStateInterface['input']['roles']>['relationshipGraph']>['groups'][number]['relationships'][number], { readonly 'operation': 'hue-offset' }>
-  ): number {
-    if (relationship.degrees !== undefined) {
-      return relationship.degrees;
-    }
-    const modeId = relationship.modeId ?? group.defaultMode;
-    const mode = group.modes.find((candidate) => {
-      const result = candidate.id === modeId;
-      return result;
-    });
-    const variant = mode?.hueOffsets.find((candidate) => {
-      const result = candidate.variantId === relationship.variantId;
-      return result;
-    });
-    if (variant === undefined) {
-      throw new TypeError(`hue-offset relationship ${relationship.id} has no resolved hue variant`);
-    }
-    return variant.degrees;
   }
 }
 
@@ -208,6 +157,23 @@ class DeriveRoleRelations implements TaskInterface {
     return pending;
   }
 
+  private static sourceColors(
+    roles: PaletteRoleState,
+    relationship: NonNullable<NonNullable<PaletteStateInterface['input']['roles']>['relationshipGraph']>['groups'][number]['relationships'][number]
+  ): readonly ColorRecordEntity.Type[] | undefined {
+    const names = RelationshipSources.names(relationship);
+    const colors: ColorRecordEntity.Type[] = [];
+    for (let index = 0; index < names.length; index += 1) {
+      const name = names[index];
+      const color = name === undefined ? undefined : roles.get(name);
+      if (color === undefined) {
+        return undefined;
+      }
+      colors.push(color);
+    }
+    return colors;
+  }
+
   private static resolveItem(
     roles: PaletteRoleState,
     provenance: ReturnType<typeof Metadata.roleProvenance>,
@@ -231,7 +197,7 @@ class DeriveRoleRelations implements TaskInterface {
       }));
       return true;
     }
-    const sources = RelationshipSources.resolve(roles, relationship);
+    const sources = DeriveRoleRelations.sourceColors(roles, relationship);
     if (sources === undefined) {
       return false;
     }
