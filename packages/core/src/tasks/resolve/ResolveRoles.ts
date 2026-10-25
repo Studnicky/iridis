@@ -15,22 +15,6 @@ import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 import { Metadata } from '../../types/metadata.ts';
 import { RoleGeometry } from '../RoleGeometry.ts';
 
-/**
- * Resolves the target hue for a candidate being nudged into a role:
- * an absolute/clamped `hue` target wins when set, otherwise `hueOffset`
- * is applied as a signed relative delta, otherwise the candidate's own hue is left unchanged.
- */
-class TargetHue {
-  static resolve(h: number, role: RoleDefinitionEntity.Type): number {
-    if (role.hue !== undefined) {
-      const result = RoleGeometry.hueTowards(h, role.hue, role.hueClamp ?? RoleGeometry.DEFAULT_HUE_CLAMP);
-      return result;
-    }
-    const result = role.hueOffset === undefined ? h : ((h + role.hueOffset) % 360 + 360) % 360;
-    return result;
-  }
-}
-
 class RoleNudge {
   static clampToRange(value: number, range: readonly [number, number]): number {
     if (value < range[0]) {return range[0];}
@@ -92,21 +76,10 @@ class RoleNudge {
     const { c, h, l } = candidate.oklch;
     const targetL = role.lightnessRange !== undefined ? RoleNudge.clampToRange(l, role.lightnessRange) : l;
     const targetC = role.chromaRange !== undefined ? RoleNudge.clampToRange(c, role.chromaRange) : c;
-    const targetH = TargetHue.resolve(h, role);
+    const targetH = h;
     const nextHints = RoleNudge.hintsFor(candidate, role);
     const adjustments: RoleProvenanceEntity.Type['adjustments'] = [];
     let record = candidate;
-
-    if (targetH !== h) {
-      record = colorRecordFactory.fromOklch(l, c, targetH, {
-        'alpha': candidate.alpha,
-        'hints': nextHints,
-        'sourceFormat': candidate.sourceFormat
-      });
-      if (record.hex !== candidate.hex) {
-        adjustments.push({ 'afterHex': record.hex, 'beforeHex': candidate.hex, 'operation': 'hue-target' });
-      }
-    }
 
     if (targetL !== l || targetC !== c) {
       const beforeRange = record;
@@ -129,19 +102,14 @@ class RoleNudge {
   }
 }
 class RoleSynthesis {
-  static hueFor(role: RoleDefinitionEntity.Type): number {
-    if (role.hue !== undefined) {
-      const result = ((role.hue % 360) + 360) % 360;
-      return result;
-    }
-    const result = role.hueOffset ?? 0;
-    return result;
+  static hueFor(): number {
+    return 0;
   }
 
   static forRole(role: RoleDefinitionEntity.Type): ColorRecordEntity.Type {
     const l = role.lightnessRange !== undefined ? RoleGeometry.rangeCenter(role.lightnessRange) : 0.5;
     const c = role.chromaRange    !== undefined ? RoleGeometry.rangeCenter(role.chromaRange)    : 0;
-    const h = RoleSynthesis.hueFor(role);
+    const h = RoleSynthesis.hueFor();
     const hints: ColorHintsEntity.Type | undefined = role.intent === undefined
       ? undefined
       : { 'intent': role.intent };
@@ -187,14 +155,8 @@ class ResolveRoles implements TaskInterface {
     const result = RoleDefinitionEntity.create({
       'name': rawInputRole.name,
       ...(rawInputRole.chromaRange === undefined ? {} : { 'chromaRange': rawInputRole.chromaRange }),
-      ...(rawInputRole.chromaScale === undefined ? {} : { 'chromaScale': rawInputRole.chromaScale }),
-      ...(rawInputRole.derivedFrom === undefined ? {} : { 'derivedFrom': rawInputRole.derivedFrom }),
       ...(rawInputRole.description === undefined ? {} : { 'description': rawInputRole.description }),
-      ...(rawInputRole.hue === undefined ? {} : { 'hue': rawInputRole.hue }),
-      ...(rawInputRole.hueClamp === undefined ? {} : { 'hueClamp': rawInputRole.hueClamp }),
-      ...(rawInputRole.hueOffset === undefined ? {} : { 'hueOffset': rawInputRole.hueOffset }),
       ...(rawInputRole.intent === undefined ? {} : { 'intent': rawInputRole.intent }),
-      ...(rawInputRole.lightnessOffset === undefined ? {} : { 'lightnessOffset': rawInputRole.lightnessOffset }),
       ...(rawInputRole.lightnessRange === undefined ? {} : { 'lightnessRange': rawInputRole.lightnessRange }),
       ...(rawInputRole.required === undefined ? {} : { 'required': rawInputRole.required })
     });
@@ -233,35 +195,6 @@ class ResolveRoles implements TaskInterface {
       }
     }
     const result = new RoleCandidateSelection(candidate, distance, distances);
-    return result;
-  }
-
-  private static overrideRole(
-    inputRole: RoleDefinitionEntity.Type,
-    hueTargetOverrides: ReturnType<typeof Metadata.hueTargetOverrides>
-  ): RoleDefinitionEntity.Type {
-    if (hueTargetOverrides === undefined || !Object.hasOwn(hueTargetOverrides, inputRole.name)) {
-      return inputRole;
-    }
-    const targetOverride = hueTargetOverrides[inputRole.name];
-    if (targetOverride === undefined) {
-      return inputRole;
-    }
-    const hueClamp = targetOverride.hueClamp ?? inputRole.hueClamp;
-    const result = RoleDefinitionEntity.intake({
-      'name': inputRole.name,
-      ...(inputRole.chromaRange === undefined ? {} : { 'chromaRange': inputRole.chromaRange }),
-      ...(inputRole.chromaScale === undefined ? {} : { 'chromaScale': inputRole.chromaScale }),
-      ...(inputRole.derivedFrom === undefined ? {} : { 'derivedFrom': inputRole.derivedFrom }),
-      ...(inputRole.description === undefined ? {} : { 'description': inputRole.description }),
-      'hue': targetOverride.hue,
-      ...(hueClamp === undefined ? {} : { 'hueClamp': hueClamp }),
-      ...(inputRole.hueOffset === undefined ? {} : { 'hueOffset': inputRole.hueOffset }),
-      ...(inputRole.intent === undefined ? {} : { 'intent': inputRole.intent }),
-      ...(inputRole.lightnessOffset === undefined ? {} : { 'lightnessOffset': inputRole.lightnessOffset }),
-      ...(inputRole.lightnessRange === undefined ? {} : { 'lightnessRange': inputRole.lightnessRange }),
-      ...(inputRole.required === undefined ? {} : { 'required': inputRole.required })
-    });
     return result;
   }
 
@@ -342,15 +275,11 @@ class ResolveRoles implements TaskInterface {
     roles: PaletteRoleState,
     provenance: Map<string, RoleProvenanceEntity.Type>,
     distances: Map<string, Map<string, number>>,
-    hueTargetOverrides: ReturnType<typeof Metadata.hueTargetOverrides>,
     context: PipelineContextInterface
   ): void {
     const inputRole = ResolveRoles.admitRole(rawInputRole);
     const hintMatch = colorsByRoleHint.get(inputRole.name);
-    if (inputRole.derivedFrom !== undefined && inputRole.derivedFrom.length > 0 && hintMatch === undefined) {
-      return;
-    }
-    const role = ResolveRoles.overrideRole(inputRole, hueTargetOverrides);
+    const role = inputRole;
     if (hintMatch !== undefined) {
       ResolveRoles.assignStated(role, hintMatch, roles, provenance, context);
       return;
@@ -380,7 +309,6 @@ class ResolveRoles implements TaskInterface {
     const roleProvenance = Metadata.roleProvenance(state.metadata);
     const roles = PaletteRoleState.admit(state.roles);
     const colorsByRoleHint = ResolveRoles.colorsByRoleHint(state.colors);
-    const hueTargetOverrides = Metadata.hueTargetOverrides(state.metadata);
     for (let roleIndex = 0; roleIndex < schema.roles.length; roleIndex += 1) {
       const inputRole = schema.roles[roleIndex];
       if (inputRole !== undefined) {
@@ -391,7 +319,6 @@ class ResolveRoles implements TaskInterface {
           roles,
           roleProvenance,
           roleDistances,
-          hueTargetOverrides,
           context
         );
       }

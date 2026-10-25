@@ -15,7 +15,6 @@ export { GamutMapResultEntity } from './entities/GamutMapResultEntity.ts';
 export { HarmonyModeEntity } from './entities/HarmonyModeEntity.ts';
 export { HslInputEntity } from './entities/HslInputEntity.ts';
 export { HslResultEntity } from './entities/HslResultEntity.ts';
-export { HueTargetOverrideEntity } from './entities/HueTargetOverrideEntity.ts';
 export { InputEntity } from './entities/InputEntity.ts';
 export { JsonOutputEntity } from './entities/JsonOutputEntity.ts';
 export { LabInputEntity } from './entities/LabInputEntity.ts';

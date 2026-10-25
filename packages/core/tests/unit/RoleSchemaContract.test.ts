@@ -11,19 +11,18 @@ import { RoleSchemaEntity } from '../../src/entities/RoleSchemaEntity.ts';
 import { RoleSchemaSchema } from '../../src/model/RoleSchemaSchema.ts';
 import { Validator } from '../../src/model/Validator.ts';
 
-await test('role derivation controls validate their declared domains', () => {
+await test('role definitions reject retired derivation controls', () => {
   assert.strictEqual(RoleDefinitionEntity.validate({
-    'chromaScale': 0,
-    'lightnessOffset': -1,
-    'name': 'surface'
-  }), true);
-  assert.strictEqual(RoleDefinitionEntity.validate({
-    'chromaScale': -0.01,
-    'name': 'surface'
+    'derivedFrom': 'surface',
+    'name': 'accent'
   }), false);
   assert.strictEqual(RoleDefinitionEntity.validate({
-    'lightnessOffset': 1.01,
-    'name': 'surface'
+    'hueOffset': 30,
+    'name': 'accent'
+  }), false);
+  assert.strictEqual(RoleDefinitionEntity.validate({
+    'lightnessOffset': 0.1,
+    'name': 'accent'
   }), false);
 });
 
@@ -77,7 +76,7 @@ await test('contrast-pair admission uses WCAG and APCA ratio domains', () => {
   }), false);
 });
 
-await test('role schemas expose derivation controls and contrast bands at the input boundary', () => {
+await test('role schemas admit graph relationships and reject retired derivation controls', () => {
   const validator = new Validator();
   const valid = validator.validate(RoleSchemaSchema, {
     'contrastPairs': [{
@@ -87,11 +86,8 @@ await test('role schemas expose derivation controls and contrast bands at the in
       'minimumContrastRatio': 3
     }],
     'name': 'contract',
-    'roles': [{
-      'chromaScale': 1.25,
-      'lightnessOffset': -0.12,
-      'name': 'accent'
-    }]
+    'relationshipGraph': { 'groups': [] },
+    'roles': [{ 'name': 'accent' }]
   });
   const invalid = validator.validate(RoleSchemaSchema, {
     'name': 'contract',

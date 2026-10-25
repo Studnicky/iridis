@@ -268,15 +268,14 @@ void test('derive:roleRelations records missing-source and cycle runtime states'
   assert.equal(Metadata.relationshipResolution(cycle.metadata).get('b')?.blockedReason, 'cycle');
 });
 
-void test('core tasks resolve relationship graphs between role resolution and family expansion', () => {
+void test('core tasks resolve relationship graphs immediately after role resolution', () => {
   const taskNames = coreTasks.map((task) => {
     const result = task.name;
     return result;
   });
   const resolveRolesIndex = taskNames.indexOf('resolve:roles');
   const relationshipResolverIndex = taskNames.indexOf('derive:roleRelations');
-  const expandFamilyIndex = taskNames.indexOf('expand:family');
 
   assert.equal(relationshipResolverIndex, resolveRolesIndex + 1);
-  assert.equal(expandFamilyIndex, relationshipResolverIndex + 1);
+  assert.equal(taskNames.includes('expand:family'), false);
 });

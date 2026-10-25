@@ -7,7 +7,6 @@ export { deriveVariant } from './derive/DeriveVariant.ts';
 export { emitJson } from './emit/EmitJson.ts';
 export { ContrastPolicy } from './enforce/ContrastPolicy.ts';
 export { enforceContrast } from './enforce/EnforceContrast.ts';
-export { expandFamily } from './expand/ExpandFamily.ts';
 export { intakeAny } from './intake/IntakeAny.ts';
 export { intakeHex } from './intake/IntakeHex.ts';
 export { intakeHsl } from './intake/IntakeHsl.ts';
@@ -26,7 +25,6 @@ import { deriveRoleRelations } from './derive/DeriveRoleRelations.ts';
 import { deriveVariant } from './derive/DeriveVariant.ts';
 import { emitJson } from './emit/EmitJson.ts';
 import { enforceContrast } from './enforce/EnforceContrast.ts';
-import { expandFamily } from './expand/ExpandFamily.ts';
 import { intakeAny } from './intake/IntakeAny.ts';
 import { intakeHex } from './intake/IntakeHex.ts';
 import { intakeHsl } from './intake/IntakeHsl.ts';
@@ -40,7 +38,7 @@ import { resolveRoles } from './resolve/ResolveRoles.ts';
 
 /**
  * Every core pipeline task shipped with `@studnicky/iridis`, ordered
- * `intake → clamp → resolve → expand → enforce → derive → emit` so a
+ * `intake → clamp → resolve → relate → enforce → derive → emit` so a
  * caller that just wants "the canonical pipeline" can register and
  * `engine.pipeline(coreTasks.map(t => t.name))` without thinking about
  * dependencies between phases.
@@ -59,7 +57,6 @@ export const coreTasks: readonly TaskInterface[] = [
   clampOklch,
   resolveRoles,
   deriveRoleRelations,
-  expandFamily,
   enforceContrast,
   deriveVariant,
   emitJson

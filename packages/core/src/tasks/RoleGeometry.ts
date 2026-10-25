@@ -1,15 +1,7 @@
-/**
- * Shared OKLCH range/hue geometry used by both {@link import('./resolve/ResolveRoles.ts').ResolveRoles}
- * and {@link import('./expand/ExpandFamily.ts').ExpandFamily} when nudging or deriving a
- * color toward a role's declared constraints.
- */
+/** Shared OKLCH range/hue geometry used by resolution and relationship derivation. */
 class RoleGeometry {
   /**
-   * Default bound (degrees) for a hue nudge when a role declares a `hue`
-   * target but no `hueClamp`. A hue target is always a BOUNDED nudge, never
-   * an absolute pin, so an unclamped target rotates the resolved color toward
-   * it by at most this many degrees — keeping semantic roles rooted in the
-   * actual palette rather than snapping to a hue that appears nowhere in it.
+   * Default bound for a hue-target relationship whose clamp is omitted.
    */
   static readonly DEFAULT_HUE_CLAMP = 90;
 

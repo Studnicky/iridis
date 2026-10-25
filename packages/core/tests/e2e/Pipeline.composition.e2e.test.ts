@@ -50,7 +50,7 @@ class PipelineCompositionFixtures {
 
 await test('Pipeline composition assigns distance and hinted roles', () => {
   const distanceEngine = PipelineCompositionFixtures.createEngine();
-  distanceEngine.pipeline(['intake:hex', 'resolve:roles', 'expand:family', 'emit:json']);
+  distanceEngine.pipeline(['intake:hex', 'resolve:roles', 'derive:roleRelations', 'emit:json']);
   const distanceState = distanceEngine.run(InputEntity.intake({
     'colors': ['#6d28d9', '#f5f3ff', '#1c1917'],
     'roles': RoleSchemaEntity.intake({
@@ -76,7 +76,7 @@ await test('Pipeline composition assigns distance and hinted roles', () => {
       state.colors.push(hintedAccent, hintedSurface);
     }
   });
-  hintedEngine.pipeline(['resolve:roles', 'expand:family', 'emit:json']);
+  hintedEngine.pipeline(['resolve:roles', 'derive:roleRelations', 'emit:json']);
   const hintedState = hintedEngine.run(InputEntity.intake({
     'colors': [],
     'roles': RoleSchemaEntity.intake({
@@ -163,7 +163,7 @@ await test('Pipeline composition makes a second contrast enforcement a no-op', (
     'intake:hex',
     'resolve:roles',
     'enforce:contrast',
-    'expand:family',
+    'derive:roleRelations',
     'enforce:contrast',
     'emit:json'
   ]);
@@ -180,12 +180,7 @@ await test('Pipeline composition makes a second contrast enforcement a no-op', (
       'name': 'idempotent-schema',
       'roles': [
         RoleDefinitionEntity.intake({ 'name': 'text', 'required': true }),
-        RoleDefinitionEntity.intake({ 'name': 'surface', 'required': true }),
-        RoleDefinitionEntity.intake({
-          'chromaRange': [0.01, 0.05],
-          'derivedFrom': 'text',
-          'name': 'text-muted'
-        })
+        RoleDefinitionEntity.intake({ 'name': 'surface', 'required': true })
       ]
     })
   }));
@@ -208,7 +203,7 @@ await test('Pipeline composition handles empty and absent role schemas', () => {
   });
   [emptySchemaInput, absentSchemaInput].forEach((input) => {
     const engine = PipelineCompositionFixtures.createEngine();
-    engine.pipeline(['intake:hex', 'resolve:roles', 'expand:family', 'enforce:contrast', 'emit:json']);
+    engine.pipeline(['intake:hex', 'resolve:roles', 'derive:roleRelations', 'enforce:contrast', 'emit:json']);
     const state = engine.run(input);
     const output = state.outputs['core:json'];
     assert.ok(output !== undefined);
@@ -220,7 +215,7 @@ await test('Pipeline composition handles empty and absent role schemas', () => {
   });
 
   const emptyInputEngine = PipelineCompositionFixtures.createEngine();
-  emptyInputEngine.pipeline(['intake:hex', 'resolve:roles', 'expand:family', 'enforce:contrast', 'emit:json']);
+  emptyInputEngine.pipeline(['intake:hex', 'resolve:roles', 'derive:roleRelations', 'enforce:contrast', 'emit:json']);
   const emptyInputState = emptyInputEngine.run(InputEntity.intake({
     'colors': [],
     'roles': RoleSchemaEntity.intake({ 'name': 'empty-input-role-schema', 'roles': [] })

@@ -8,7 +8,6 @@ import type { InferType } from '@studnicky/json-tology/types';
 import { EntityCompiler } from '@studnicky/entity/node';
 
 import { ContrastReportEntity } from './ContrastReportEntity.ts';
-import { HueTargetOverrideEntity } from './HueTargetOverrideEntity.ts';
 import { RoleProvenanceEntity } from './RoleProvenanceEntity.ts';
 
 /** Known `state.metadata` keys written by core tasks, and their runtime shapes. */
@@ -17,14 +16,6 @@ export namespace EngineMetadataEntity {
     'additionalProperties': false,
     'properties': {
       'core:contrastReport': ContrastReportEntity.Schema,
-      'core:hueOffsetOverrides': {
-        'additionalProperties': { 'type': 'number' },
-        'type': 'object'
-      },
-      'core:hueTargetOverrides': {
-        'additionalProperties': HueTargetOverrideEntity.Schema,
-        'type': 'object'
-      },
       'core:roleDistances': {
         'additionalProperties': {
           'additionalProperties': { 'type': 'number' },

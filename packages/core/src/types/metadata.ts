@@ -1,7 +1,5 @@
 import type { JSONSchema7Type } from 'json-schema';
 
-import type { HueTargetOverrideEntity } from '../entities/HueTargetOverrideEntity.ts';
-
 import { ContrastReportEntity } from '../entities/ContrastReportEntity.ts';
 import { EngineMetadataEntity } from '../entities/EngineMetadataEntity.ts';
 import { RelationshipResolutionEntity } from '../entities/RelationshipResolutionEntity.ts';
@@ -22,32 +20,6 @@ export class Metadata {
       });
     }
     return result;
-  }
-
-  static hueOffsetOverrides(
-    metadataRecord: Record<string, JSONSchema7Type>
-  ): Record<string, number> | undefined {
-    const value = metadataRecord['core:hueOffsetOverrides'];
-    if (value === undefined) {
-      return undefined;
-    }
-    const normalized = EngineMetadataEntity.intake({
-      'core:hueOffsetOverrides': value
-    });
-    return normalized['core:hueOffsetOverrides'];
-  }
-
-  static hueTargetOverrides(
-    metadataRecord: Record<string, JSONSchema7Type>
-  ): Record<string, HueTargetOverrideEntity.Type> | undefined {
-    const value = metadataRecord['core:hueTargetOverrides'];
-    if (value === undefined) {
-      return undefined;
-    }
-    const normalized = EngineMetadataEntity.intake({
-      'core:hueTargetOverrides': value
-    });
-    return normalized['core:hueTargetOverrides'];
   }
 
   static roleDistances(
