@@ -1,6 +1,6 @@
 import type { ColorRecordEntity } from '@studnicky/iridis';
 
-import { clamp01, linearToSrgb, srgbToLinear } from '@studnicky/iridis';
+import { clamp01, linearToSrgb, rgbToHex, srgbToLinear } from '@studnicky/iridis';
 
 import type { CvdFailurePolicy } from './CvdFailurePolicy.ts';
 import type { CvdEvalEntity } from './entities/CvdEvalEntity.ts';
@@ -123,9 +123,9 @@ export class CvdEvaluator {
 
   static simulatedLuminances(
     rgb: ColorRecordEntity.Type['rgb'],
-    cache: Map<string, readonly number[]>,
-    key: string
+    cache: Map<string, readonly number[]>
   ): readonly number[] {
+    const key = rgbToHex.apply(rgb.r, rgb.g, rgb.b);
     const cached = cache.get(key);
     if (cached !== undefined) {
       return cached;

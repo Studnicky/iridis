@@ -10,12 +10,10 @@ import {
   ContrastPolicy,
   contrastWcag21,
   gamutMapSrgb,
-  linearToSrgb,
   Metadata,
   oklchToRgbRaw,
   PaletteRoleState,
-  rgbToHex,
-  srgbToLinear
+  rgbToHex
 } from '@studnicky/iridis';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
@@ -56,23 +54,17 @@ class CvdPairConstraint {
     failurePolicy: CvdFailurePolicy
   ) {
     this.background = background;
-    this.backgroundLuminance = CvdSimulation.luminance(background.rgb);
+    this.backgroundLuminance = CvdEvaluator.luminance(background.rgb);
     this.backgroundName = backgroundName;
     this.baseline = baseline;
     this.foregroundName = foregroundName;
     this.originalFailureTypes = originalFailureTypes;
     this.requiredTrichromat = requiredTrichromat;
     this.failurePolicy = failurePolicy;
-    const simulatedBackgroundLuminances: number[] = [];
-    for (let cvdIndex = 0; cvdIndex < cvdMatrices.length; cvdIndex += 1) {
-      const cvd = cvdMatrices[cvdIndex];
-      if (cvd !== undefined) {
-        simulatedBackgroundLuminances.push(
-          CvdSimulation.luminance(CvdSimulation.color(background.rgb, cvd))
-        );
-      }
-    }
-    this.simulatedBackgroundLuminances = simulatedBackgroundLuminances;
+    this.simulatedBackgroundLuminances = CvdEvaluator.simulatedLuminances(
+      background.rgb,
+      new Map()
+    );
   }
 }
 
@@ -240,22 +232,6 @@ class CvdCorrectionCandidate {
   }
 }
 
-class Matrix {
-  static apply(
-    cvd: CvdMatrixEntity.Type,
-    r: number,
-    g: number,
-    b: number
-  ): readonly [number, number, number] {
-    const m = cvd.matrix;
-    // Row-major: [m0 m1 m2 / m3 m4 m5 / m6 m7 m8]
-    const rp = m[0] * r + m[1] * g + m[2] * b;
-    const gp = m[3] * r + m[4] * g + m[5] * b;
-    const bp = m[6] * r + m[7] * g + m[8] * b;
-    return [clamp01.apply(rp), clamp01.apply(gp), clamp01.apply(bp)] as const;
-  }
-}
-
 class CvdEmittedColorCache {
   private readonly records: Map<string, ColorRecordEntity.Type>;
 
@@ -333,53 +309,6 @@ class CvdSimulation {
   private static readonly searchRefinementLevels = 4;
   private static readonly searchRefinementRadius = 4;
 
-  static color(
-    rgb: ColorRecordEntity.Type['rgb'],
-    cvd: CvdMatrixEntity.Type
-  ): ColorRecordEntity.Type['rgb'] {
-    // Convert gamma-encoded sRGB → linear sRGB
-    const lin = srgbToLinear.apply(rgb.r, rgb.g, rgb.b);
-
-    // Apply CVD matrix in linear sRGB
-    const [rp, gp, bp] = Matrix.apply(cvd, lin.r, lin.g, lin.b);
-
-    // Convert back to gamma-encoded sRGB
-    const encoded = linearToSrgb.apply(rp, gp, bp);
-    const result = { 'b': encoded.b, 'g': encoded.g, 'r': encoded.r };
-    return result;
-  }
-
-  static luminance(simulated: {
-    readonly 'b': number;
-    readonly 'g': number;
-    readonly 'r': number;
-  }): number {
-    const linear = srgbToLinear.apply(simulated.r, simulated.g, simulated.b);
-    const result = 0.2126 * linear.r + 0.7152 * linear.g + 0.0722 * linear.b;
-    return result;
-  }
-
-  /** WCAG-21 style contrast ratio between two gamma-encoded sRGB triples.
-   *  Used both for CVD-simulated contrast and, fed un-simulated triples,
-   *  for the trichromat contrast of a correction candidate — the formula
-   *  is identical either way. */
-  static contrast(
-    fg: { readonly 'b': number; readonly 'g': number; readonly 'r': number },
-    bg: { readonly 'b': number; readonly 'g': number; readonly 'r': number }
-  ): number {
-    const l1 = CvdSimulation.luminance(fg);
-    const l2 = CvdSimulation.luminance(bg);
-    const result = CvdSimulation.contrastFromLuminances(l1, l2);
-    return result;
-  }
-
-  private static contrastFromLuminances(l1: number, l2: number): number {
-    const lighter = Math.max(l1, l2);
-    const darker = Math.min(l1, l2);
-    const result = (lighter + 0.05) / (darker + 0.05);
-    return result;
-  }
-
   static infeasibleTypes(
     constraint: CvdPairConstraint
   ): CvdEvalEntity.Type['cvdType'][] {
@@ -394,7 +323,7 @@ class CvdSimulation {
           'CVD simulation matrices and luminance measurements are misaligned'
         );
       }
-      const threshold = CvdSimulation.thresholdFor(cvd);
+      const threshold = CVD_THRESHOLDS[cvd.name];
       const required = Math.max(
         threshold.minimumSimulatedContrast,
         constraint.requiredTrichromat
@@ -447,7 +376,7 @@ class CvdSimulation {
   ): CvdCorrectionCandidate {
     const epsilon = 1e-12;
     const emitted = candidate.emitted;
-    const foregroundLuminance = CvdSimulation.luminance(emitted.rgb);
+    const foregroundLuminance = CvdEvaluator.luminance(emitted.rgb);
     const baseline = CvdSimulation.measureBaselines(
       foregroundLuminance,
       constraints,
@@ -504,7 +433,7 @@ class CvdSimulation {
       if (constraint === undefined) {
         continue;
       }
-      const contrast = CvdSimulation.contrastFromLuminances(
+      const contrast = CvdEvaluator.contrastFromLuminances(
         foregroundLuminance,
         constraint.backgroundLuminance
       );
@@ -525,7 +454,7 @@ class CvdSimulation {
     epsilon: number,
     simulatedLuminanceCache: Map<string, readonly number[]>
   ): CvdScoreMeasurements {
-    const foregroundLuminances = CvdSimulation.simulatedLuminances(
+    const foregroundLuminances = CvdEvaluator.simulatedLuminances(
       rgb,
       simulatedLuminanceCache
     );
@@ -557,7 +486,7 @@ class CvdSimulation {
     epsilon: number,
     measurements: CvdScoreMeasurements
   ): void {
-    const contrast = CvdSimulation.contrastFromLuminances(
+    const contrast = CvdEvaluator.contrastFromLuminances(
       foregroundLuminance,
       constraint.backgroundLuminance
     );
@@ -575,7 +504,7 @@ class CvdSimulation {
           'CVD simulation matrices and luminance measurements are misaligned'
         );
       }
-      const simulatedContrast = CvdSimulation.contrastFromLuminances(
+      const simulatedContrast = CvdEvaluator.contrastFromLuminances(
         simulatedForegroundLuminance,
         simulatedBackgroundLuminance
       );
@@ -599,43 +528,6 @@ class CvdSimulation {
     }
   }
 
-  private static simulatedLuminances(
-    rgb: ColorRecordEntity.Type['rgb'],
-    cache: Map<string, readonly number[]>
-  ): readonly number[] {
-    const hex = rgbToHex.apply(rgb.r, rgb.g, rgb.b);
-    const cached = cache.get(hex);
-    if (cached !== undefined) {
-      return cached;
-    }
-    const luminances: number[] = [];
-    for (let cvdIndex = 0; cvdIndex < cvdMatrices.length; cvdIndex += 1) {
-      const cvd = cvdMatrices[cvdIndex];
-      if (cvd === undefined) {
-        throw new TypeError('CVD simulation matrix is missing');
-      }
-      luminances.push(CvdSimulation.luminance(CvdSimulation.color(rgb, cvd)));
-    }
-    cache.set(hex, luminances);
-    return luminances;
-  }
-
-  private static thresholdFor(cvd: CvdMatrixEntity.Type): {
-    readonly 'dropMagnitude': number;
-    readonly 'minimumSimulatedContrast': number;
-  } {
-    const thresholds = new Map([
-      ['achromatopsia', CVD_THRESHOLDS.achromatopsia],
-      ['deuteranopia', CVD_THRESHOLDS.deuteranopia],
-      ['protanopia', CVD_THRESHOLDS.protanopia],
-      ['tritanopia', CVD_THRESHOLDS.tritanopia]
-    ]);
-    const result = thresholds.get(cvd.name);
-    if (result === undefined) {
-      throw new TypeError(`Unknown CVD matrix: ${cvd.name}`);
-    }
-    return result;
-  }
 
   private static searchCandidates(
     selection: CvdCandidateSelection,
@@ -1091,10 +983,10 @@ class CvdSimulation {
       if (corner === undefined) {
         continue;
       }
-      const simulatedCorner = CvdSimulation.luminance(
-        CvdSimulation.color(corner, cvd)
+      const simulatedCorner = CvdEvaluator.luminance(
+        CvdEvaluator.color(corner, cvd)
       );
-      const contrast = CvdSimulation.contrastFromLuminances(
+      const contrast = CvdEvaluator.contrastFromLuminances(
         simulatedCorner,
         simulatedBackgroundLuminance
       );

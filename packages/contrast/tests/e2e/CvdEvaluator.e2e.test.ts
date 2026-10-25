@@ -97,11 +97,11 @@ await test('CvdEvaluator keeps correction and warning boundaries explicit at one
     'simulatedContrastRatio': 0,
     'simulatedLuminanceContrast': warningSimulatedContrast
   });
-  const legacyExceedsDrop = Math.abs(warning.drop) > warning.dropThreshold;
+  const terminalExceedsDrop = Math.abs(warning.drop) > warning.dropThreshold;
   const warningEvidence = CvdEvaluator.fromWarning(warning, policy);
   assert.strictEqual(
     warningEvidence.exceedsDrop,
-    legacyExceedsDrop,
-    'terminal warning evidence preserves the exact pre-refactor boundary classification'
+    terminalExceedsDrop,
+    'terminal warning evidence classifies the exact boundary strictly'
   );
 });
