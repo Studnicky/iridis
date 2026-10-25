@@ -1,5 +1,17 @@
+class RelationshipCoordinateMode {
+  static readonly clamp = new RelationshipCoordinateMode();
+
+  static readonly midpoint = new RelationshipCoordinateMode();
+
+  private constructor() {}
+}
+
 /** Shared OKLCH range/hue geometry used by resolution and relationship derivation. */
 class RoleGeometry {
+  static readonly clampMode = RelationshipCoordinateMode.clamp;
+
+  static readonly midpointMode = RelationshipCoordinateMode.midpoint;
+
   /**
    * Default bound for a hue-target relationship whose clamp is omitted.
    */
@@ -19,33 +31,35 @@ class RoleGeometry {
       'chromaRange': readonly [number, number] | undefined;
       'lightnessRange': readonly [number, number] | undefined;
     }>,
-    resolveChroma: (value: number, range: readonly [number, number] | undefined) => number,
-    resolveLightness: (value: number, range: readonly [number, number] | undefined) => number
+    modes: Readonly<{
+      'chroma': RelationshipCoordinateMode;
+      'lightness': RelationshipCoordinateMode;
+    }>
   ): { readonly 'chroma': number; readonly 'lightness': number } {
-    const targetLightness = resolveLightness(lightness, options.lightnessRange);
-    const targetChroma = resolveChroma(chroma, options.chromaRange);
+    const targetLightness = RoleGeometry.relationshipCoordinate(
+      lightness,
+      options.lightnessRange,
+      modes.lightness
+    );
+    const targetChroma = RoleGeometry.relationshipCoordinate(
+      chroma,
+      options.chromaRange,
+      modes.chroma
+    );
     const result = { 'chroma': targetChroma, 'lightness': targetLightness };
     return result;
   }
 
-  static clampRelationshipCoordinate(
+  private static relationshipCoordinate(
     value: number,
-    range: readonly [number, number] | undefined
+    range: readonly [number, number] | undefined,
+    mode: RelationshipCoordinateMode
   ): number {
     if (range === undefined) {
-      const result = value;
-      return result;
+      return value;
     }
-    const result = Math.max(range[0], Math.min(range[1], value));
-    return result;
-  }
-
-  static preserveRelationshipCoordinate(
-    value: number,
-    range: readonly [number, number] | undefined
-  ): number {
-    if (range === undefined) {
-      const result = value;
+    if (mode === RelationshipCoordinateMode.clamp) {
+      const result = Math.max(range[0], Math.min(range[1], value));
       return result;
     }
     const result = RoleGeometry.rangeCenter(range);

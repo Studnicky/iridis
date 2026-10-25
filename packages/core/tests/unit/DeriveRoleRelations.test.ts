@@ -213,7 +213,7 @@ void test('derive:roleRelations applies target envelopes and source-less hue tar
     [
       RoleDefinitionEntity.create({ 'name': 'brand' }),
       RoleDefinitionEntity.create({
-        'chromaRange': [0.01, 0.03],
+        'chromaRange': [0.01, 0.05],
         'lightnessRange': [0.20, 0.40],
         'name': 'accent'
       })
@@ -223,7 +223,7 @@ void test('derive:roleRelations applies target envelopes and source-less hue tar
   const deltaAccent = delta.roles.accent;
   assert.ok(deltaAccent !== undefined);
   assert.ok(Math.abs(deltaAccent.oklch.l - 0.40) < 1e-12);
-  assert.ok(Math.abs(deltaAccent.oklch.c - 0.02) < 1e-12);
+  assert.ok(Math.abs(deltaAccent.oklch.c - 0.05) < 1e-12);
   assert.ok(Math.abs((Metadata.relationshipResolution(delta.metadata).get('accent')?.after?.oklch.l ?? 0) - 0.40) < 1e-12);
 
   const interpolationRelationship = RoleRelationshipEntity.create({

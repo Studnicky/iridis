@@ -52,50 +52,31 @@ class RelationshipOperation {
       'chromaRange': target.chromaRange,
       'lightnessRange': target.lightnessRange
     };
-    const resolvesChroma = RelationshipOperation.explicitChroma(relationship)
-      ? RoleGeometry.clampRelationshipCoordinate
-      : RoleGeometry.preserveRelationshipCoordinate;
-    const resolvesLightness = RelationshipOperation.explicitLightness(relationship)
-      ? RoleGeometry.clampRelationshipCoordinate
-      : RoleGeometry.preserveRelationshipCoordinate;
+    const mode = RelationshipOperation.coordinateMode(relationship);
     const envelope = RoleGeometry.relationshipCoordinates(
       operationResult.oklch.l,
       operationResult.oklch.c,
       options,
-      resolvesChroma,
-      resolvesLightness
+      { 'chroma': mode, 'lightness': mode }
     );
-    const hue = relationship.operation === 'hue-target'
-      ? RoleGeometry.hueTowards(
-        sources[0]?.oklch.h ?? operationResult.oklch.h,
-        relationship.hue,
-        relationship.clamp ?? RoleGeometry.DEFAULT_HUE_CLAMP
-      )
-      : operationResult.oklch.h;
     const result = colorRecordFactory.fromOklch(
       envelope.lightness,
       envelope.chroma,
-      hue,
+      operationResult.oklch.h,
       { 'alpha': operationResult.alpha }
     );
     return result;
   }
 
-  private static explicitChroma(
+  private static coordinateMode(
     relationship: RelationshipGraphShape.GroupInterface['relationships'][number]
-  ): boolean {
-    const result = relationship.operation === 'alpha-overlay'
+  ) {
+    const explicit = relationship.operation === 'alpha-overlay'
       || relationship.operation === 'oklch-interpolate'
-      || (relationship.operation === 'oklch-delta' && relationship.chromaScale !== undefined);
-    return result;
-  }
-
-  private static explicitLightness(
-    relationship: RelationshipGraphShape.GroupInterface['relationships'][number]
-  ): boolean {
-    const result = relationship.operation === 'alpha-overlay'
-      || relationship.operation === 'oklch-interpolate'
-      || (relationship.operation === 'oklch-delta' && relationship.lightnessOffset !== undefined);
+      || (relationship.operation === 'oklch-delta' && (
+        relationship.chromaScale !== undefined || relationship.lightnessOffset !== undefined
+      ));
+    const result = explicit ? RoleGeometry.clampMode : RoleGeometry.midpointMode;
     return result;
   }
 
