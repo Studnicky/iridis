@@ -1142,7 +1142,7 @@ export class ContrastFeasibility {
     const relation = resolvedHue === undefined && role.derivedFrom !== undefined
       ? relations.get(role.name)
       : undefined;
-    const relationship = fixed === undefined && options?.input !== undefined && options.metadata !== undefined
+    const relationship = fixed === undefined && options?.input?.roles?.relationshipGraph !== undefined && options.metadata !== undefined
       ? RelationshipConstraint.domain(options.input, options.metadata, role.name)
       : undefined;
     const result: RoleDomainOptionsInterface = {
