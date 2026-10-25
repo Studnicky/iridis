@@ -42,25 +42,60 @@ class RelationshipOperation {
     if (target.lightnessRange === undefined && target.chromaRange === undefined) {
       return operationResult;
     }
+    const ownsTarget = relationship.operation === 'hue-target' && (
+      relationship.source === undefined || relationship.source === relationship.target
+    );
+    if (ownsTarget) {
+      return operationResult;
+    }
     const options = {
       'chromaRange': target.chromaRange,
       'lightnessRange': target.lightnessRange
     };
-    const preservesTargetCoordinates = relationship.operation === 'hue-target' && (
-      relationship.source === undefined || relationship.source === relationship.target
+    const resolvesChroma = RelationshipOperation.explicitChroma(relationship)
+      ? RoleGeometry.clampRelationshipCoordinate
+      : RoleGeometry.preserveRelationshipCoordinate;
+    const resolvesLightness = RelationshipOperation.explicitLightness(relationship)
+      ? RoleGeometry.clampRelationshipCoordinate
+      : RoleGeometry.preserveRelationshipCoordinate;
+    const envelope = RoleGeometry.relationshipCoordinates(
+      operationResult.oklch.l,
+      operationResult.oklch.c,
+      options,
+      resolvesChroma,
+      resolvesLightness
     );
-    const appliesRelativeDelta = relationship.operation === 'oklch-delta' && (
-      relationship.lightnessOffset !== undefined || relationship.chromaScale !== undefined
-    );
-    const envelope = preservesTargetCoordinates || appliesRelativeDelta
-      ? RoleGeometry.clampToTargetEnvelope(operationResult.oklch.l, operationResult.oklch.c, options)
-      : RoleGeometry.targetEnvelope(operationResult.oklch.l, operationResult.oklch.c, options);
+    const hue = relationship.operation === 'hue-target'
+      ? RoleGeometry.hueTowards(
+        sources[0]?.oklch.h ?? operationResult.oklch.h,
+        relationship.hue,
+        relationship.clamp ?? RoleGeometry.DEFAULT_HUE_CLAMP
+      )
+      : operationResult.oklch.h;
     const result = colorRecordFactory.fromOklch(
       envelope.lightness,
       envelope.chroma,
-      operationResult.oklch.h,
+      hue,
       { 'alpha': operationResult.alpha }
     );
+    return result;
+  }
+
+  private static explicitChroma(
+    relationship: RelationshipGraphShape.GroupInterface['relationships'][number]
+  ): boolean {
+    const result = relationship.operation === 'alpha-overlay'
+      || relationship.operation === 'oklch-interpolate'
+      || (relationship.operation === 'oklch-delta' && relationship.chromaScale !== undefined);
+    return result;
+  }
+
+  private static explicitLightness(
+    relationship: RelationshipGraphShape.GroupInterface['relationships'][number]
+  ): boolean {
+    const result = relationship.operation === 'alpha-overlay'
+      || relationship.operation === 'oklch-interpolate'
+      || (relationship.operation === 'oklch-delta' && relationship.lightnessOffset !== undefined);
     return result;
   }
 

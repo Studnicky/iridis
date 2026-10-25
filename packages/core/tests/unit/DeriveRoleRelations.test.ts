@@ -199,6 +199,33 @@ void test('derive:roleRelations applies target envelopes and source-less hue tar
   assert.ok(Math.abs(accent.oklch.c - 0.02) < 1e-12);
   assert.ok(Math.abs((Metadata.relationshipResolution(ranged.metadata).get('accent')?.after?.oklch.l ?? 0) - 0.30) < 1e-12);
 
+  const deltaRelationship = RoleRelationshipEntity.create({
+    'id': 'accent-delta',
+    'lightnessOffset': 0.50,
+    'operation': 'oklch-delta',
+    'priority': 0,
+    'relaxability': 'fixed',
+    'source': 'brand',
+    'target': 'accent'
+  });
+  const deltaSchema = DeriveRoleRelationsFixture.schemaWithRoles(
+    [deltaRelationship],
+    [
+      RoleDefinitionEntity.create({ 'name': 'brand' }),
+      RoleDefinitionEntity.create({
+        'chromaRange': [0.01, 0.03],
+        'lightnessRange': [0.20, 0.40],
+        'name': 'accent'
+      })
+    ]
+  );
+  const delta = DeriveRoleRelationsFixture.runSchema(deltaSchema, [brand]);
+  const deltaAccent = delta.roles.accent;
+  assert.ok(deltaAccent !== undefined);
+  assert.ok(Math.abs(deltaAccent.oklch.l - 0.40) < 1e-12);
+  assert.ok(Math.abs(deltaAccent.oklch.c - 0.02) < 1e-12);
+  assert.ok(Math.abs((Metadata.relationshipResolution(delta.metadata).get('accent')?.after?.oklch.l ?? 0) - 0.40) < 1e-12);
+
   const selfRelationship = RoleRelationshipEntity.create({
     'clamp': 25,
     'hue': 120,

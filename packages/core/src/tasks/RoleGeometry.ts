@@ -11,40 +11,45 @@ class RoleGeometry {
     return result;
   }
 
-  /** Uses target range centers for an operation without source-relative L/C controls. */
-  static targetEnvelope(
+  /** Resolves operation coordinates inside the target envelope. */
+  static relationshipCoordinates(
     lightness: number,
     chroma: number,
     options: Readonly<{
       'chromaRange': readonly [number, number] | undefined;
       'lightnessRange': readonly [number, number] | undefined;
-    }>
+    }>,
+    resolveChroma: (value: number, range: readonly [number, number] | undefined) => number,
+    resolveLightness: (value: number, range: readonly [number, number] | undefined) => number
   ): { readonly 'chroma': number; readonly 'lightness': number } {
-    const targetLightness = options.lightnessRange === undefined
-      ? lightness
-      : RoleGeometry.rangeCenter(options.lightnessRange);
-    const targetChroma = options.chromaRange === undefined
-      ? chroma
-      : RoleGeometry.rangeCenter(options.chromaRange);
-    return { 'chroma': targetChroma, 'lightness': targetLightness };
+    const targetLightness = resolveLightness(lightness, options.lightnessRange);
+    const targetChroma = resolveChroma(chroma, options.chromaRange);
+    const result = { 'chroma': targetChroma, 'lightness': targetLightness };
+    return result;
   }
 
-  /** Clamps source-relative coordinates inside the target role's declared envelope. */
-  static clampToTargetEnvelope(
-    lightness: number,
-    chroma: number,
-    options: Readonly<{
-      'chromaRange': readonly [number, number] | undefined;
-      'lightnessRange': readonly [number, number] | undefined;
-    }>
-  ): { readonly 'chroma': number; readonly 'lightness': number } {
-    const targetLightness = options.lightnessRange === undefined
-      ? lightness
-      : Math.max(options.lightnessRange[0], Math.min(options.lightnessRange[1], lightness));
-    const targetChroma = options.chromaRange === undefined
-      ? chroma
-      : Math.max(options.chromaRange[0], Math.min(options.chromaRange[1], chroma));
-    return { 'chroma': targetChroma, 'lightness': targetLightness };
+  static clampRelationshipCoordinate(
+    value: number,
+    range: readonly [number, number] | undefined
+  ): number {
+    if (range === undefined) {
+      const result = value;
+      return result;
+    }
+    const result = Math.max(range[0], Math.min(range[1], value));
+    return result;
+  }
+
+  static preserveRelationshipCoordinate(
+    value: number,
+    range: readonly [number, number] | undefined
+  ): number {
+    if (range === undefined) {
+      const result = value;
+      return result;
+    }
+    const result = RoleGeometry.rangeCenter(range);
+    return result;
   }
 
   /** Rotate `source` toward `target` along the shortest arc, by at most `maximumDegrees` degrees. */
