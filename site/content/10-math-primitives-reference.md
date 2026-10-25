@@ -1,5 +1,5 @@
 ---
-title: 10. Math Primitives Reference
+title: Math Primitives Reference
 description: Every internal colour-math primitive, callable directly as a singleton, outside of the pipeline.
 ---
 

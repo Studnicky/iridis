@@ -1,5 +1,5 @@
 ---
-title: 11. Architecture Internals
+title: Architecture Internals
 description: The TaskRegistry class and the shared PaletteState that every task reads and writes.
 ---
 

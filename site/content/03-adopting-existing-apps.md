@@ -1,5 +1,5 @@
 ---
-title: 3. Adopting Iridis In An Existing App
+title: Adopting Iridis In An Existing App
 description: Adopt Iridis into an existing codebase without changing your existing utility classes or CSS component styles.
 ---
 

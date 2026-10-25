@@ -1,5 +1,5 @@
 ---
-title: 1. What is Iridis
+title: What is Iridis
 description: A chromatic pipeline that turns seed colors into a contrast-enforced palette in one line.
 ---
 
