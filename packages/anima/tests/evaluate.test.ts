@@ -1,4 +1,4 @@
-import { PaletteInterfaceTypeEntity } from '@studnicky/iridis-algebra';
+import { PaletteEntity } from '@studnicky/iridis-algebra';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
@@ -6,7 +6,7 @@ import { cubicBezier, evaluate, evaluateStops, hueInterpolations } from '../src/
 import { EvaluatePaletteFixture } from './fixtures/EvaluatePaletteFixture.ts';
 
 class PaletteAssertions {
-  static close(actual: PaletteInterfaceTypeEntity.Type, expected: PaletteInterfaceTypeEntity.Type): void {
+  static close(actual: PaletteEntity.Type, expected: PaletteEntity.Type): void {
     const actualByRole = new Map(Object.entries(actual));
     const expectedEntries = Object.entries(expected);
     for (let index = 0; index < expectedEntries.length; index += 1) {
@@ -66,7 +66,7 @@ await test('evaluate: chromaticDetourRoles routes the accent hue through green a
 });
 
 await test('evaluateStops: t=0 and t=1 return the first and last stops', () => {
-  const middle = PaletteInterfaceTypeEntity.create({
+  const middle = PaletteEntity.create({
     'accent':     { 'c': 0.15, 'h': 120, 'l': 0.55 },
     'background': { 'c': 0.02, 'h': 240, 'l': 0.50 }
   });
@@ -77,7 +77,7 @@ await test('evaluateStops: t=0 and t=1 return the first and last stops', () => {
 });
 
 await test('evaluateStops: t maps into the correct segment across N-1 segments', () => {
-  const middle = PaletteInterfaceTypeEntity.create({
+  const middle = PaletteEntity.create({
     'accent':     { 'c': 0.15, 'h': 120, 'l': 0.55 },
     'background': { 'c': 0.02, 'h': 240, 'l': 0.50 }
   });

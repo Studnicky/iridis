@@ -1,4 +1,4 @@
-import type { PaletteInterfaceTypeEntity } from '@studnicky/iridis-algebra';
+import type { PaletteEntity } from '@studnicky/iridis-algebra';
 import type { CurveOptionsInterface } from '@studnicky/iridis-anima';
 
 import { evaluate } from '@studnicky/iridis-anima';
@@ -82,7 +82,7 @@ export abstract class PaletteStateMachine {
 
     const fromPalette = this.#states[this.#fromState]!.palette;
     const toPalette    = this.#states[this.#toState]!.palette;
-    const palette: PaletteInterfaceTypeEntity.Type = evaluate(fromPalette, toPalette, this.#t, this.#curveOptions);
+    const palette: PaletteEntity.Type = evaluate(fromPalette, toPalette, this.#t, this.#curveOptions);
 
     this.onTick(palette, this.#t);
 
@@ -115,7 +115,7 @@ export abstract class PaletteStateMachine {
   protected onTransition(_fromState: string, _toState: string): void {}
 
   /** Fires with each evaluated intermediate palette while a transition is in progress. */
-  protected onTick(_palette: PaletteInterfaceTypeEntity.Type, _t: number): void {}
+  protected onTick(_palette: PaletteEntity.Type, _t: number): void {}
 
   /** Fires when leaving a state, once its outbound transition completes (t=1). */
   protected onExitState(_state: string): void {}

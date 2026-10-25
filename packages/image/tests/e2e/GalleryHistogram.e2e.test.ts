@@ -1,4 +1,4 @@
-import { InputInterfaceTypeEntity } from '@studnicky/iridis';
+import { InputEntity } from '@studnicky/iridis';
 import { imagePlugin } from '@studnicky/iridis-image';
 import { Engine } from '@studnicky/iridis/engine';
 import { coreTasks } from '@studnicky/iridis/tasks';
@@ -31,7 +31,7 @@ class GalleryHistogramFixture {
   }
 
   static run(pixels: readonly [number, number, number, number][], gallery?: Record<string, number | string>) {
-    const input = InputInterfaceTypeEntity.create({
+    const input = InputEntity.create({
       'colors': [GalleryHistogramFixture.imageData(pixels)],
       ...(gallery === undefined ? {} : { 'metadata': { 'gallery': gallery } })
     });
@@ -86,7 +86,7 @@ await test('GalleryHistogram applies lightness and chroma filters', () => {
 await test('GalleryHistogram feeds the extraction pipeline with bounded output', () => {
   const pixels: [number, number, number, number][] = [];
   for (let index = 0; index < 100; index += 1) {pixels.push([255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255]);}
-  const input = InputInterfaceTypeEntity.create({
+  const input = InputEntity.create({
     'colors': [GalleryHistogramFixture.imageData(pixels)],
     'metadata': { 'gallery': { 'algorithm': 'median-cut', 'k': 3 } }
   });

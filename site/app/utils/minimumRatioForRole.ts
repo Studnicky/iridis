@@ -1,4 +1,4 @@
-import type { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis/model';
+import type { RoleSchemaEntity } from '@studnicky/iridis/model';
 
 /** WCAG AA body-text ratio — the fallback for any role with no declared
  * contrast pair in the active schema (undeclared roles, Nuxt UI aliases,
@@ -22,7 +22,7 @@ const DEFAULT_MINIMUM_RATIO = 4.5;
  * non-table caller that also resolves through this function.
  */
 class MinimumRatioForRoleOperation {
-  static run(schema: RoleSchemaInterfaceTypeEntity.Type | undefined, roleName: string): number {
+  static run(schema: RoleSchemaEntity.Type | undefined, roleName: string): number {
     const pair = schema?.contrastPairs?.find((contrastPair) => {
       const isForeground = contrastPair.foreground === roleName;
       return isForeground;

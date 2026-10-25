@@ -15,10 +15,10 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import type { ScenarioInterface } from '../_runner/ScenarioInterface.ts';
-import type { ColorRecordInterfaceTypeEntity } from '../../src/entities/ColorRecordInterfaceTypeEntity.ts';
+import type { ColorRecordEntity } from '../../src/entities/ColorRecordEntity.ts';
 
 import { ScenarioRunner } from '../_runner/ScenarioRunner.ts';
-import { ColorHintsInterfaceTypeEntity } from '../../src/entities/ColorHintsInterfaceTypeEntity.ts';
+import { ColorHintsEntity } from '../../src/entities/ColorHintsEntity.ts';
 import { clusterMedianCutWeighted }    from '../../src/math/ClusterMedianCutWeighted.ts';
 import { colorRecordFactory }          from '../../src/math/ColorRecordFactory.ts';
 
@@ -27,10 +27,10 @@ import { colorRecordFactory }          from '../../src/math/ColorRecordFactory.t
 // ---------------------------------------------------------------------------
 
 class TestColorFixture {
-  static rgb(r: number, g: number, b: number, weight?: number): ColorRecordInterfaceTypeEntity.Type {
+  static rgb(r: number, g: number, b: number, weight?: number): ColorRecordEntity.Type {
     const hints = weight === undefined
       ? undefined
-      : ColorHintsInterfaceTypeEntity.create({ 'weight': weight });
+      : ColorHintsEntity.create({ 'weight': weight });
     const result = colorRecordFactory.fromRgb(r, g, b, {
       ...(hints === undefined ? {} : { 'hints': hints }),
       'sourceFormat': 'rgb'
@@ -38,10 +38,10 @@ class TestColorFixture {
     return result;
   }
 
-  static hex(code: string, weight?: number): ColorRecordInterfaceTypeEntity.Type {
+  static hex(code: string, weight?: number): ColorRecordEntity.Type {
     const hints = weight === undefined
       ? undefined
-      : ColorHintsInterfaceTypeEntity.create({ 'weight': weight });
+      : ColorHintsEntity.create({ 'weight': weight });
     const result = colorRecordFactory.fromHex(code, {
       ...(hints === undefined ? {} : { 'hints': hints }),
       'sourceFormat': 'hex'
@@ -51,23 +51,23 @@ class TestColorFixture {
 }
 
 interface Cell1InputInterface {
-  readonly 'colors': readonly ColorRecordInterfaceTypeEntity.Type[];
+  readonly 'colors': readonly ColorRecordEntity.Type[];
   readonly 'k': number;
 };
 interface Cell1OutputInterface {
-  readonly 'result': ColorRecordInterfaceTypeEntity.Type[];
+  readonly 'result': ColorRecordEntity.Type[];
 };
 
 interface Cell2InputInterface {
-  readonly 'colors': readonly ColorRecordInterfaceTypeEntity.Type[];
+  readonly 'colors': readonly ColorRecordEntity.Type[];
   readonly 'k': number;
 };
 interface Cell2OutputInterface {
-  readonly 'clusters': ColorRecordInterfaceTypeEntity.Type[];
+  readonly 'clusters': ColorRecordEntity.Type[];
 };
 
 interface Cell3InputInterface {
-  readonly 'colors': readonly ColorRecordInterfaceTypeEntity.Type[];
+  readonly 'colors': readonly ColorRecordEntity.Type[];
   readonly 'k': number;
 };
 interface Cell3OutputInterface {
@@ -76,7 +76,7 @@ interface Cell3OutputInterface {
 }
 
 interface Cell4InputInterface {
-  readonly 'colors': readonly ColorRecordInterfaceTypeEntity.Type[];
+  readonly 'colors': readonly ColorRecordEntity.Type[];
   readonly 'k': number;
 };
 interface Cell4OutputInterface {
@@ -399,7 +399,7 @@ class ClusterMedianCutWeightedScenarios {
         'input': {
           'colors': [
             colorRecordFactory.fromRgb(0.1, 0.1, 0.1), // weight=1 (absent)
-            colorRecordFactory.fromRgb(0.9, 0.1, 0.1, { 'hints': ColorHintsInterfaceTypeEntity.create({ 'weight': 9 }), 'sourceFormat': 'rgb' })
+            colorRecordFactory.fromRgb(0.9, 0.1, 0.1, { 'hints': ColorHintsEntity.create({ 'weight': 9 }), 'sourceFormat': 'rgb' })
           ],
           'k': 2
         },

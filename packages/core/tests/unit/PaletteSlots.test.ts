@@ -5,8 +5,8 @@ import { test } from 'node:test';
 
 import type { PaletteStateInterface } from '../../src/interfaces/PaletteStateInterface.ts';
 
-import { InputInterfaceTypeEntity } from '../../src/entities/InputInterfaceTypeEntity.ts';
-import { RuntimeOptionsInterfaceTypeEntity } from '../../src/entities/RuntimeOptionsInterfaceTypeEntity.ts';
+import { InputEntity } from '../../src/entities/InputEntity.ts';
+import { RuntimeOptionsEntity } from '../../src/entities/RuntimeOptionsEntity.ts';
 import { PaletteMetadataSlot } from '../../src/model/PaletteMetadataSlot.ts';
 import { PaletteOutputSlot } from '../../src/model/PaletteOutputSlot.ts';
 
@@ -18,11 +18,11 @@ class PaletteSlotTestFixture {
   static state(): PaletteStateInterface {
     return {
       'colors': [],
-      'input': InputInterfaceTypeEntity.intake({ 'colors': [] }),
+      'input': InputEntity.intake({ 'colors': [] }),
       'metadata': {},
       'outputs':  {},
       'roles':    {},
-      'runtime': RuntimeOptionsInterfaceTypeEntity.intake({}),
+      'runtime': RuntimeOptionsEntity.intake({}),
       'variants': {}
     };
   }

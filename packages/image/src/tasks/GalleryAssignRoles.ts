@@ -1,5 +1,5 @@
 import type {
-  ColorRecordInterfaceTypeEntity,
+  ColorRecordEntity,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface
@@ -7,7 +7,7 @@ import type {
 
 import {
   oklchToRgb,
-  TaskManifestInterfaceTypeEntity
+  TaskManifestEntity
 } from '@studnicky/iridis';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
@@ -28,7 +28,7 @@ import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 class GalleryAssignRoles implements TaskInterface {
   readonly 'name' = 'gallery:assignRoles';
 
-  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest' = TaskManifestEntity.create({
     'description': 'Assign dominant colors to gallery roles: canvas, frame, accent, muted, text',
     'name':        'gallery:assignRoles',
     'reads':       ['colors'],
@@ -67,13 +67,13 @@ class GalleryAssignRoles implements TaskInterface {
     }
 
     // canvas: darkest (lowest L)
-    const canvas = colors.reduce((best: ColorRecordInterfaceTypeEntity.Type, color: ColorRecordInterfaceTypeEntity.Type) => {
+    const canvas = colors.reduce((best: ColorRecordEntity.Type, color: ColorRecordEntity.Type) => {
       const result = color.oklch.l < best.oklch.l ? color : best;
       return result;
     }, firstColor);
 
     // frame: closest to mid-luminance (L nearest 0.5)
-    const frame = colors.reduce((best: ColorRecordInterfaceTypeEntity.Type, color: ColorRecordInterfaceTypeEntity.Type) => {
+    const frame = colors.reduce((best: ColorRecordEntity.Type, color: ColorRecordEntity.Type) => {
       const distance  = Math.abs(color.oklch.l - 0.5);
       const bestDistance = Math.abs(best.oklch.l - 0.5);
       const result = distance < bestDistance ? color : best;
@@ -81,7 +81,7 @@ class GalleryAssignRoles implements TaskInterface {
     }, firstColor);
 
     // accent: highest chroma
-    const accent = colors.reduce((best: ColorRecordInterfaceTypeEntity.Type, color: ColorRecordInterfaceTypeEntity.Type) => {
+    const accent = colors.reduce((best: ColorRecordEntity.Type, color: ColorRecordEntity.Type) => {
       const result = color.oklch.c > best.oklch.c ? color : best;
       return result;
     }, firstColor);
@@ -92,7 +92,7 @@ class GalleryAssignRoles implements TaskInterface {
       return result;
     });
     const muteSource = nonNeutral.length > 0 ? nonNeutral : colors;
-    const muted = muteSource.reduce((best: ColorRecordInterfaceTypeEntity.Type, color: ColorRecordInterfaceTypeEntity.Type) => {
+    const muted = muteSource.reduce((best: ColorRecordEntity.Type, color: ColorRecordEntity.Type) => {
       const result = color.oklch.c < best.oklch.c ? color : best;
       return result;
     }, firstColor);
@@ -123,7 +123,7 @@ class GalleryAssignRoles implements TaskInterface {
     );
   }
 
-  private deriveTextColor(canvas: ColorRecordInterfaceTypeEntity.Type): ColorRecordInterfaceTypeEntity.Type {
+  private deriveTextColor(canvas: ColorRecordEntity.Type): ColorRecordEntity.Type {
     if (canvas.oklch.l <= 0.5) {
       const result = oklchToRgb.apply(1.0, 0.0, 0.0, 1.0);
       return result;

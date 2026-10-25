@@ -11,7 +11,7 @@ Treating a palette this way makes a small algebra fall out for free: lerp
 between two palettes, subtract one from another, find the nearest preset in a
 corpus, detect drift past a tolerance, or nudge a single role's chroma
 orthogonally. This package has no dependency on `@studnicky/iridis` or its
-engine; it operates purely on `PaletteInterfaceType` values (`Record<string,
+engine; it operates purely on `PaletteEntity` values (`Record<string,
 { l, c, h }>`) and can be used standalone.
 
 This is the foundation package for iridis's living-color stack.
@@ -39,16 +39,16 @@ npm install @studnicky/iridis-algebra
 ## Usage
 
 ```ts
-import type { PaletteInterfaceType } from '@studnicky/iridis-algebra';
+import type { PaletteEntity } from '@studnicky/iridis-algebra';
 
 import { lerp, subtract, nearest, drift, perpendicular } from '@studnicky/iridis-algebra';
 
-const day: PaletteInterfaceType = {
+const day: PaletteEntity = {
   accent:     { l: 0.62, c: 0.18, h: 290 },
   background: { l: 0.98, c: 0.01, h: 290 },
 };
 
-const night: PaletteInterfaceType = {
+const night: PaletteEntity = {
   accent:     { l: 0.72, c: 0.20, h: 300 },
   background: { l: 0.12, c: 0.02, h: 290 },
 };
@@ -64,11 +64,11 @@ const punchier = perpendicular(day, 'accent', 0.05);
 
 | Function | Signature | Meaning |
 |---|---|---|
-| `lerp` | `(a, b, t, options?) => PaletteInterfaceType` | Per-role OKLCH lerp between two palettes; hue wraps around the 0/360 circle per `options.hueDirection` (`shortestArc` default, `clockwise`, `counterClockwise`). |
-| `subtract` | `(a, b) => PaletteInterfaceType` | Per-role OKLCH delta (`a - b`); hue delta wraps to `[-180, 180]`. |
-| `nearest` | `(target, corpus, metric?) => PaletteInterfaceType` | Returns whichever palette in `corpus` is closest to `target` under `metric` (defaults to a perceptual OKLCH distance). Throws on an empty corpus. |
+| `lerp` | `(a, b, t, options?) => PaletteEntity` | Per-role OKLCH lerp between two palettes; hue wraps around the 0/360 circle per `options.hueDirection` (`shortestArc` default, `clockwise`, `counterClockwise`). |
+| `subtract` | `(a, b) => PaletteEntity` | Per-role OKLCH delta (`a - b`); hue delta wraps to `[-180, 180]`. |
+| `nearest` | `(target, corpus, metric?) => PaletteEntity` | Returns whichever palette in `corpus` is closest to `target` under `metric` (defaults to a perceptual OKLCH distance). Throws on an empty corpus. |
 | `drift` | `(current, derived, threshold) => boolean` | `true` when the perceptual distance between `current` and `derived` exceeds `threshold` -- signals a re-derivation is due. |
-| `perpendicular` | `(a, roleAxis, delta?) => PaletteInterfaceType` | Moves orthogonally on the chroma plane for `roleAxis`: `l` and `h` for that role hold fixed while `c` shifts by `delta` (clamped to `[0, 0.5]`). Other roles pass through unchanged. |
+| `perpendicular` | `(a, roleAxis, delta?) => PaletteEntity` | Moves orthogonally on the chroma plane for `roleAxis`: `l` and `h` for that role hold fixed while `c` shifts by `delta` (clamped to `[0, 0.5]`). Other roles pass through unchanged. |
 | `lerpHue` | `(from, to, t, direction?) => number` | The single-hue lerp `lerp` uses internally, exported standalone for callers composing their own per-channel interpolation. |
 
 `nearest`'s default metric sums, over shared roles, `sqrt(dl^2 + dc^2 + dh^2)`

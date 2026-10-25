@@ -1,4 +1,4 @@
-import { OklchInterfaceTypeEntity, PaletteInterfaceTypeEntity } from '@studnicky/iridis-algebra';
+import { OklchEntity, PaletteEntity } from '@studnicky/iridis-algebra';
 
 import type { CurveOptionsInterface } from './interfaces/CurveOptionsInterface.ts';
 
@@ -7,17 +7,17 @@ import { chromaticDetourHue, hueInterpolations, linear } from './easings/index.t
 /** Evaluates one admitted pair of palette stops at normalized progress. */
 class Evaluate {
   static apply(
-    from: PaletteInterfaceTypeEntity.Type,
-    to: PaletteInterfaceTypeEntity.Type,
+    from: PaletteEntity.Type,
+    to: PaletteEntity.Type,
     progress: number,
     options?: CurveOptionsInterface
-  ): PaletteInterfaceTypeEntity.Type {
+  ): PaletteEntity.Type {
     const easing = options?.easing ?? linear;
     const hueInterpolation = options?.hueInterpolation ?? hueInterpolations.shortestArc;
     const easedProgress = easing.apply(Math.min(1, Math.max(0, progress)));
     const detourRoleNames = new Set(options?.chromaticDetourRoles ?? []);
     const toRoles = new Map(Object.entries(to));
-    const frame: PaletteInterfaceTypeEntity.Type = {};
+    const frame: PaletteEntity.Type = {};
     const fromEntries = Object.entries(from);
 
     for (let index = 0; index < fromEntries.length; index += 1) {
@@ -37,7 +37,7 @@ class Evaluate {
       Object.defineProperty(frame, roleName, {
         'configurable': true,
         'enumerable':   true,
-        'value': OklchInterfaceTypeEntity.create({
+        'value': OklchEntity.create({
           'c': fromRole.c + easedProgress * (toRole.c - fromRole.c),
           'h': hue,
           'l': fromRole.l + easedProgress * (toRole.l - fromRole.l)
@@ -45,7 +45,7 @@ class Evaluate {
         'writable': true
       });
     }
-    const evaluatedFrame = PaletteInterfaceTypeEntity.create(frame);
+    const evaluatedFrame = PaletteEntity.create(frame);
     return evaluatedFrame;
   }
 }

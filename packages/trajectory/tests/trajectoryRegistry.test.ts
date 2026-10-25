@@ -1,4 +1,4 @@
-import type { PaletteInterfaceTypeEntity } from '@studnicky/iridis-algebra';
+import type { PaletteEntity } from '@studnicky/iridis-algebra';
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -8,7 +8,7 @@ import { sunriseTrajectory } from '../src/SunriseTrajectory.ts';
 import { TrajectoryRegistryTestPatterns } from './fixtures/TrajectoryRegistryTestPatterns.ts';
 
 class PaletteAssertions {
-  static close(actual: PaletteInterfaceTypeEntity.Type, expected: PaletteInterfaceTypeEntity.Type): void {
+  static close(actual: PaletteEntity.Type, expected: PaletteEntity.Type): void {
     const roles = Object.keys(expected);
     for (let index = 0; index < roles.length; index += 1) {
       const role = roles[index];
@@ -75,7 +75,7 @@ await test('resolve: unknown trajectory name throws a clear error', () => {
 
 await test('registerTrajectory: custom trajectory can be registered and resolved by name', () => {
   const registry = new TrajectoryRegistry();
-  const stops: PaletteInterfaceTypeEntity.Type[] = [
+  const stops: PaletteEntity.Type[] = [
     { 'accent': { 'c': 0.1, 'h': 0,   'l': 0.5 } },
     { 'accent': { 'c': 0.1, 'h': 100, 'l': 0.5 } }
   ];
@@ -92,7 +92,7 @@ await test('registerTrajectory: custom trajectory can be registered and resolved
 
 await test('registerTrajectory: registering under a built-in name overwrites it', () => {
   const registry = new TrajectoryRegistry();
-  const overrideStops: PaletteInterfaceTypeEntity.Type[] = [
+  const overrideStops: PaletteEntity.Type[] = [
     { 'accent': { 'c': 0.3, 'h': 0, 'l': 0.9 } }
   ];
   registry.registerTrajectory('sunrise', { 'stops': overrideStops });

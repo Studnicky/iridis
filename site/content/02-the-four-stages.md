@@ -41,8 +41,8 @@ A `TaskRegistry` is a `Map<string, TaskInterface>`. Every task has a string `nam
 
 For every registered, non-lifecycle task named by `manifest.requires`, the engine validates that the required task is present earlier in the pipeline. A missing or out-of-order predecessor fails during `engine.pipeline()`. Callers and plugins remain responsible for registering tasks before declaring the sequence; `reads` and `writes` document state flow but do not create dependencies automatically.
 
-## Plugins Bring the Optional Stages
+## Plugins Bring Additional Stages
 
-Core `intake`/`resolve`/`emit` stages ship with iridis itself. Optional `enforce` stages — WCAG AA/AAA, APCA, and CVD simulate — are contributed by plugins such as `@studnicky/iridis-contrast`, switched on or off per project.
+Core `intake`/`resolve`/`emit` stages ship with iridis itself. The `enforce:compliance`, `report:compliance` and `withhold:compliance` stages are contributed by `@studnicky/iridis-contrast`; the selected standard (WCAG AA, WCAG AAA, or APCA) is the `input.contrast` setting, not a separate stage.
 
 A plugin is any object satisfying `PluginInterface` (a `name`, a `version`, and a `tasks()` method); `engine.adopt(plugin)` registers all of a plugin's tasks in one call. iridis ships seven plugins beyond the core task set: `@studnicky/iridis-vscode`, `-stylesheet`, `-tailwind`, `-image`, `-contrast`, `-capacitor`, and `-rdf`. Each is a separate package — install only what a project needs.

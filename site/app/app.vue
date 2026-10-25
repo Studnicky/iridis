@@ -24,13 +24,14 @@ usePauseOffscreenAnimations();
  * reactive computed, so it also updates live as seeds/roles change,
  * redundantly with Tokens.apply()'s direct DOM write, which is harmless).
  */
-const { framing, roles, scales } = useIridis();
+const { framing, paletteRevision, roles, scales } = useIridis();
 const tokenCssText = computed(() => Tokens.toCssText(Tokens.mapFromEngine(roles.value, scales.value)));
 
 useHead({
   'htmlAttrs': {
     'class': computed(() => {return framing.value === 'dark' ? 'dark' : '';}),
-    'data-iridis-framing': framing
+    'data-iridis-framing': framing,
+    'data-iridis-palette-revision': paletteRevision
   },
   'bodyAttrs': {
     'class': 'preload'
@@ -52,6 +53,7 @@ onMounted(() => {
   <UApp>
     <AmbientBackground />
     <NuxtRouteAnnouncer />
+    <AccessibilityToast />
     <CvdPreviewOverlay>
       <NuxtPage />
     </CvdPreviewOverlay>

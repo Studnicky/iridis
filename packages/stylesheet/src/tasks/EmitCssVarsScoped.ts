@@ -1,4 +1,4 @@
-import { type ColorRecordInterfaceTypeEntity, CssVarName, type PaletteStateInterface, type PipelineContextInterface, type TaskInterface, TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { type ColorRecordEntity, CssVarName, type PaletteStateInterface, type PipelineContextInterface, type TaskInterface, TaskManifestEntity } from '@studnicky/iridis';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
 import { CssAttributeSelector } from '../util/CssAttributeSelector.ts';
@@ -8,7 +8,7 @@ import { P3Serializer } from '../util/P3Serializer.ts';
 class ScopedCategoryBlock {
   static build(
     category:    string,
-    roles:       Record<string, ColorRecordInterfaceTypeEntity.Type>,
+    roles:       Record<string, ColorRecordEntity.Type>,
     prefix:      string,
     scopePrefix: string
   ): string {
@@ -39,7 +39,7 @@ class ScopedCategoryBlock {
 class ScopedWideGamutBlock {
   static build(
     category:    string,
-    roles:       Record<string, ColorRecordInterfaceTypeEntity.Type>,
+    roles:       Record<string, ColorRecordEntity.Type>,
     prefix:      string,
     scopePrefix: string
   ): string {
@@ -76,7 +76,7 @@ class ScopedWideGamutBlock {
  */
 class EmitCssVarsScoped implements TaskInterface {
   readonly name = 'emit:cssVarsScoped';
-  readonly manifest: TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({ 'description': 'Emit per-category scoped CSS custom property blocks for Vue/Capacitor use cases', 'name': 'emit:cssVarsScoped', 'reads': ['roles', 'variants', 'metadata'], 'writes': ['outputs.stylesheet:cssVarsScoped'] });
+  readonly manifest: TaskManifestEntity.Type = TaskManifestEntity.create({ 'description': 'Emit per-category scoped CSS custom property blocks for Vue/Capacitor use cases', 'name': 'emit:cssVarsScoped', 'reads': ['roles', 'variants', 'metadata'], 'writes': ['outputs.stylesheet:cssVarsScoped'] });
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const prefix = CssCustomPropertyPrefix.from(typeof state.metadata.cssVarPrefix === 'string' ? state.metadata.cssVarPrefix : undefined);
     const scopePrefix = typeof state.metadata.scopePrefix === 'string' ? state.metadata.scopePrefix : 'theme';

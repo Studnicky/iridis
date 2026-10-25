@@ -1,4 +1,4 @@
-import { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis';
+import { RoleSchemaEntity } from '@studnicky/iridis';
 import assert from 'node:assert/strict';
 
 import type { ScenarioInterface } from '../../_runner/ScenarioInterface.ts';
@@ -27,7 +27,7 @@ export class RdfPluginMissingGraphScenarioSuite {
     const runner = new ScenarioRunner<undefined, RdfPluginMissingGraphScenarioEntity.Type>(
       'RdfPlugin :: cell-6 :: serialize-missing-graph',
       (): RdfPluginMissingGraphScenarioEntity.Type => {
-        const roles = RoleSchemaInterfaceTypeEntity.intake({
+        const roles = RoleSchemaEntity.intake({
           'name': 'missing-graph',
           'roles': [{ 'name': 'primary', 'required': true }, { 'name': 'background', 'required': true }]
         });

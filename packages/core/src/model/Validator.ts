@@ -5,7 +5,7 @@ import { JsonTology } from '@studnicky/json-tology';
 import { JsonObject, JsonValue } from '@studnicky/types/node';
 import { RE2JS } from 're2js';
 
-import { ValidationErrorInterfaceTypeEntity } from '../entities/ValidationErrorInterfaceTypeEntity.ts';
+import { ValidationErrorEntity } from '../entities/ValidationErrorEntity.ts';
 import { CORE_ID_INDEX, CORE_SCHEMAS } from './constants/CoreSchemaRegistry.ts';
 import { JSON_POINTER_PATTERNS }       from './constants/JsonPointerPatterns.ts';
 import { JSON_SCHEMA_TYPE_NAMES }      from './constants/JsonSchemaTypeNames.ts';
@@ -30,6 +30,7 @@ class CoreRegistry {
     // validation, not canonical-graph shape dedup.
     CoreRegistry.#state.instance ??= JsonTology.create({
       'baseIri': 'https://studnicky.dev/iridis',
+      'enableDuplicateDetection': false,
       'enableStrictGraph': false,
       'schemas': CORE_SCHEMAS
     });
@@ -636,7 +637,7 @@ class Value {
 /**
  * Drops own-enumerable keys whose value is `undefined`, recursively.
  *
- * `ColorRecordInterfaceType` deliberately keeps `displayP3: undefined` /
+ * `ColorRecordEntity` deliberately keeps `displayP3: undefined` /
  * `hints: undefined` present (rather than omitted) for V8 hidden-class
  * monomorphism (see `types/color.ts`). Ajv's compiled `properties` validators
  * treat a present-but-`undefined` key the same as an absent one; json-tology's
@@ -814,7 +815,7 @@ class ValidatorClass {
     this.#jt = CoreRegistry.ensure();
   }
 
-  validate<T>(schema: JsonSchemaObjectType, value: T): { readonly 'errors': ValidationErrorInterfaceTypeEntity.Type[] } {
+  validate<T>(schema: JsonSchemaObjectType, value: T): { readonly 'errors': ValidationErrorEntity.Type[] } {
     const withId = SyntheticId.assign(schema);
     const pruned = value === undefined ? undefined : UndefinedPruner.prune(value);
 
@@ -824,12 +825,12 @@ class ValidatorClass {
       return { 'errors': [] };
     }
 
-    const mapped: ValidationErrorInterfaceTypeEntity.Type[] = errors.items.map((error) => {
+    const mapped: ValidationErrorEntity.Type[] = errors.items.map((error) => {
       const parameters = JsonRecord.from(JsonValue.from(error.params));
       const normalisedPath = PathNormaliser.normalise(withId, error.path, error.keyword, parameters);
       const actual = pruned === undefined ? undefined : Value.resolve(pruned, error.path);
       const message = MessageNormaliser.normalise(error.keyword, parameters, error.path, actual, error.message, withId);
-      const result = ValidationErrorInterfaceTypeEntity.create({ 'message': message, 'path': normalisedPath });
+      const result = ValidationErrorEntity.create({ 'message': message, 'path': normalisedPath });
       return result;
     });
 

@@ -1,13 +1,13 @@
 import {
-  type ColorRecordInterfaceTypeEntity,
+  type ColorRecordEntity,
   type PaletteStateInterface,
   type PipelineContextInterface,
   type TaskInterface,
-  TaskManifestInterfaceTypeEntity
+  TaskManifestEntity
 } from '@studnicky/iridis';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
-import type { ChakraOutputInterfaceType } from '../types/index.ts';
+import type { ChakraOutputEntity } from '../types/index.ts';
 
 import { FAMILY_ROLE_MAP } from './constants/FamilyRoleMap.ts';
 
@@ -18,7 +18,7 @@ import { FAMILY_ROLE_MAP } from './constants/FamilyRoleMap.ts';
  */
 class EffectiveRole {
   static resolve(
-    roles: Record<string, ColorRecordInterfaceTypeEntity.Type>,
+    roles: Record<string, ColorRecordEntity.Type>,
     role: string,
     fallback?: string
   ): string | undefined {
@@ -38,8 +38,8 @@ class EffectiveRole {
  */
 class Family {
   static build(
-    roles: Record<string, ColorRecordInterfaceTypeEntity.Type>,
-    variants: Record<string, Record<string, ColorRecordInterfaceTypeEntity.Type>>,
+    roles: Record<string, ColorRecordEntity.Type>,
+    variants: Record<string, Record<string, ColorRecordEntity.Type>>,
     effectiveRole: string
   ): Record<string, string> | undefined {
     const light = variants.light?.[effectiveRole];
@@ -95,7 +95,7 @@ class ColorsToJs {
 export class EmitChakraTheme implements TaskInterface {
   readonly 'name' = 'emit:chakraTheme';
 
-  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest': TaskManifestEntity.Type = TaskManifestEntity.create({
     'description': 'Emit a Chakra UI extendTheme() color-token scale (100/500/900 per family) from resolved roles and dark/light variants',
     'name':        'emit:chakraTheme',
     'reads':       ['roles', 'variants'],
@@ -149,7 +149,7 @@ export class EmitChakraTheme implements TaskInterface {
       '});'
     ].join('\n');
 
-    const output: ChakraOutputInterfaceType = {
+    const output: ChakraOutputEntity = {
       'colors': colorOutput,
       'config': config
     };

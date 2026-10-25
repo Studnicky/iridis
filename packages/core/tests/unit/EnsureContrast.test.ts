@@ -81,3 +81,17 @@ void test('ensureContrast measures the gamut-mapped record it returns', () => {
   assert.ok(ratio >= 4.5, `expected at least 4.5:1 from the returned record, got ${ratio}:1`);
   assert.ok(ratio <= 4.6, `expected no more than 4.6:1 from the returned record, got ${ratio}:1`);
 });
+
+void test('ensureContrast keeps an adjustment inside the supplied lightness range', () => {
+  const background = colorRecordFactory.fromHex('#f59e0b');
+  const foreground = colorRecordFactory.fromHex('#ffffff');
+  const result = ensureContrast.apply(foreground, background, 4.5, {
+    'algorithm': 'wcag21',
+    'lightnessRange': [0.94, 0.99]
+  });
+  const ratio = contrastWcag21.apply(result, background);
+
+  assert.ok(result.oklch.l >= 0.94, `expected lightness at least 0.94, got ${result.oklch.l}`);
+  assert.ok(result.oklch.l <= 0.99, `expected lightness at most 0.99, got ${result.oklch.l}`);
+  assert.ok(ratio < 4.5, `expected the constrained result to remain below 4.5:1, got ${ratio}:1`);
+});

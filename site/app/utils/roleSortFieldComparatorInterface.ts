@@ -1,6 +1,6 @@
-import type { RoleSortableRowInterfaceTypeEntity } from '../composables/entities/RoleSortableRowInterfaceTypeEntity.ts';
+import type { RoleSortableRowEntity } from '../composables/entities/RoleSortableRowEntity.ts';
 
 export interface RoleSortFieldComparatorInterface {
-  compare(left: RoleSortableRowInterfaceTypeEntity.Type, right: RoleSortableRowInterfaceTypeEntity.Type): number;
+  compare(left: RoleSortableRowEntity.Type, right: RoleSortableRowEntity.Type): number;
   readonly 'label': string;
 }

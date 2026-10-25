@@ -1,4 +1,4 @@
-import { type InputInterfaceTypeEntity, RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis';
+import { type InputEntity, RoleSchemaEntity } from '@studnicky/iridis';
 import assert from 'node:assert/strict';
 
 import type { ScenarioInterface } from '../../_runner/ScenarioInterface.ts';
@@ -10,13 +10,13 @@ import { StylesheetRoleSchemas } from './StylesheetRoleSchemas.ts';
 import { StylesheetScenarioFixture } from './StylesheetScenarioFixture.ts';
 
 interface CssVarsNamingInputInterface {
-  readonly 'colors': InputInterfaceTypeEntity.Type['colors'];
-  readonly 'metadata': InputInterfaceTypeEntity.Type['metadata'];
+  readonly 'colors': InputEntity.Type['colors'];
+  readonly 'metadata': InputEntity.Type['metadata'];
   readonly 'pipeline': readonly string[];
-  readonly 'roles': RoleSchemaInterfaceTypeEntity.Type;
+  readonly 'roles': RoleSchemaEntity.Type;
 }
 
-const CAMEL_ROLE_SCHEMA = RoleSchemaInterfaceTypeEntity.intake({
+const CAMEL_ROLE_SCHEMA = RoleSchemaEntity.intake({
   'name': 'camel',
   'roles': [
     { 'name': 'primaryText', 'required': true },

@@ -1,4 +1,4 @@
-import type { OutputRowInterfaceTypeEntity } from '~/composables/entities/OutputRowInterfaceTypeEntity.ts';
+import type { OutputRowEntity } from '~/composables/entities/OutputRowEntity.ts';
 
 import { OUTPUT_FORMAT_INFO } from './outputFormatInfo.ts';
 
@@ -32,7 +32,7 @@ export const buildOutputFormatCardModel = class OutputFormatCardModelBuilder {
 
   public static build(
     formatKey: string,
-    row: OutputRowInterfaceTypeEntity.Type | undefined
+    row: OutputRowEntity.Type | undefined
   ): OutputFormatCardModel {
     const info = OUTPUT_FORMAT_INFO[formatKey];
     const result = new OutputFormatCardModel(

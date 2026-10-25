@@ -1,14 +1,14 @@
 import { ValidationError } from '@studnicky/errors/node';
 
 import type { ClusterMergeEntity } from '../entities/ClusterMergeEntity.ts';
-import type { ColorHintsInterfaceTypeEntity } from '../entities/ColorHintsInterfaceTypeEntity.ts';
+import type { ColorHintsEntity } from '../entities/ColorHintsEntity.ts';
 
-import { ColorRecordInterfaceTypeEntity } from '../entities/ColorRecordInterfaceTypeEntity.ts';
+import { ColorRecordEntity } from '../entities/ColorRecordEntity.ts';
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 import { deltaE2000 } from './DeltaE2000.ts';
 
 class RecordWeight {
-  static of(record: ColorRecordInterfaceTypeEntity.Type): number {
+  static of(record: ColorRecordEntity.Type): number {
     const w = record.hints?.weight;
     const result = typeof w === 'number' && w > 0 ? w : 1;
     return result;
@@ -51,7 +51,7 @@ class Centroids {
 }
 
 class ClusterRecords {
-  static asClusters(colors: readonly ColorRecordInterfaceTypeEntity.Type[]): ClusterMergeEntity.Type[] {
+  static asClusters(colors: readonly ColorRecordEntity.Type[]): ClusterMergeEntity.Type[] {
     const result = new Array<ClusterMergeEntity.Type>(colors.length);
     const colorCount = colors.length;
     for (let colorIndex = 0; colorIndex < colorCount; colorIndex++) {
@@ -61,8 +61,8 @@ class ClusterRecords {
     return result;
   }
 
-  static withWeights(colors: readonly ColorRecordInterfaceTypeEntity.Type[]): ColorRecordInterfaceTypeEntity.Type[] {
-    const result = new Array<ColorRecordInterfaceTypeEntity.Type>(colors.length);
+  static withWeights(colors: readonly ColorRecordEntity.Type[]): ColorRecordEntity.Type[] {
+    const result = new Array<ColorRecordEntity.Type>(colors.length);
     const colorCount = colors.length;
     for (let colorIndex = 0; colorIndex < colorCount; colorIndex++) {
       const color = colors[colorIndex]!;
@@ -70,7 +70,7 @@ class ClusterRecords {
         result[colorIndex] = color;
         continue;
       }
-      const hints: ColorHintsInterfaceTypeEntity.Type = { 'weight': 1 };
+      const hints: ColorHintsEntity.Type = { 'weight': 1 };
       if (color.hints?.intent !== undefined) {hints.intent = color.hints.intent;}
       if (color.hints?.role !== undefined) {hints.role = color.hints.role;}
       result[colorIndex] = colorRecordFactory.fromOklch(color.oklch.l, color.oklch.c, color.oklch.h, { 'alpha': color.alpha, 'hints': hints, 'sourceFormat': color.sourceFormat });
@@ -89,17 +89,17 @@ class ClusterDistanceMatrix {
   readonly #active: number[];
   readonly #clusters: ClusterMergeEntity.Type[];
   readonly #distances: Float64Array;
-  readonly #records: ColorRecordInterfaceTypeEntity.Type[];
+  readonly #records: ColorRecordEntity.Type[];
   readonly #size: number;
 
   private constructor(clusters: readonly ClusterMergeEntity.Type[]) {
     this.#size = clusters.length;
     this.#clusters = [...clusters];
     this.#active = new Array<number>(this.#size);
-    this.#records = new Array<ColorRecordInterfaceTypeEntity.Type>(this.#size);
+    this.#records = new Array<ColorRecordEntity.Type>(this.#size);
     for (let slot = 0; slot < this.#size; slot++) {
       this.#active[slot] = slot;
-      this.#records[slot] = ColorRecordInterfaceTypeEntity.intake(clusters[slot]!.centroid);
+      this.#records[slot] = ColorRecordEntity.intake(clusters[slot]!.centroid);
     }
     this.#distances = new Float64Array(this.#size * this.#size);
     for (let first = 0; first < this.#size; first++) {
@@ -149,7 +149,7 @@ class ClusterDistanceMatrix {
     const absorbedSlot = this.#active[pair.secondIndex]!;
     const merged = Centroids.merge(this.#clusters[keptSlot]!, this.#clusters[absorbedSlot]!);
     this.#clusters[keptSlot] = merged;
-    this.#records[keptSlot] = ColorRecordInterfaceTypeEntity.intake(merged.centroid);
+    this.#records[keptSlot] = ColorRecordEntity.intake(merged.centroid);
     this.#active.splice(pair.secondIndex, 1);
     const activeCount = this.#active.length;
     for (let activeIndex = 0; activeIndex < activeCount; activeIndex++) {
@@ -188,9 +188,9 @@ class ClusterDistanceMatrix {
 class ClusterDeltaEMerge {
   readonly 'name' = 'clusterDeltaEMerge';
 
-  apply(colors: readonly ColorRecordInterfaceTypeEntity.Type[], k: number): ColorRecordInterfaceTypeEntity.Type[] {
+  apply(colors: readonly ColorRecordEntity.Type[], k: number): ColorRecordEntity.Type[] {
     if (colors.length === 0) {
-      const result: ColorRecordInterfaceTypeEntity.Type[] = [];
+      const result: ColorRecordEntity.Type[] = [];
       return result;
     }
     if (k < 1) {
@@ -216,10 +216,10 @@ class ClusterDeltaEMerge {
     }
     const clusters = matrix.clusters();
 
-    const result = new Array<ColorRecordInterfaceTypeEntity.Type>(clusters.length);
+    const result = new Array<ColorRecordEntity.Type>(clusters.length);
     const clusterCount = clusters.length;
     for (let clusterIndex = 0; clusterIndex < clusterCount; clusterIndex++) {
-      result[clusterIndex] = ColorRecordInterfaceTypeEntity.intake(clusters[clusterIndex]!.centroid);
+      result[clusterIndex] = ColorRecordEntity.intake(clusters[clusterIndex]!.centroid);
     }
     return result;
   }

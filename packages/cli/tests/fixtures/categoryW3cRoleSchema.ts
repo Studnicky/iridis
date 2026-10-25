@@ -1,6 +1,6 @@
-import { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis';
+import { RoleSchemaEntity } from '@studnicky/iridis';
 
-export const categoryW3cRoleSchema = RoleSchemaInterfaceTypeEntity.create({
+export const categoryW3cRoleSchema = RoleSchemaEntity.create({
   'contrastPairs': [
     { 'algorithm': 'wcag21', 'background': 'canvas', 'foreground': 'text', 'minimumContrastRatio': 4.5 },
     { 'algorithm': 'wcag21', 'background': 'surface', 'foreground': 'text', 'minimumContrastRatio': 4.5 },

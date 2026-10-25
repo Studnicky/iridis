@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.14.0
+
+### Patch Changes
+
+- Updated dependencies [0ac5b09]
+- Updated dependencies [4b6918d]
+- Updated dependencies [646d87d]
+- Updated dependencies [6eb117b]
+- Updated dependencies [f904046]
+- Updated dependencies [13ca891]
+- Updated dependencies [6f3c284]
+- Updated dependencies [8116e75]
+- Updated dependencies [fda1be3]
+  - @studnicky/iridis@0.14.0
+  - @studnicky/iridis-contrast@0.14.0
+  - @studnicky/iridis-algebra@0.14.0
+
 ## 0.13.2
 
 ### Patch Changes

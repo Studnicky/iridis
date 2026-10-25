@@ -10,7 +10,7 @@ The implementation target is the `site` application. The migration preserves the
 
 This is a future-architecture plan. `PaletteSession`, `PaletteSessionStore`, `PaletteSessionMachine`, and their bus topics are not current site modules.
 
-The current 0.13.1 site separates image extraction from role resolution: the combine path ends after intake, histogram, candidate extraction, extraction, and harmonisation; the seed watcher performs the one role, contrast, and CVD resolution pass. The colour graph retains layout geometry across palette-only revisions and applies structural buffers only when its structure key changes. The visualization profile gate detects a frozen or severely delayed graph, carousel, or Mermaid viewport under its headless environment.
+The current 0.14.0 site separates image extraction from role resolution: the combine path ends after intake, histogram, candidate extraction, extraction, and harmonisation; the seed watcher performs the one role, contrast, and CVD resolution pass. The colour graph retains layout geometry across palette-only revisions and applies structural buffers only when its structure key changes. The visualization profile gate detects a frozen or severely delayed graph, carousel, or Mermaid viewport under its headless environment.
 
 ## Current Architecture Evidence and Risks
 

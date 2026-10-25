@@ -5,6 +5,8 @@ import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
 import { useNavigationTargets } from '~/composables/useNavigationTargets.ts';
 import { buildSchemaComplianceSummaries } from './schema/buildSchemaComplianceSummaries.ts';
+import { buildSchemaFeasibilityRows } from './schema/buildSchemaFeasibilityRows.ts';
+import { ContrastChoiceModels } from './contrastChoiceModels.ts';
 import SchemaSelector from './SchemaSelector.vue';
 
 /**
@@ -16,20 +18,24 @@ import SchemaSelector from './SchemaSelector.vue';
  * their own Derivation Relations card (see DerivationRelations.vue).
  */
 const {
-  schemaName, contrastStrictness, colorSpace,
-  contrastReport, enabledOptionalStages
+  schemaName, contrastStrictness, cvdMode, enableStrictCompliance, nonMandatoryLevel, colorSpace,
+  contrastReport, schemaFeasibilityChecking, schemaFeasibilityReport
 } = useIridis();
 const { send } = useIridisUiMachine();
 const { activateTarget } = useNavigationTargets();
 
-/** Compact pass/fail summary badges for whichever optional stages are currently enabled. */
+/** Pass/fail summary badge for the selected contrast standard. */
 const stageSummaries = computed(() => {
-  const reports = {
-    'aa': contrastReport.value.aa,
-    'aaa': contrastReport.value.aaa,
-    'apca': contrastReport.value.apca
-  };
-  const result = buildSchemaComplianceSummaries.build(enabledOptionalStages.value, reports);
+  const result = buildSchemaComplianceSummaries.build(contrastReport.value.compliance, {
+    'cvdMode': cvdMode.value,
+    'strictCompliance': enableStrictCompliance.value ? 'on' : 'off',
+    'nonMandatoryLevel': nonMandatoryLevel.value
+  });
+  return result;
+});
+
+const feasibilityRows = computed(() => {
+  const result = buildSchemaFeasibilityRows.build(schemaFeasibilityReport.value);
   return result;
 });
 
@@ -40,6 +46,18 @@ function updateColorSpace(colorSpace: 'displayP3' | 'srgb'): void {
 
 function updateContrastStrictness(strictness: number): void {
   send(IridisUiEvent.setContrastStrictness(strictness));
+}
+
+function updateCvdMode(value: string): void {
+  send(IridisUiEvent.setCvdMode(value));
+}
+
+function updateEnableStrictCompliance(value: boolean): void {
+  send(value ? IridisUiEvent.enableStrictCompliance() : IridisUiEvent.disableStrictCompliance());
+}
+
+function updateNonMandatoryLevel(value: string): void {
+  send(IridisUiEvent.setNonMandatoryLevel(value));
 }
 </script>
 
@@ -80,6 +98,26 @@ function updateContrastStrictness(strictness: number): void {
           :strictness="contrastStrictness"
           @update="updateContrastStrictness"
         />
+        <ContrastChoiceControl
+          :model="ContrastChoiceModels.nonMandatoryLevel"
+          :selected="nonMandatoryLevel"
+          @update="updateNonMandatoryLevel"
+        />
+        <ContrastChoiceControl
+          :model="ContrastChoiceModels.cvdMode"
+          :selected="cvdMode"
+          @update="updateCvdMode"
+        />
+        <SectionIntro
+          title="Strict compliance"
+          body="When on, a palette that cannot meet the selected standard is withheld and the last compliant palette stays; when off, the closest palette renders with its shortfall report."
+        >
+          <USwitch
+            :model-value="enableStrictCompliance"
+            label="Strict compliance"
+            @update:model-value="updateEnableStrictCompliance"
+          />
+        </SectionIntro>
         <div class="flex justify-end">
           <UButton
             label="Open CVD panel"
@@ -93,5 +131,51 @@ function updateContrastStrictness(strictness: number): void {
     </div>
 
     <SchemaComplianceFooter :stage-summaries="stageSummaries" />
+
+    <SectionIntro
+      title="Schema reachability"
+      body="Checks whether each declared pair is reachable inside its authored constraints."
+    >
+      <p
+        v-if="schemaFeasibilityChecking"
+        class="text-sm text-muted"
+        aria-live="polite"
+      >
+        Checking schema reachability…
+      </p>
+      <ul
+        v-if="feasibilityRows.length > 0"
+        class="space-y-2"
+      >
+        <li
+          v-for="row in feasibilityRows"
+          :key="row.id"
+          class="rounded-md border border-default px-3 py-2"
+        >
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-sm text-highlighted">{{ row.label }}</span>
+            <UBadge
+              :color="row.color"
+              variant="soft"
+              size="xs"
+            >
+              {{ row.status }}
+            </UBadge>
+          </div>
+          <p
+            v-if="row.detail !== ''"
+            class="mt-1 text-xs text-muted"
+          >
+            {{ row.detail }}
+          </p>
+        </li>
+      </ul>
+      <p
+        v-else-if="!schemaFeasibilityChecking"
+        class="text-sm text-muted"
+      >
+        Schema reachability is pending.
+      </p>
+    </SectionIntro>
   </div>
 </template>

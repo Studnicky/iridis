@@ -1,10 +1,10 @@
 import {
-  type ColorRecordInterfaceTypeEntity,
+  type ColorRecordEntity,
   CssVarName,
   type PaletteStateInterface,
   type PipelineContextInterface,
   type TaskInterface,
-  TaskManifestInterfaceTypeEntity
+  TaskManifestEntity
 } from '@studnicky/iridis';
 
 import type { CssVarsOutputInterface } from '../interfaces/CssVarsOutputInterface.ts';
@@ -36,7 +36,7 @@ import { P3Serializer } from '../util/P3Serializer.ts';
  * schemas remain legible against a default Canvas background rather
  * than disappearing into it. Roles that need a different forced-colors
  * mapping MUST declare an `intent` on the schema; see
- * {@link RoleDefinitionInterfaceType.intent}.
+ * {@link RoleDefinitionEntity.intent}.
  */
 class ForcedColorsToken {
   static readonly #tokens = new Map<string, string>([
@@ -45,7 +45,7 @@ class ForcedColorsToken {
     ['onAccent', 'HighlightText'], ['onButton', 'ButtonText'], ['positive', 'CanvasText'], ['text', 'CanvasText']
   ]);
 
-  static resolve(record: ColorRecordInterfaceTypeEntity.Type): string {
+  static resolve(record: ColorRecordEntity.Type): string {
     const result = ForcedColorsToken.#tokens.get(record.hints?.intent ?? '') ?? 'CanvasText';
     return result;
   }
@@ -53,7 +53,7 @@ class ForcedColorsToken {
 
 class Declarations {
   static build(
-    roles: Record<string, ColorRecordInterfaceTypeEntity.Type>,
+    roles: Record<string, ColorRecordEntity.Type>,
     prefix: string
   ): string[] {
     const result = Object.entries(roles).map(([role, record]) => {
@@ -66,7 +66,7 @@ class Declarations {
 
 class RootBlock {
   static build(
-    roles: Record<string, ColorRecordInterfaceTypeEntity.Type>,
+    roles: Record<string, ColorRecordEntity.Type>,
     prefix: string
   ): string {
     const decls = Declarations.build(roles, prefix);
@@ -76,7 +76,7 @@ class RootBlock {
 
 class ScopedBlock {
   static build(
-    roles: Record<string, ColorRecordInterfaceTypeEntity.Type>,
+    roles: Record<string, ColorRecordEntity.Type>,
     prefix: string,
     scopeAttr: string | undefined,
     scopeName: string
@@ -101,7 +101,7 @@ class IndentedDeclarations {
 
 class DarkSchemeBlock {
   static build(
-    darkRoles: Record<string, ColorRecordInterfaceTypeEntity.Type>,
+    darkRoles: Record<string, ColorRecordEntity.Type>,
     prefix: string
   ): string {
     const decls = Declarations.build(darkRoles, prefix);
@@ -111,7 +111,7 @@ class DarkSchemeBlock {
 
 class ForcedColorsBlock {
   static build(
-    roles: Record<string, ColorRecordInterfaceTypeEntity.Type>,
+    roles: Record<string, ColorRecordEntity.Type>,
     prefix: string
   ): string {
     const decls = Object.entries(roles).map(([role, record]) => {
@@ -140,7 +140,7 @@ class ForcedColorsBlock {
  */
 class WideGamutBlock {
   static build(
-    roles: Record<string, ColorRecordInterfaceTypeEntity.Type>,
+    roles: Record<string, ColorRecordEntity.Type>,
     prefix: string
   ): string {
     const p3Decls: string[] = [];
@@ -162,7 +162,7 @@ class WideGamutBlock {
 
 class VarMap {
   static build(
-    roles: Record<string, ColorRecordInterfaceTypeEntity.Type>,
+    roles: Record<string, ColorRecordEntity.Type>,
     prefix: string
   ): Record<string, string> {
     const map: Record<string, string> = {};
@@ -185,7 +185,7 @@ class VarMap {
 class EmitCssVars implements TaskInterface {
   readonly name = 'emit:cssVars';
 
-  readonly manifest: TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
+  readonly manifest: TaskManifestEntity.Type = TaskManifestEntity.create({
     'description': 'Emit CSS custom property blocks from resolved roles and variants',
     'name':        'emit:cssVars',
     'reads':       ['roles', 'variants', 'metadata'],

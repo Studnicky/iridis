@@ -4,9 +4,9 @@ import { registerHooks } from 'node:module';
 import { test } from 'node:test';
 import { createRenderer, h } from 'vue';
 
-import type { OutputRowInterfaceTypeEntity } from '../app/composables/entities/OutputRowInterfaceTypeEntity.ts';
+import type { OutputRowEntity } from '../app/composables/entities/OutputRowEntity.ts';
 
-import { SchemaNameInterfaceTypeEntity } from '../app/composables/entities/SchemaNameInterfaceTypeEntity.ts';
+import { SchemaNameEntity } from '../app/composables/entities/SchemaNameEntity.ts';
 import { OUTPUT_FORMAT_CARDS } from '../app/composables/outputFormatCards.ts';
 import { IridisUiEvent } from '../app/composables/types/iridisUiEvent.ts';
 import * as NuxtImportsLoader from './fixtures/NuxtImportsLoader.mjs';
@@ -97,8 +97,8 @@ class HostOperations {
 
 class OutputHarness {
   static readonly state: {
-    'operation': (() => { readonly 'outputsByKey': { 'value': Record<string, OutputRowInterfaceTypeEntity.Type | undefined> } }) | undefined;
-    'outputs': { 'value': Record<string, OutputRowInterfaceTypeEntity.Type | undefined> } | undefined;
+    'operation': (() => { readonly 'outputsByKey': { 'value': Record<string, OutputRowEntity.Type | undefined> } }) | undefined;
+    'outputs': { 'value': Record<string, OutputRowEntity.Type | undefined> } | undefined;
   } = { 'operation': undefined, 'outputs': undefined };
 
   static render() {
@@ -128,10 +128,10 @@ await test('useMultiOutput uses the current framing for non-VS-Code outputs and 
   const { useMultiOutput } = await import('../app/composables/useMultiOutput.ts');
   const iridis = useIridis();
   assert.throws(() => {
-    const schemaName = SchemaNameInterfaceTypeEntity.intake('not-registered');
+    const schemaName = SchemaNameEntity.intake('not-registered');
     return schemaName;
   });
-  iridis.schemaName.value = SchemaNameInterfaceTypeEntity.defaultValue;
+  iridis.schemaName.value = SchemaNameEntity.defaultValue;
   iridis.send(IridisUiEvent.setLightFraming());
   assert.equal(iridis.framing.value, 'light');
 

@@ -1,15 +1,15 @@
-import { ViewportStatusOptionsInterfaceTypeEntity } from './ViewportStatusOptionsInterfaceTypeEntity.ts';
+import { ViewportStatusOptionsEntity } from './ViewportStatusOptionsEntity.ts';
 
 interface ViewportStatusFormattingInterface {
   formatZoom?(zoomLevel: number | null): string | null;
 }
 
 class ViewportStatusModel {
-  readonly #options: ViewportStatusOptionsInterfaceTypeEntity.Type;
+  readonly #options: ViewportStatusOptionsEntity.Type;
   readonly #zoomText: string | null;
 
   public constructor(
-    options: ViewportStatusOptionsInterfaceTypeEntity.Type,
+    options: ViewportStatusOptionsEntity.Type,
     zoomText: string | null
   ) {
     this.#options = options;
@@ -31,7 +31,7 @@ class ViewportStatusModel {
     return result;
   }
 
-  public get mode(): ViewportStatusOptionsInterfaceTypeEntity.Type['mode'] {
+  public get mode(): ViewportStatusOptionsEntity.Type['mode'] {
     const result = this.#options.mode;
     return result;
   }
@@ -49,9 +49,9 @@ class ViewportStatusModel {
 
 export const ViewportStatus = class ViewportStatus {
   public static create(
-    options: ViewportStatusFormattingInterface & ViewportStatusOptionsInterfaceTypeEntity.Type
+    options: ViewportStatusFormattingInterface & ViewportStatusOptionsEntity.Type
   ): ViewportStatusModel {
-    const normalized = ViewportStatusOptionsInterfaceTypeEntity.intake({
+    const normalized = ViewportStatusOptionsEntity.intake({
       'canFit': options.canFit ?? true,
       'canPan': options.canPan ?? true,
       'hint': options.hint === undefined ? 'drag · wheel' : options.hint,

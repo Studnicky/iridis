@@ -480,7 +480,7 @@ onBeforeUnmount(() => {
      dark glass card in dark framing but fails AA/AAA in light framing, where
      the same shade sits on a near-white tinted surface. --ui-text-highlighted
      is one of the engine's actual contrast-ENFORCED roles (text-strong vs
-     background, verified by enforce:contrast) — same as this card's own
+     background, verified by enforce:compliance) — same as this card's own
      93%-background glass surface — so it stays compliant in both framings.
      The glow stays purely in the text-shadow, which doesn't touch fill
      contrast. */

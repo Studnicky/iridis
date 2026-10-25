@@ -22,7 +22,7 @@ Every task registered by the core engine and by each official plugin, grouped by
 | `clamp:count` | `colors`, `input.maxColors`, `input.bypass` | `colors` | — | Reduces colors to `maxColors` (default 64) via weighted median-cut clustering when exceeded. |
 | `resolve:roles` | `colors`, `input.roles`, `metadata` | `roles`, `metadata` | — | Assigns colors to schema roles by hint match then OKLCH distance, then nudges into declared ranges. |
 | `expand:family` | `roles`, `input.roles`, `metadata` | `roles` | — | Derives missing roles with `derivedFrom` set, applying OKLCH deltas from the source role. |
-| `enforce:contrast` | `roles`, `input.roles`, `input.contrast` | `roles`, `metadata['core:contrastReport']` | — | Enforces every declared WCAG contrast pair, including `minRatio` and optional `maxRatio` bounds. |
+| `enforce:contrast` | `roles`, `input.roles`, `input.contrast` | `roles`, `metadata['core:contrastReport']` | — | Core stage over the shared contrast policy: enforces every declared contrast pair, including `minRatio` and optional `maxRatio` bounds, moves only derived endpoints, preserves stated roles, and writes the typed `{compliant, pairs}` object to `core:contrastReport`. |
 | `derive:variant` | `roles`, `metadata['core:variantConfig']` | `variants` | — | Produces light/dark variants by transforming all roles. |
 | `emit:json` | `colors`, `roles`, `variants` | `outputs['core:json']` | — | Writes `outputs['core:json']` with `{colors, roles, variants}` flattened to hex strings. |
 
@@ -30,10 +30,9 @@ Every task registered by the core engine and by each official plugin, grouped by
 
 | Task | Reads | Writes | Requires | Description |
 |---|---|---|---|---|
-| `enforce:wcagAA` | `input.roles.contrastPairs`, `roles` | `roles`, `metadata['contrast:aa']` | — | Enforces WCAG 2.1 AA contrast (4.5:1 normal text, 3:1 large/UI) on all role pairs. |
-| `enforce:wcagAAA` | `input.roles.contrastPairs`, `roles` | `roles`, `metadata['contrast:aaa']` | — | Enforces WCAG 2.1 AAA contrast (7:1 normal text, 4.5:1 large/UI). |
-| `enforce:apca` | `input.roles.contrastPairs`, `roles` | `roles`, `metadata['contrast:apca']` | — | Enforces APCA (WCAG 3 draft) Lc targets: 75 body text, 60 fluent text, 45 non-text UI. |
-| `enforce:cvdSimulate` | `input.roles.contrastPairs`, `input.contrast.cvdCorrect`, `roles` | `roles`, `metadata['contrast:cvd']` | — | Simulates protanopia/deuteranopia/tritanopia/achromatopsia against published thresholds; advisory by default, auto-corrects when `input.contrast.cvdCorrect` is true. |
+| `enforce:compliance` | `roles`, `input.roles`, `input.contrast`, `metadata['core:roleProvenance']` | `roles`, `metadata['contrast:cvd']`, `metadata['contrast:complianceReport']` | — | Resolves the selected standard (`input.contrast`) over every declared pair, runs CVD correction as a validator and refiner of the same policy, and moves only derived endpoints. Stated roles keep their exact color. |
+| `report:compliance` | `roles`, `metadata['contrast:cvd']` | `metadata['contrast:complianceReport']` | — | Measures the final roles and writes `{compliant, disposition, selected, pairs, problemPairs}`, where `disposition` is `resolved`, `best-effort` or `withheld`, `problemPairs` is the failing subset of `pairs`, and each pair carries `required`, `actual`, `shortfall`, `adjustedRoles` and `constraints`, and a failing pair may carry a `proof` with its best reachable value and limiting bounds. |
+| `withhold:compliance` | `roles`, `variants`, `input.contrast`, `metadata['contrast:complianceReport']` | `roles`, `variants`, `metadata['contrast:complianceReport']` | — | Runs last. When `input.contrast.enableStrictCompliance` is true and the report has problem pairs, sets the report `disposition` to `withheld` and keeps the roles and variants as the closest palette; the consumer decides whether to admit it. Otherwise the closest palette is the result. |
 
 ## `@studnicky/iridis-image`
 

@@ -15,9 +15,9 @@
  *   defaultLibrary:         Subtle, blend toward muted (built-in, not user code)
  */
 
-import type { ModifierTransformInterfaceTypeEntity } from '../entities/ModifierTransformInterfaceTypeEntity.ts';
+import type { ModifierTransformEntity } from '../entities/ModifierTransformEntity.ts';
 
-export const MODIFIER_TRANSFORMS: Readonly<Record<string, ModifierTransformInterfaceTypeEntity.Type>> = {
+export const MODIFIER_TRANSFORMS: Readonly<Record<string, ModifierTransformEntity.Type>> = {
   'abstract':       { 'fontStyle': 'italic', 'lightness': 3, 'saturation': -8 },
   'async':          { 'fontStyle': 'italic', 'mixWeight': 0.12, 'mixWith': 'info' },
   'declaration':    { 'fontStyle': 'bold', 'lightness': 5 },

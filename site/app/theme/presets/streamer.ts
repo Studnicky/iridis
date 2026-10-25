@@ -1,10 +1,10 @@
-import type { ThemeDefinitionInterfaceType } from '../ThemeDefinitionInterfaceType.ts';
+import type { ThemeDefinitionInterface } from '../ThemeDefinitionInterface.ts';
 
 import { DataLayoutStrategy } from '../DataLayoutStrategy.ts';
 import { renderStar } from '../particles/renderStar.ts';
 
 /** Twitch/YouTube stream-overlay energy — bursting star particles plus a bottom-edge alert-glow pulse (./streamer.css), fastest pace of any theme. The lava-lamp goo wash is Futuristic's own signature effect now. Visual (fonts/radius/border) lives in ./streamer.css. */
-export const streamer: ThemeDefinitionInterfaceType = {
+export const streamer: ThemeDefinitionInterface = {
   'ambient': {
     'blobCount':       0,
     'gooFilter':       'none',

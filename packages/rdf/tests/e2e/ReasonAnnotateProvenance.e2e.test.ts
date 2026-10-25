@@ -1,11 +1,11 @@
 import type { PaletteStateInterface, TaskInterface } from '@studnicky/iridis';
 
 import {
-  InputInterfaceTypeEntity,
+  InputEntity,
   Metadata,
-  RoleProvenanceInterfaceTypeEntity,
-  RoleSchemaInterfaceTypeEntity,
-  TaskManifestInterfaceTypeEntity
+  RoleProvenanceEntity,
+  RoleSchemaEntity,
+  TaskManifestEntity
 } from '@studnicky/iridis';
 import { iridisVocab, rdfPlugin } from '@studnicky/iridis-rdf';
 import { Engine }    from '@studnicky/iridis/engine';
@@ -17,7 +17,7 @@ import { test } from 'node:test';
 class ProvenanceFixtureTask implements TaskInterface {
   readonly 'name' = 'test:install-provenance';
 
-  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest' = TaskManifestEntity.create({
     'description': 'Install controlled canonical role provenance for RDF annotation tests',
     'name':        'test:install-provenance',
     'reads':       ['roles'],
@@ -30,7 +30,7 @@ class ProvenanceFixtureTask implements TaskInterface {
       throw new Error('derived role must resolve before provenance installation');
     }
     const provenance = new Map([
-      ['derived', RoleProvenanceInterfaceTypeEntity.create({
+      ['derived', RoleProvenanceEntity.create({
         'adjustments': [{
           'afterHex':  derived.hex,
           'beforeHex': '#010203',
@@ -38,7 +38,7 @@ class ProvenanceFixtureTask implements TaskInterface {
         }],
         'origin': 'derived'
       })],
-      ['stated', RoleProvenanceInterfaceTypeEntity.create({
+      ['stated', RoleProvenanceEntity.create({
         'adjustments': [],
         'origin':      'stated'
       })]
@@ -60,9 +60,9 @@ class RdfProvenanceFixture {
     engine.adopt(rdfPlugin);
     engine.pipeline(['intake:hex', 'resolve:roles', 'test:install-provenance', 'reason:annotate']);
 
-    const state = engine.run(InputInterfaceTypeEntity.create({
+    const state = engine.run(InputEntity.create({
       'colors': ['#a898c3', '#10161f'],
-      'roles': RoleSchemaInterfaceTypeEntity.create({
+      'roles': RoleSchemaEntity.create({
         'name': 'rdf-provenance',
         'roles': [
           { 'name': 'stated', 'required': true },

@@ -1,12 +1,12 @@
 import type { PaletteStateInterface } from '@studnicky/iridis';
 
-import { InputInterfaceTypeEntity, RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis';
+import { InputEntity, RoleSchemaEntity } from '@studnicky/iridis';
 
 import { ContrastTestPort } from '../../contrast-plugin/ContrastTestPort.ts';
 
 /** Canonical CVD test inputs and engine boundary used by the CVD scenario suite. */
 export class CvdScenarioFixture {
-  static readonly redGreenRoles = RoleSchemaInterfaceTypeEntity.intake({
+  static readonly redGreenRoles = RoleSchemaEntity.intake({
     'contrastPairs': [{ 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 1 }],
     'name': 'cvd-red-green',
     'roles': [
@@ -15,7 +15,7 @@ export class CvdScenarioFixture {
     ]
   });
 
-  static readonly blueYellowRoles = RoleSchemaInterfaceTypeEntity.intake({
+  static readonly blueYellowRoles = RoleSchemaEntity.intake({
     'contrastPairs': [{ 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 1 }],
     'name': 'cvd-blue-yellow',
     'roles': [
@@ -24,7 +24,7 @@ export class CvdScenarioFixture {
     ]
   });
 
-  static readonly isoluminantRoles = RoleSchemaInterfaceTypeEntity.intake({
+  static readonly isoluminantRoles = RoleSchemaEntity.intake({
     'contrastPairs': [{ 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 1 }],
     'name': 'cvd-isolum',
     'roles': [
@@ -33,7 +33,7 @@ export class CvdScenarioFixture {
     ]
   });
 
-  static readonly blackWhiteRoles = RoleSchemaInterfaceTypeEntity.intake({
+  static readonly blackWhiteRoles = RoleSchemaEntity.intake({
     'contrastPairs': [{ 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 1 }],
     'name': 'cvd-black-white',
     'roles': [
@@ -42,7 +42,7 @@ export class CvdScenarioFixture {
     ]
   });
 
-  static readonly darkAccentRoles = RoleSchemaInterfaceTypeEntity.intake({
+  static readonly darkAccentRoles = RoleSchemaEntity.intake({
     'contrastPairs': [{ 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 1 }],
     'name': 'cvd-dark-accent',
     'roles': [
@@ -51,7 +51,7 @@ export class CvdScenarioFixture {
     ]
   });
 
-  static readonly darkOnAccentRoles = RoleSchemaInterfaceTypeEntity.intake({
+  static readonly darkOnAccentRoles = RoleSchemaEntity.intake({
     'contrastPairs': [{ 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 1 }],
     'name': 'cvd-dark-on-accent',
     'roles': [
@@ -60,7 +60,7 @@ export class CvdScenarioFixture {
     ]
   });
 
-  static readonly sharedForegroundRoles = RoleSchemaInterfaceTypeEntity.intake({
+  static readonly sharedForegroundRoles = RoleSchemaEntity.intake({
     'contrastPairs': [
       { 'algorithm': 'wcag21', 'background': 'backgroundLow', 'foreground': 'text', 'minimumContrastRatio': 1 },
       { 'algorithm': 'wcag21', 'background': 'backgroundHigh', 'foreground': 'text', 'minimumContrastRatio': 1 }
@@ -73,7 +73,7 @@ export class CvdScenarioFixture {
     ]
   });
 
-  static readonly achromaticCorrectionRoles = RoleSchemaInterfaceTypeEntity.intake({
+  static readonly achromaticCorrectionRoles = RoleSchemaEntity.intake({
     'contrastPairs': [{ 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 1 }],
     'name': 'cvd-achromatic-correction',
     'roles': [
@@ -82,7 +82,7 @@ export class CvdScenarioFixture {
     ]
   });
 
-  static readonly extremumRoles = RoleSchemaInterfaceTypeEntity.intake({
+  static readonly extremumRoles = RoleSchemaEntity.intake({
     'contrastPairs': [{ 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 1 }],
     'name': 'cvd-extremum',
     'roles': [
@@ -91,7 +91,7 @@ export class CvdScenarioFixture {
     ]
   });
 
-  static readonly partialCorrectionRoles = RoleSchemaInterfaceTypeEntity.intake({
+  static readonly partialCorrectionRoles = RoleSchemaEntity.intake({
     'contrastPairs': [{ 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 1 }],
     'name': 'cvd-partial-correction',
     'roles': [
@@ -100,17 +100,19 @@ export class CvdScenarioFixture {
     ]
   });
 
-  static input(colors: InputInterfaceTypeEntity.Type['colors'], roles: RoleSchemaInterfaceTypeEntity.Type, cvdCorrect = false): InputInterfaceTypeEntity.Type {
-    const contrast = cvdCorrect ? { 'cvdCorrect': true } : undefined;
-    const result = InputInterfaceTypeEntity.intake({
+  static input(
+    colors: InputEntity.Type['colors'],
+    roles: RoleSchemaEntity.Type
+  ): InputEntity.Type {
+    const result = InputEntity.intake({
       'colors': colors,
-      ...(contrast === undefined ? {} : { 'contrast': contrast }),
+      'contrast': { 'cvdMode': 'warn' },
       'roles': roles
     });
     return result;
   }
 
-  static run(input: InputInterfaceTypeEntity.Type, pipeline: readonly string[]): PaletteStateInterface {
+  static run(input: InputEntity.Type, pipeline: readonly string[]): PaletteStateInterface {
     const engine = ContrastTestPort.createEngine();
     engine.pipeline([...pipeline]);
     const result = engine.run(input);

@@ -14,10 +14,10 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import type { ScenarioInterface } from '../_runner/ScenarioInterface.ts';
-import type { ColorRecordInterfaceTypeEntity } from '../../src/entities/ColorRecordInterfaceTypeEntity.ts';
+import type { ColorRecordEntity } from '../../src/entities/ColorRecordEntity.ts';
 
 import { ScenarioRunner } from '../_runner/ScenarioRunner.ts';
-import { ColorHintsInterfaceTypeEntity } from '../../src/entities/ColorHintsInterfaceTypeEntity.ts';
+import { ColorHintsEntity } from '../../src/entities/ColorHintsEntity.ts';
 import { clusterDeltaEMerge }   from '../../src/math/ClusterDeltaEMerge.ts';
 import { colorRecordFactory }   from '../../src/math/ColorRecordFactory.ts';
 
@@ -26,10 +26,10 @@ import { colorRecordFactory }   from '../../src/math/ColorRecordFactory.ts';
 // ---------------------------------------------------------------------------
 
 class TestClusterFixture {
-  static hex(code: string, weight?: number): ColorRecordInterfaceTypeEntity.Type {
+  static hex(code: string, weight?: number): ColorRecordEntity.Type {
     const hints = weight === undefined
       ? undefined
-      : ColorHintsInterfaceTypeEntity.create({ 'weight': weight });
+      : ColorHintsEntity.create({ 'weight': weight });
     const result = colorRecordFactory.fromHex(code, {
       ...(hints === undefined ? {} : { 'hints': hints }),
       'sourceFormat': 'hex'
@@ -50,33 +50,33 @@ class TestClusterFixture {
 // ---------------------------------------------------------------------------
 
 interface Cell1InputInterface {
-  readonly 'colors': readonly ColorRecordInterfaceTypeEntity.Type[];
+  readonly 'colors': readonly ColorRecordEntity.Type[];
   readonly 'k': number;
 }
 
 interface Cell1OutputInterface {
-  readonly 'result': ColorRecordInterfaceTypeEntity.Type[];
+  readonly 'result': ColorRecordEntity.Type[];
 }
 
 interface Cell2InputInterface {
-  readonly 'colors': readonly ColorRecordInterfaceTypeEntity.Type[];
+  readonly 'colors': readonly ColorRecordEntity.Type[];
   readonly 'k': number;
 }
 
 interface Cell2OutputInterface {
-  readonly 'clusters': ColorRecordInterfaceTypeEntity.Type[];
+  readonly 'clusters': ColorRecordEntity.Type[];
   readonly 'totalIn': number;
   readonly 'totalOut': number;
 }
 
 interface Cell3InputInterface {
-  readonly 'colors': readonly ColorRecordInterfaceTypeEntity.Type[];
+  readonly 'colors': readonly ColorRecordEntity.Type[];
   readonly 'k': number;
 }
 
 interface Cell3OutputInterface {
-  readonly 'original': ColorRecordInterfaceTypeEntity.Type | undefined;
-  readonly 'results': ColorRecordInterfaceTypeEntity.Type[];
+  readonly 'original': ColorRecordEntity.Type | undefined;
+  readonly 'results': ColorRecordEntity.Type[];
 }
 
 class ClusterDeltaEMergeScenarios {
@@ -273,8 +273,8 @@ class ClusterDeltaEMergeScenarios {
         },
         'input': {
           'colors': [
-            colorRecordFactory.fromRgb(0.2, 0.2, 0.2, { 'hints': ColorHintsInterfaceTypeEntity.create({ 'weight': 5 }), 'sourceFormat': 'rgb' }),
-            colorRecordFactory.fromRgb(0.3, 0.3, 0.3, { 'hints': ColorHintsInterfaceTypeEntity.create({ 'weight': 5 }), 'sourceFormat': 'rgb' })
+            colorRecordFactory.fromRgb(0.2, 0.2, 0.2, { 'hints': ColorHintsEntity.create({ 'weight': 5 }), 'sourceFormat': 'rgb' }),
+            colorRecordFactory.fromRgb(0.3, 0.3, 0.3, { 'hints': ColorHintsEntity.create({ 'weight': 5 }), 'sourceFormat': 'rgb' })
           ],
           'k': 1
         },
@@ -439,14 +439,14 @@ await test('ClusterDeltaEMerge preserves first-pair order for equal-distance mer
 });
 
 class ClusterDeltaEMergeScaleFixture {
-  static colors(count: number): ColorRecordInterfaceTypeEntity.Type[] {
+  static colors(count: number): ColorRecordEntity.Type[] {
     let seed = 20260920;
     const next = (): number => {
       seed = (seed * 1664525 + 1013904223) % 4294967296;
       const unit = seed / 4294967296;
       return unit;
     };
-    const result = new Array<ColorRecordInterfaceTypeEntity.Type>(count);
+    const result = new Array<ColorRecordEntity.Type>(count);
     for (let index = 0; index < count; index++) {
       result[index] = colorRecordFactory.fromOklch(0.2 + next() * 0.7, next() * 0.3, next() * 360, {
         'alpha': 1,
@@ -457,7 +457,7 @@ class ClusterDeltaEMergeScaleFixture {
     return result;
   }
 
-  static weight(colors: readonly ColorRecordInterfaceTypeEntity.Type[]): number {
+  static weight(colors: readonly ColorRecordEntity.Type[]): number {
     let total = 0;
     for (let index = 0; index < colors.length; index++) {
       total += colors[index]?.hints?.weight ?? 1;

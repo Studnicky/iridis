@@ -1,14 +1,14 @@
-import { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis';
+import { RoleSchemaEntity } from '@studnicky/iridis';
 
 import { VSCODE_ROLE_SCHEMAS_64 } from './VSCODE_ROLE_SCHEMAS_64.ts';
 
 /** Backward-compatible 16-role views of the canonical 64-role VS Code schemas. */
 class VscodeRoleSchemas16 {
-  static readonly dark: RoleSchemaInterfaceTypeEntity.Type = VscodeRoleSchemas16.baseView(VSCODE_ROLE_SCHEMAS_64.dark);
+  static readonly dark: RoleSchemaEntity.Type = VscodeRoleSchemas16.baseView(VSCODE_ROLE_SCHEMAS_64.dark);
 
-  static readonly light: RoleSchemaInterfaceTypeEntity.Type = VscodeRoleSchemas16.baseView(VSCODE_ROLE_SCHEMAS_64.light);
+  static readonly light: RoleSchemaEntity.Type = VscodeRoleSchemas16.baseView(VSCODE_ROLE_SCHEMAS_64.light);
 
-  static baseView(schema: RoleSchemaInterfaceTypeEntity.Type): RoleSchemaInterfaceTypeEntity.Type {
+  static baseView(schema: RoleSchemaEntity.Type): RoleSchemaEntity.Type {
     const roles = schema.roles.slice(0, 16);
     const roleNames = new Set<string>();
     for (let roleIndex = 0; roleIndex < roles.length; roleIndex += 1) {
@@ -22,7 +22,7 @@ class VscodeRoleSchemas16 {
       return included;
     });
     const description = schema.description?.replace('64-role', '16-role');
-    const result = RoleSchemaInterfaceTypeEntity.create({
+    const result = RoleSchemaEntity.create({
       ...(contrastPairs === undefined ? {} : { 'contrastPairs': contrastPairs }),
       ...(description === undefined ? {} : { 'description': description }),
       'name': schema.name.replace('64', '16'),

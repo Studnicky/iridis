@@ -1,6 +1,6 @@
 import type { FsmStepInterface } from '@studnicky/fsm/browser';
 
-import type { DerivationConfigInterfaceTypeEntity } from '../entities/DerivationConfigInterfaceTypeEntity.ts';
+import type { DerivationConfigEntity } from '../entities/DerivationConfigEntity.ts';
 import type { RoleSortKeyType } from './roleSortKeyType.ts';
 
 import { IridisUiEffect } from './iridisUiEffect.ts';
@@ -31,10 +31,12 @@ export abstract class IridisUiEvent {
   static selectImageMode(): IridisUiEvent { return new SelectImageModeIridisUiEvent(); }
   static selectPickerMode(): IridisUiEvent { return new SelectPickerModeIridisUiEvent(); }
   static setContrastStrictness(strictness: number): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_CONTRAST_STRICTNESS', IridisUiEffect.setContrastStrictness(strictness)); }
-  static setCvdCorrectionDisabled(): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_CVD_CORRECT', IridisUiEffect.setCvdCorrection(IridisUiEffect.cvdCorrectionDisabled())); }
-  static setCvdCorrectionEnabled(): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_CVD_CORRECT', IridisUiEffect.setCvdCorrection(IridisUiEffect.cvdCorrectionEnabled())); }
+  static disableStrictCompliance(): IridisUiEvent { return new EffectOnlyIridisUiEvent('DISABLE_STRICT_COMPLIANCE', IridisUiEffect.disableStrictCompliance()); }
+  static enableStrictCompliance(): IridisUiEvent { return new EffectOnlyIridisUiEvent('ENABLE_STRICT_COMPLIANCE', IridisUiEffect.enableStrictCompliance()); }
+  static setCvdMode(cvdMode: string): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_CVD_MODE', IridisUiEffect.setCvdMode(cvdMode)); }
+  static setNonMandatoryLevel(nonMandatoryLevel: string): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_NON_MANDATORY_LEVEL', IridisUiEffect.setNonMandatoryLevel(nonMandatoryLevel)); }
   static setDarkFraming(): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_FRAMING', IridisUiEffect.setFraming(IridisUiEffect.darkFraming())); }
-  static setDerivationConfig(config: DerivationConfigInterfaceTypeEntity.Type): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_DERIVATION_CONFIG', IridisUiEffect.setDerivationConfig(config)); }
+  static setDerivationConfig(config: DerivationConfigEntity.Type): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_DERIVATION_CONFIG', IridisUiEffect.setDerivationConfig(config)); }
   static setDeltaEImageAlgorithm(): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_IMAGE_ALGORITHM', IridisUiEffect.setImageAlgorithm(IridisUiEffect.deltaEImageAlgorithm())); }
   static setImageChromaRange(range: [number, number][]): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_IMAGE_CHROMA_RANGE', IridisUiEffect.setImageChromaRange(range)); }
   static setImageDeltaECap(cap: number): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_IMAGE_DELTA_E_CAP', IridisUiEffect.setImageDeltaECap(cap)); }

@@ -1,4 +1,4 @@
-import type { ColorRecordInterfaceTypeEntity } from '../entities/ColorRecordInterfaceTypeEntity.ts';
+import type { ColorRecordEntity } from '../entities/ColorRecordEntity.ts';
 
 import { clamp01 } from './Clamp01.ts';
 import { hslToRgb } from './HslToRgb.ts';
@@ -43,7 +43,7 @@ class Hue {
 class MixHsl {
   readonly 'name' = 'mixHsl';
 
-  apply(a: ColorRecordInterfaceTypeEntity.Type, b: ColorRecordInterfaceTypeEntity.Type, t: number): ColorRecordInterfaceTypeEntity.Type {
+  apply(a: ColorRecordEntity.Type, b: ColorRecordEntity.Type, t: number): ColorRecordEntity.Type {
     const tc = clamp01.apply(t);
 
     const hslA = rgbToHsl.apply(a.rgb.r, a.rgb.g, a.rgb.b);

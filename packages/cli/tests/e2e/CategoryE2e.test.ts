@@ -1,4 +1,4 @@
-import { Engine, InputInterfaceTypeEntity, type PaletteStateInterface } from '@studnicky/iridis';
+import { Engine, InputEntity, type PaletteStateInterface } from '@studnicky/iridis';
 import { CapacitorOutputsEntity, capacitorPlugin } from '@studnicky/iridis-capacitor';
 import { contrastPlugin } from '@studnicky/iridis-contrast';
 import { stylesheetPlugin } from '@studnicky/iridis-stylesheet';
@@ -24,19 +24,19 @@ class CategoryE2eFixture {
     return engine;
   }
 
-  static run(colors: InputInterfaceTypeEntity.Type['colors'], metadata: Record<string, string>): PaletteStateInterface {
+  static run(colors: InputEntity.Type['colors'], metadata: Record<string, string>): PaletteStateInterface {
     const engine = CategoryE2eFixture.createEngine();
     engine.pipeline([
       'intake:any',
       'resolve:roles',
       'expand:family',
-      'enforce:wcagAA',
+      'enforce:compliance',
       'derive:variant',
       'emit:cssVars',
       'emit:capacitorStatusBar',
       'emit:capacitorTheme'
     ]);
-    const input = InputInterfaceTypeEntity.create({
+    const input = InputEntity.create({
       'colors': colors,
       'contrast': { 'algorithm': 'wcag21', 'level': 'AA' },
       'metadata': metadata,

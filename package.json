@@ -9,6 +9,7 @@
       "@changesets/parse>js-yaml": "4.3.2",
       "@studnicky/json-tology": "0.27.1",
       "brace-expansion": ">=5.0.9",
+      "dompurify": "3.4.17",
       "eyereasoner>@rdfjs/types": "^1.1.0",
       "postcss": ">=8.5.18",
       "read-yaml-file>js-yaml": "3.15.2",
@@ -17,9 +18,11 @@
       "launch-editor": ">=2.14.2",
       "@apidevtools/json-schema-ref-parser>js-yaml": "4.3.2",
       "shell-quote": "1.11.0",
-      "@studnicky/fetch>undici": "8.11.2",
-      "@digitalbazaar/http-client>undici": "6.28.1",
-      "@nuxt/devtools": "3.4.3"
+      "@studnicky/fetch>undici": "8.12.2",
+      "@digitalbazaar/http-client>undici": "6.29.1",
+      "nuxt>undici": "8.12.2",
+      "@nuxt/devtools": "3.4.3",
+      "zod": "4.6.7"
     },
     "onlyBuiltDependencies": [
       "@parcel/watcher",
@@ -121,5 +124,5 @@
     "@studnicky/types": "^15.2.1",
     "@studnicky/virtual-fs": "^15.2.1"
   },
-  "version": "0.13.2"
+  "version": "0.14.0"
 }

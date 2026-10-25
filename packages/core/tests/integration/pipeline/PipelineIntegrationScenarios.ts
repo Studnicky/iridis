@@ -5,12 +5,12 @@ import type { EdgeInputsOutputEntity } from '../entities/EdgeInputsOutputEntity.
 import type { ErrorPathOutputEntity } from '../entities/ErrorPathOutputEntity.ts';
 import type { StateFlowOutputEntity } from '../entities/StateFlowOutputEntity.ts';
 
-import { InputInterfaceTypeEntity } from '../../../src/entities/InputInterfaceTypeEntity.ts';
+import { InputEntity } from '../../../src/entities/InputEntity.ts';
 import { EdgeInputsInputEntity } from '../entities/EdgeInputsInputEntity.ts';
 import { ErrorPathInputEntity } from '../entities/ErrorPathInputEntity.ts';
 
 export namespace PipelineIntegrationScenarios {
-  export const stateFlow: readonly ScenarioInterface<InputInterfaceTypeEntity.Type, StateFlowOutputEntity.Type>[] = [
+  export const stateFlow: readonly ScenarioInterface<InputEntity.Type, StateFlowOutputEntity.Type>[] = [
     {
       'assert': function(output, error) {
         assert.strictEqual(error, undefined, '[cell=1, scenario=single-seed] no throw');
@@ -20,7 +20,7 @@ export namespace PipelineIntegrationScenarios {
         assert.strictEqual(output?.primaryHex, '#8B5CF6', '[cell=1, scenario=single-seed] primary hex matches seed');
         assert.strictEqual(output?.stubVarValue, '#8B5CF6', '[cell=1, scenario=single-seed] stub output CSS var correct');
       },
-      'input': InputInterfaceTypeEntity.intake({
+      'input': InputEntity.intake({
         'colors': ['#8B5CF6'],
         'metadata': { 'source': 'integration-test' }
       }),
@@ -33,7 +33,7 @@ export namespace PipelineIntegrationScenarios {
         assert.strictEqual(output?.metaCategory, 'music', '[cell=1, scenario=metadata] category preserved');
         assert.strictEqual(output?.metaVersion, 2, '[cell=1, scenario=metadata] version preserved');
       },
-      'input': InputInterfaceTypeEntity.intake({
+      'input': InputEntity.intake({
         'colors': ['#ffffff'],
         'metadata': { 'category': 'music', 'version': 2 }
       }),

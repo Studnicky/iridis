@@ -2,12 +2,12 @@ import { ValidationError } from '@studnicky/errors/node';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
 import type { ColorInputEntity } from '../../entities/ColorInputEntity.ts';
-import type { ColorRecordInterfaceTypeEntity } from '../../entities/ColorRecordInterfaceTypeEntity.ts';
+import type { ColorRecordEntity } from '../../entities/ColorRecordEntity.ts';
 import type { PaletteStateInterface } from '../../interfaces/PaletteStateInterface.ts';
 import type { PipelineContextInterface } from '../../interfaces/PipelineContextInterface.ts';
 import type { TaskInterface } from '../../interfaces/TaskInterface.ts';
 
-import { TaskManifestInterfaceTypeEntity } from '../../entities/TaskManifestInterfaceTypeEntity.ts';
+import { TaskManifestEntity } from '../../entities/TaskManifestEntity.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 import { HEX_PATTERNS }       from './constants/HexPatterns.ts';
 import { IsImagePixelInput }  from './IsImagePixelInput.ts';
@@ -47,7 +47,7 @@ class Hex {
 class IntakeHex implements TaskInterface {
   readonly 'name' = 'intake:hex';
 
-  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest': TaskManifestEntity.Type = TaskManifestEntity.create({
     'description': 'Parses #RRGGBB, #RGB, #RGBA, and #RRGGBBAA hex strings into ColorRecord entries. Throws on non-hex input.',
     'name':        'intake:hex',
     'reads':       ['input.colors'],
@@ -58,7 +58,7 @@ class IntakeHex implements TaskInterface {
    * Parses a single value as a hex color. Throws when the input is not a
    * valid hex string. Used by IntakeAny for format dispatch (via try/catch).
    */
-  parse(raw: ColorInputEntity.Type): ColorRecordInterfaceTypeEntity.Type {
+  parse(raw: ColorInputEntity.Type): ColorRecordEntity.Type {
     if (typeof raw !== 'string') {
       throw ValidationError.create({
         'message': 'intake:hex — expected a string input',
@@ -111,7 +111,7 @@ class IntakeHex implements TaskInterface {
    * {@link IntakeHex.run} does not carry a try/catch in its body (V8
    * de-optimises try/catch inside hot loops).
    */
-  #tryParse(raw: ColorInputEntity.Type): ColorRecordInterfaceTypeEntity.Type | undefined {
+  #tryParse(raw: ColorInputEntity.Type): ColorRecordEntity.Type | undefined {
     try {
       const result = this.parse(raw);
       return result;

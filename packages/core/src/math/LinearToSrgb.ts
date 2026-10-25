@@ -1,24 +1,22 @@
-import { RgbInterfaceTypeEntity } from '../entities/RgbInterfaceTypeEntity.ts';
-
-class GammaEncode {
-  static channel(v: number): number {
-    if (v <= 0.0031308) {
-      const result = 12.92 * v;
-      return result;
-    }
-    const result = 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
-    return result;
-  }
-}
+import { RgbEntity } from '../entities/RgbEntity.ts';
 
 class LinearToSrgb {
   readonly 'name' = 'linearToSrgb';
 
-  apply(r: number, g: number, b: number): RgbInterfaceTypeEntity.Type {
-    const result = RgbInterfaceTypeEntity.create({
-      'b': GammaEncode.channel(b),
-      'g': GammaEncode.channel(g),
-      'r': GammaEncode.channel(r)
+  channel(value: number): number {
+    if (value <= 0.0031308) {
+      const result = 12.92 * value;
+      return result;
+    }
+    const result = 1.055 * Math.pow(value, 1 / 2.4) - 0.055;
+    return result;
+  }
+
+  apply(r: number, g: number, b: number): RgbEntity.Type {
+    const result = RgbEntity.create({
+      'b': this.channel(b),
+      'g': this.channel(g),
+      'r': this.channel(r)
     });
     return result;
   }

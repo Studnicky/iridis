@@ -1,11 +1,11 @@
 # @studnicky/iridis-vscode
 
-Generate a portable VS Code `theme.json` from an explicitly framed, tiered palette. The plugin resolves a 64-role vocabulary, emits 129 registry-backed workbench colours, semantic-token rules, and TextMate token colours. Every emitted colour is sRGB `#RRGGBB` or `#RRGGBBAA`.
+Generate a portable VS Code `theme.json` from an explicitly framed, tiered palette. The plugin resolves a 64-role vocabulary, emits 132 registry-backed workbench colours, semantic-token rules, and TextMate token colours. Every emitted colour is sRGB `#RRGGBB` or `#RRGGBBAA`.
 
 ## Install
 
 ```bash
-npm install @studnicky/iridis @studnicky/iridis-vscode
+npm install @studnicky/iridis @studnicky/iridis-contrast @studnicky/iridis-vscode
 ```
 
 Packages publish through GitHub Packages. Configure npm with a token that has `read:packages` access:
@@ -19,6 +19,7 @@ Packages publish through GitHub Packages. Configure npm with a token that has `r
 
 ```ts
 import { Engine, coreTasks } from '@studnicky/iridis';
+import { contrastPlugin } from '@studnicky/iridis-contrast';
 import {
   VSCODE_ROLE_SCHEMAS_64,
   vscodePlugin
@@ -27,12 +28,13 @@ import {
 const engine = new Engine();
 for (const task of coreTasks) engine.tasks.register(task);
 engine.adopt(vscodePlugin);
+engine.adopt(contrastPlugin);
 engine.pipeline([
   'vscode:seedRoles',
   'resolve:roles',
   'expand:family',
   'vscode:deriveUiRoles',
-  'enforce:contrast',
+  'enforce:compliance',
   'derive:variant',
   'vscode:expandTokens',
   'vscode:applyModifiers',
@@ -53,7 +55,7 @@ const state = engine.run({
       'error': '#ef4444'
     }
   }],
-  'contrast': undefined,
+  'contrast': { 'algorithm': 'wcag21', 'cvdMode': 'nudge', 'extra': undefined, 'level': 'AA' },
   'emit': undefined,
   'maxColors': undefined,
   'metadata': { 'themeName': 'Iridis Dark' },
@@ -68,7 +70,7 @@ const themeJson = state.outputs['vscode:themeJson'];
 
 ## Schemas and tiers
 
-Use `VSCODE_ROLE_SCHEMAS_64.dark` or `.light` for the declared framing. The schemas are explicit dark and light role definitions; light themes are generated through the light schema, not by inverting a dark output. `VSCODE_ROLE_SCHEMAS_16` exports a backward-compatible 16-role view of the same canonical definitions.
+Use `VSCODE_ROLE_SCHEMAS_64.dark` or `.light` for the declared framing. The schemas are explicit dark and light role definitions; light themes are generated through the light schema, not by inverting a dark output. `VSCODE_ROLE_SCHEMAS_16` exports a 16-role view of the same canonical definitions.
 
 | Tier | Exact supplied roles |
 |---|---|
@@ -77,7 +79,7 @@ Use `VSCODE_ROLE_SCHEMAS_64.dark` or `.light` for the declared framing. The sche
 | 16 | `background`, `foreground`, `surface`, `muted`, `keyword`, `type`, `function`, `variable`, `string`, `number`, `constant`, `comment`, `error`, `warning`, `info`, `success` |
 | 64 | The 16 base roles plus accent, UI, ANSI, Git, diff, bracket, and widget roles declared by `VSCODE_ROLE_SCHEMAS_64` |
 
-The schema declares WCAG pairs for foreground, muted text, syntax roles, status colours, `onAccent`, links, and chrome foreground. It also declares bounded pairs for `surface` and `accent`. The contrast task adjusts derived roles into the declared bands and reports a failing caller-stated pair without changing its colour.
+The schema declares WCAG pairs for foreground, muted text, syntax roles, status colours, `onAccent`, links, and chrome foreground. It also declares bounded pairs for `surface` and `accent`. The VS Code plugin consumes the same engine and the same `input.contrast` configuration as every other output. `enforce:compliance` applies the selected standard to these pairs and adjusts derived roles; a pair whose endpoints are both caller-stated is reported without changing either colour.
 
 ## Tasks
 

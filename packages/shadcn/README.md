@@ -19,27 +19,29 @@ the `@studnicky` scope before installing:
 ```
 
 ```bash
-npm install @studnicky/iridis @studnicky/iridis-shadcn
+npm install @studnicky/iridis @studnicky/iridis-contrast @studnicky/iridis-shadcn
 ```
 
 ## Usage
 
 ```ts
-import type { RoleSchemaInterfaceType } from '@studnicky/iridis';
+import type { RoleSchemaEntity } from '@studnicky/iridis';
 
 import { Engine, coreTasks } from '@studnicky/iridis';
+import { contrastPlugin } from '@studnicky/iridis-contrast';
 import { shadcnPlugin }      from '@studnicky/iridis-shadcn';
 
-export function generateShadcnTheme(roleSchema: RoleSchemaInterfaceType) {
+export function generateShadcnTheme(roleSchema: RoleSchemaEntity.Type) {
   const engine = new Engine();
   for (const task of coreTasks) engine.tasks.register(task);
   engine.adopt(shadcnPlugin);
+  engine.adopt(contrastPlugin);
 
   engine.pipeline([
     'intake:any',
     'resolve:roles',
     'expand:family',
-    'enforce:contrast',
+    'enforce:compliance',
     'emit:shadcnTheme',
   ]);
 
@@ -48,7 +50,7 @@ export function generateShadcnTheme(roleSchema: RoleSchemaInterfaceType) {
     'colors':   ['#8B5CF6'],
     'contrast': {
       'algorithm':  'wcag21',
-      'cvdCorrect': undefined,
+      'cvdMode': 'nudge',
       'extra':      undefined,
       'level':      'AA',
     },
@@ -67,7 +69,7 @@ export function generateShadcnTheme(roleSchema: RoleSchemaInterfaceType) {
 }
 ```
 
-`state.outputs['shadcn:theme']` is typed as `ShadcnOutputInterfaceType`:
+`state.outputs['shadcn:theme']` is typed as `ShadcnOutputEntity`:
 
 | Field | Shape | Notes |
 |---|---|---|

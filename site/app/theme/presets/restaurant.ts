@@ -1,4 +1,4 @@
-import type { ThemeDefinitionInterfaceType } from '../ThemeDefinitionInterfaceType.ts';
+import type { ThemeDefinitionInterface } from '../ThemeDefinitionInterface.ts';
 
 import { DataLayoutStrategy } from '../DataLayoutStrategy.ts';
 import { renderDot } from '../particles/renderDot.ts';
@@ -9,7 +9,7 @@ import { renderDot } from '../particles/renderDot.ts';
  * warmth instead comes entirely from a candlelight-flicker vignette wash
  * (./restaurant.css), researched from real CSS candle-flame techniques.
  */
-export const restaurant: ThemeDefinitionInterfaceType = {
+export const restaurant: ThemeDefinitionInterface = {
   'ambient': {
     'blobCount':       0,
     'gooFilter':       'none',

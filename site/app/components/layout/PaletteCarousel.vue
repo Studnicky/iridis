@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { colorRecordFactory } from '@studnicky/iridis';
-import { RoleSortableRowInterfaceTypeEntity } from '~/composables/entities/RoleSortableRowInterfaceTypeEntity.ts';
+import { RoleSortableRowEntity } from '~/composables/entities/RoleSortableRowEntity.ts';
 import { useDataLayout } from '~/composables/useDataLayout.ts';
 import { useIridis } from '~/composables/useIridis.ts';
 import { roleSchemaByName } from '~/theme/RoleSchemaByName.ts';
@@ -44,7 +44,7 @@ const sortedAliases = computed(() => {
     // so it never matches a declared contrast pair — minimumRatioForRole falls
     // back to the WCAG-AA default, which is what every alias's underlying
     // role (brand/accent-alt/success/…) already declares.
-    const row = RoleSortableRowInterfaceTypeEntity.create({
+    const row = RoleSortableRowEntity.create({
       'c': oklch.c,
       'compliance': complianceFor(ratio, minimumRatioForRole(schema, a.key)),
       'h': oklch.h,

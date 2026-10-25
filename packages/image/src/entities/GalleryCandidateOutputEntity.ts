@@ -1,7 +1,7 @@
 import type { CanonicalShapeType, NominalSchemaType } from '@studnicky/json-tology/types';
 
 import { EntityCompiler } from '@studnicky/entity/node';
-import { ColorRecordInterfaceTypeEntity } from '@studnicky/iridis';
+import { ColorRecordEntity } from '@studnicky/iridis';
 
 import { GalleryAlgorithmTypeEntity } from './GalleryAlgorithmTypeEntity.ts';
 
@@ -12,7 +12,7 @@ export namespace GalleryCandidateOutputEntity {
     'additionalProperties': false,
     'properties': {
       'algorithm': GalleryAlgorithmTypeEntity.Schema,
-      'colors':    { 'items': ColorRecordInterfaceTypeEntity.Schema, 'type': 'array' },
+      'colors':    { 'items': ColorRecordEntity.Schema, 'type': 'array' },
       'k':         { 'minimum': 0, 'type': 'number' },
       'label':     { 'type': 'string' }
     },

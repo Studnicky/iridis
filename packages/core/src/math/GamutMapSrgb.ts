@@ -63,7 +63,7 @@ class GamutMapSrgb {
 /**
  * UNCLAMPED OKLCH → linear sRGB check. A channel outside `[0, 1]`
  * indicates the point is outside the sRGB gamut. Encapsulated here so
- * the gamut-map binary search doesn't allocate `RgbInterfaceType` records.
+ * the gamut-map binary search doesn't allocate `RgbEntity` records.
  */
 class SrgbGamutCheck {
   static contains(l: number, c: number, h: number): boolean {

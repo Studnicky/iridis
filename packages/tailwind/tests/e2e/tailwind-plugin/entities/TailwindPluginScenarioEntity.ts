@@ -3,7 +3,7 @@ import type { TailwindOutputInterface } from '@studnicky/iridis-tailwind';
 import type { InferType } from '@studnicky/json-tology/types';
 
 import { EntityCompiler } from '@studnicky/entity/node';
-import { Engine, InputInterfaceTypeEntity, RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis';
+import { Engine, InputEntity, RoleSchemaEntity } from '@studnicky/iridis';
 import { tailwindPlugin } from '@studnicky/iridis-tailwind';
 import { coreTasks } from '@studnicky/iridis/tasks';
 
@@ -37,12 +37,12 @@ export namespace TailwindPluginScenarioEntity {
   export type Type = InferType<typeof Schema>;
 
   export interface InputInterface {
-    readonly 'colors': InputInterfaceTypeEntity.Type['colors'];
-    readonly 'contrast'?: InputInterfaceTypeEntity.Type['contrast'];
-    readonly 'emit'?: InputInterfaceTypeEntity.Type['emit'];
-    readonly 'metadata'?: InputInterfaceTypeEntity.Type['metadata'];
-    readonly 'roles'?: RoleSchemaInterfaceTypeEntity.Type;
-    readonly 'runtime'?: InputInterfaceTypeEntity.Type['runtime'];
+    readonly 'colors': InputEntity.Type['colors'];
+    readonly 'contrast'?: InputEntity.Type['contrast'];
+    readonly 'emit'?: InputEntity.Type['emit'];
+    readonly 'metadata'?: InputEntity.Type['metadata'];
+    readonly 'roles'?: RoleSchemaEntity.Type;
+    readonly 'runtime'?: InputEntity.Type['runtime'];
   }
 
   export const validate = EntityCompiler.compile<Type>(Schema);
@@ -62,8 +62,8 @@ export namespace TailwindPluginScenarioEntity {
       return engine;
     }
 
-    static createInput(value: InputInterface): InputInterfaceTypeEntity.Type {
-      const result = InputInterfaceTypeEntity.create({
+    static createInput(value: InputInterface): InputEntity.Type {
+      const result = InputEntity.create({
         'colors': value.colors,
         ...(value.contrast === undefined ? {} : { 'contrast': value.contrast }),
         ...(value.emit === undefined ? {} : { 'emit': value.emit }),
@@ -77,8 +77,8 @@ export namespace TailwindPluginScenarioEntity {
     static createRoleSchema(
       roleNames: readonly string[],
       options: { 'chromaRange'?: [number, number]; 'lightnessRange'?: [number, number]; } = {}
-    ): RoleSchemaInterfaceTypeEntity.Type {
-      const result = RoleSchemaInterfaceTypeEntity.intake({
+    ): RoleSchemaEntity.Type {
+      const result = RoleSchemaEntity.intake({
         'contrastPairs': undefined,
         'description': undefined,
         'name': 'test-schema',

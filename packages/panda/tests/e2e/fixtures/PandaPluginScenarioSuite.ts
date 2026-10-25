@@ -1,8 +1,8 @@
 import {
-  InputInterfaceTypeEntity,
+  InputEntity,
   type PaletteStateInterface,
-  RoleDefinitionInterfaceTypeEntity,
-  RoleSchemaInterfaceTypeEntity
+  RoleDefinitionEntity,
+  RoleSchemaEntity
 } from '@studnicky/iridis';
 import { pandaPlugin } from '@studnicky/iridis-panda';
 import { Engine } from '@studnicky/iridis/engine';
@@ -69,24 +69,24 @@ class PandaPluginScenarioFixture {
     return ['intake:hex', 'resolve:roles', 'emit:pandaTheme'];
   }
 
-  static roles(names: readonly string[]): RoleSchemaInterfaceTypeEntity.Type {
+  static roles(names: readonly string[]): RoleSchemaEntity.Type {
     const roles = names.map((name, index) => {
       const lightness = 0.1 + index * 0.07;
-      const role = RoleDefinitionInterfaceTypeEntity.create({
+      const role = RoleDefinitionEntity.create({
         'lightnessRange': [Math.max(0, lightness - 0.02), Math.min(1, lightness + 0.02)],
         'name': name,
         'required': true
       });
       return role;
     });
-    const schema = RoleSchemaInterfaceTypeEntity.create({ 'name': 'panda-e2e', 'roles': roles });
+    const schema = RoleSchemaEntity.create({ 'name': 'panda-e2e', 'roles': roles });
     return schema;
   }
 
-  static state(colors: InputInterfaceTypeEntity.Type['colors'], names: readonly string[]): PaletteStateInterface {
+  static state(colors: InputEntity.Type['colors'], names: readonly string[]): PaletteStateInterface {
     const engine = PandaPluginScenarioFixture.freshEngine();
     engine.pipeline(PandaPluginScenarioFixture.pipeline());
-    const input = InputInterfaceTypeEntity.intake({ 'colors': colors, 'roles': PandaPluginScenarioFixture.roles(names) });
+    const input = InputEntity.intake({ 'colors': colors, 'roles': PandaPluginScenarioFixture.roles(names) });
     const state = engine.run(input);
     return state;
   }
@@ -97,7 +97,7 @@ class PandaPluginScenarioFixture {
     return output;
   }
 
-  static theme(colors: InputInterfaceTypeEntity.Type['colors'], names: readonly string[]): ThemeWithRolesScenarioOutputInterface {
+  static theme(colors: InputEntity.Type['colors'], names: readonly string[]): ThemeWithRolesScenarioOutputInterface {
     const state = PandaPluginScenarioFixture.state(colors, names);
     const rolesHex = new Map<string, string>();
     const entries = Object.entries(state.roles);
@@ -369,7 +369,7 @@ export class PandaPluginScenarioSuite {
     const runner = new ScenarioRunner<true, undefined>('PandaPlugin :: invalid-input', (): undefined => {
       const engine = PandaPluginScenarioFixture.freshEngine();
       engine.pipeline(PandaPluginScenarioFixture.pipeline());
-      const input = InputInterfaceTypeEntity.intake({ 'colors': ['not-a-hex-color'], 'roles': PandaPluginScenarioFixture.roles(['brand']) });
+      const input = InputEntity.intake({ 'colors': ['not-a-hex-color'], 'roles': PandaPluginScenarioFixture.roles(['brand']) });
       engine.run(input);
       return undefined;
     });

@@ -1,13 +1,13 @@
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
-import type { ColorRecordInterfaceTypeEntity } from '../../entities/ColorRecordInterfaceTypeEntity.ts';
+import type { ColorRecordEntity } from '../../entities/ColorRecordEntity.ts';
 import type {
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface
 } from '../../types/index.ts';
 
-import { TaskManifestInterfaceTypeEntity } from '../../entities/TaskManifestInterfaceTypeEntity.ts';
+import { TaskManifestEntity } from '../../entities/TaskManifestEntity.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 import { OKLCH_RANGES } from './constants/OklchRanges.ts';
 
@@ -18,7 +18,7 @@ class OklchRangeGeometry {
   }
 
   static roleRangeFor(
-    color: ColorRecordInterfaceTypeEntity.Type,
+    color: ColorRecordEntity.Type,
     state: PaletteStateInterface
   ): { 'cRange': readonly [number, number]; 'lRange': readonly [number, number]; } {
     const roleName = color.hints?.role;
@@ -54,7 +54,7 @@ class OklchRangeGeometry {
 class ClampOklch implements TaskInterface {
   readonly 'name' = 'clamp:oklch';
 
-  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest': TaskManifestEntity.Type = TaskManifestEntity.create({
     'description': 'Clamps each color OKLCH L and C into role-defined ranges (or sensible defaults). Preserves hue.',
     'name':        'clamp:oklch',
     'reads':       ['colors', 'input.roles'],

@@ -4,14 +4,16 @@ import { buildRefinePaletteSeedGridModel } from './refine/buildRefinePaletteSeed
 
 const props = defineProps<{
   activeSeeds: readonly { hex: string; role?: string }[];
+  rejectedPinRoles: readonly string[];
   sortedPinnableRoles: readonly string[];
+  standardLabel: string;
 }>();
 
 const emit = defineEmits<{
   pin: [index: number, role: string | undefined];
 }>();
 
-const seedGridModel = computed(() => buildRefinePaletteSeedGridModel.build(props.activeSeeds));
+const seedGridModel = computed(() => buildRefinePaletteSeedGridModel.build(props.activeSeeds, props.rejectedPinRoles, props.standardLabel));
 
 function forwardPin(index: number, role: string | undefined): void {
   emit('pin', index, role);
@@ -34,6 +36,7 @@ function forwardPin(index: number, role: string | undefined): void {
         <SeedRolePicker
           :current-role="card.role"
           :index="i"
+          :pending-title="card.pendingTitle"
           :roles="sortedPinnableRoles"
           :seed-roles="seedGridModel.seedRoles"
           @pin="forwardPin"

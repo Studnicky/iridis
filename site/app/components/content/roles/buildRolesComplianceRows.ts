@@ -1,8 +1,8 @@
-import type { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis/model';
+import type { RoleSchemaEntity } from '@studnicky/iridis/model';
 
 import type { RoleSortKeyType } from '~/composables/types/roleSortKeyType.ts';
 
-import { RoleSortableRowInterfaceTypeEntity } from '~/composables/entities/RoleSortableRowInterfaceTypeEntity.ts';
+import { RoleSortableRowEntity } from '~/composables/entities/RoleSortableRowEntity.ts';
 import { sortRoleRows } from '~/utils/sortRoleRows.ts';
 
 
@@ -14,7 +14,7 @@ export const buildRolesComplianceRows = class RolesComplianceRows {
    * this read against the page background" intent in the first place.
    */
   private static structuralRole(
-    schema: RoleSchemaInterfaceTypeEntity.Type | undefined,
+    schema: RoleSchemaEntity.Type | undefined,
     roleName: string
   ): boolean {
     const contrastPairs = schema?.contrastPairs ?? [];
@@ -28,18 +28,18 @@ export const buildRolesComplianceRows = class RolesComplianceRows {
   }
 
   public static build(
-    schema: RoleSchemaInterfaceTypeEntity.Type | undefined,
-    rows: readonly RoleSortableRowInterfaceTypeEntity.Type[],
+    schema: RoleSchemaEntity.Type | undefined,
+    rows: readonly RoleSortableRowEntity.Type[],
     roleSortKeys: readonly RoleSortKeyType[]
-  ): RoleSortableRowInterfaceTypeEntity.Type[] {
-    const labeled: RoleSortableRowInterfaceTypeEntity.Type[] = [];
+  ): RoleSortableRowEntity.Type[] {
+    const labeled: RoleSortableRowEntity.Type[] = [];
     for (let index = 0; index < rows.length; index += 1) {
       const row = rows[index];
       if (row === undefined) {
         continue;
       }
       const isStructural = RolesComplianceRows.structuralRole(schema, row.name);
-      const labeledRow = RoleSortableRowInterfaceTypeEntity.create({ 'c': row.c, 'compliance': isStructural === true ? 'n/a' : row.compliance, 'h': row.h, 'hex': row.hex, 'l': row.l, 'name': row.name, 'ratio': row.ratio });
+      const labeledRow = RoleSortableRowEntity.create({ 'c': row.c, 'compliance': isStructural === true ? 'n/a' : row.compliance, 'h': row.h, 'hex': row.hex, 'l': row.l, 'name': row.name, 'ratio': row.ratio });
       labeled.push(labeledRow);
     }
     const behaviors = roleSortKeys.map((key) => { return key.behavior; });

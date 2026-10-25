@@ -1,11 +1,15 @@
-import type { ColorRecordInterfaceTypeEntity, PaletteStateInterface } from '@studnicky/iridis';
+import type { ColorRecordEntity, PaletteStateInterface, RoleSchemaEntity } from '@studnicky/iridis';
 import type { LoggerInterface } from '@studnicky/logger/interfaces';
 import type { JSONSchema7Type } from 'json-schema';
 
-import { InputInterfaceTypeEntity, RuntimeOptionsInterfaceTypeEntity } from '@studnicky/iridis';
-import { contrastPlugin, enforceCvdSimulate } from '@studnicky/iridis-contrast';
+import { ContrastPolicy, InputEntity, Metadata, PaletteRoleState, RoleProvenanceEntity, RuntimeOptionsEntity } from '@studnicky/iridis';
+import { contrastPlugin } from '@studnicky/iridis-contrast';
 import { Engine } from '@studnicky/iridis/engine';
 import { coreTasks } from '@studnicky/iridis/tasks';
+
+import { enforceCompliance } from '../../../src/tasks/EnforceCompliance.ts';
+import { enforceCvdSimulate } from '../../../src/tasks/EnforceCvdSimulate.ts';
+import { reportCompliance } from '../../../src/tasks/ReportCompliance.ts';
 
 /** Typed test boundary for complete contrast-plugin engine runs and direct CVD probes. */
 export class ContrastTestPort {
@@ -21,48 +25,173 @@ export class ContrastTestPort {
     return engine;
   }
 
-  static runCorrectedCvd(roles: Readonly<Record<string, ColorRecordInterfaceTypeEntity.Type>>, contrastPairs: readonly JSONSchema7Type[], logger: LoggerInterface): PaletteStateInterface {
-    const input = InputInterfaceTypeEntity.intake({
-      'colors': [],
-      'contrast': { 'cvdCorrect': true },
-      'roles': { 'contrastPairs': contrastPairs, 'name': 'cvd-direct-probe', 'roles': [] }
-    });
-    const state: PaletteStateInterface = {
-      'colors': [], 'input': input, 'metadata': {}, 'outputs': {}, 'roles': { ...roles },
-      'runtime': RuntimeOptionsInterfaceTypeEntity.intake({ 'colorSpace': 'srgb', 'extra': {}, 'framing': 'dark' }), 'variants': {}
-    };
+  static runCorrectedCvd(roles: Readonly<Record<string, ColorRecordEntity.Type>>, contrastPairs: readonly JSONSchema7Type[], logger: LoggerInterface, statedRoleNames: readonly string[] = []): PaletteStateInterface {
+    const state = ContrastTestPort.directState(roles, contrastPairs, statedRoleNames);
     enforceCvdSimulate.run(state, { 'logger': logger, 'startedAt': Date.now() });
     return state;
   }
 
-  static runObservedCvd(roles: Readonly<Record<string, ColorRecordInterfaceTypeEntity.Type>>, contrastPairs: readonly JSONSchema7Type[], logger: LoggerInterface): PaletteStateInterface {
-    const input = InputInterfaceTypeEntity.intake({
+  static runCorrectedCvdWithRoleSchema(
+    roles: Readonly<Record<string, ColorRecordEntity.Type>>,
+    roleSchema: RoleSchemaEntity.Type,
+    logger: LoggerInterface,
+    statedRoleNames: readonly string[] = []
+  ): PaletteStateInterface {
+    const input = InputEntity.intake({
       'colors': [],
-      'contrast': {},
-      'roles': { 'contrastPairs': contrastPairs, 'name': 'cvd-direct-probe', 'roles': [] }
+      'contrast': { 'cvdMode': 'enforce' },
+      'roles': roleSchema
     });
-    const state: PaletteStateInterface = {
-      'colors': [], 'input': input, 'metadata': {}, 'outputs': {}, 'roles': { ...roles },
-      'runtime': RuntimeOptionsInterfaceTypeEntity.intake({ 'colorSpace': 'srgb', 'extra': {}, 'framing': 'dark' }), 'variants': {}
-    };
+    const state = ContrastTestPort.stateFor(input, roles, statedRoleNames);
     enforceCvdSimulate.run(state, { 'logger': logger, 'startedAt': Date.now() });
     return state;
   }
 
-  static runCvdCandidate(foreground: ColorRecordInterfaceTypeEntity.Type, background: ColorRecordInterfaceTypeEntity.Type): PaletteStateInterface {
-    const engine = ContrastTestPort.createEngine();
-    engine.pipeline(['intake:oklch', 'resolve:roles', 'enforce:cvdSimulate']);
-    const result = engine.run(InputInterfaceTypeEntity.intake({
-      'colors': [foreground.oklch, background.oklch],
-      'roles': {
-        'contrastPairs': [{ 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 1 }],
-        'name': 'cvd-candidate-probe',
-        'roles': [
-          { 'chromaRange': [Math.max(0, foreground.oklch.c - 0.01), Math.min(0.5, foreground.oklch.c + 0.01)], 'hue': foreground.oklch.h, 'lightnessRange': [Math.max(0, foreground.oklch.l - 0.01), Math.min(1, foreground.oklch.l + 0.01)], 'name': 'text', 'required': true },
-          { 'chromaRange': [Math.max(0, background.oklch.c - 0.01), Math.min(0.5, background.oklch.c + 0.01)], 'hue': background.oklch.h, 'lightnessRange': [Math.max(0, background.oklch.l - 0.01), Math.min(1, background.oklch.l + 0.01)], 'name': 'background', 'required': true }
-        ]
-      }
-    }));
+  static runNudgedCvd(
+    roles: Readonly<Record<string, ColorRecordEntity.Type>>,
+    contrastPairs: readonly JSONSchema7Type[],
+    logger: LoggerInterface,
+    statedRoleNames: readonly string[] = []
+  ): PaletteStateInterface {
+    const input = InputEntity.intake({
+      'colors': [],
+      'contrast': { 'cvdMode': 'nudge' },
+      'roles': { 'contrastPairs': contrastPairs, 'name': 'cvd-direct-probe', 'roles': [] }
+    });
+    const state = ContrastTestPort.stateFor(input, roles, statedRoleNames);
+    enforceCvdSimulate.run(state, { 'logger': logger, 'startedAt': Date.now() });
+    return state;
+  }
+
+  static runCompliance(
+    roles: Readonly<Record<string, ColorRecordEntity.Type>>,
+    contrastPairs: readonly JSONSchema7Type[],
+    logger: LoggerInterface,
+    statedRoleNames: readonly string[] = []
+  ): PaletteStateInterface {
+    const state = ContrastTestPort.directState(roles, contrastPairs, statedRoleNames);
+    const result = ContrastTestPort.completeCompliance(state, logger);
     return result;
+  }
+
+  static runNudgedCompliance(
+    roles: Readonly<Record<string, ColorRecordEntity.Type>>,
+    contrastPairs: readonly JSONSchema7Type[],
+    logger: LoggerInterface,
+    statedRoleNames: readonly string[] = []
+  ): PaletteStateInterface {
+    const input = InputEntity.intake({
+      'colors': [],
+      'contrast': { 'cvdMode': 'nudge' },
+      'roles': { 'contrastPairs': contrastPairs, 'name': 'cvd-direct-probe', 'roles': [] }
+    });
+    const state = ContrastTestPort.stateFor(input, roles, statedRoleNames);
+    const result = ContrastTestPort.completeCompliance(state, logger);
+    return result;
+  }
+
+  static runObservedCompliance(
+    roles: Readonly<Record<string, ColorRecordEntity.Type>>,
+    contrastPairs: readonly JSONSchema7Type[],
+    logger: LoggerInterface,
+    statedRoleNames: readonly string[] = []
+  ): PaletteStateInterface {
+    const input = InputEntity.intake({
+      'colors': [],
+      'contrast': { 'cvdMode': 'warn' },
+      'roles': { 'contrastPairs': contrastPairs, 'name': 'cvd-direct-probe', 'roles': [] }
+    });
+    const state = ContrastTestPort.stateFor(input, roles, statedRoleNames);
+    const result = ContrastTestPort.completeCompliance(state, logger);
+    return result;
+  }
+
+  static runObservedCvd(roles: Readonly<Record<string, ColorRecordEntity.Type>>, contrastPairs: readonly JSONSchema7Type[], logger: LoggerInterface, statedRoleNames: readonly string[] = []): PaletteStateInterface {
+    const input = InputEntity.intake({
+      'colors': [],
+      'contrast': { 'cvdMode': 'warn' },
+      'roles': { 'contrastPairs': contrastPairs, 'name': 'cvd-direct-probe', 'roles': [] }
+    });
+    const state = ContrastTestPort.stateFor(input, roles, statedRoleNames);
+    const requirements = ContrastPolicy.normalize(state.input, PaletteRoleState.admit(state.roles));
+    enforceCvdSimulate.observe(state, { 'logger': logger, 'startedAt': Date.now() }, requirements);
+    return state;
+  }
+
+  static configureCvdSearchBudgetForTesting(
+    maximumCandidateScores: number,
+    maximumWeightedUnits: number
+  ): void {
+    enforceCvdSimulate.configureSearchBudgetForTesting(maximumCandidateScores, maximumWeightedUnits);
+  }
+
+  static clearCvdSearchBudgetForTesting(): void {
+    enforceCvdSimulate.clearSearchBudgetForTesting();
+  }
+
+  static runComplianceWithCvdSearchBudgetForTesting(
+    roles: Readonly<Record<string, ColorRecordEntity.Type>>,
+    contrastPairs: readonly JSONSchema7Type[],
+    logger: LoggerInterface,
+    maximumCandidateScores: number,
+    maximumWeightedUnits: number,
+    statedRoleNames: readonly string[] = []
+  ): { readonly 'state': PaletteStateInterface; readonly 'usage': { readonly 'candidateScores': number; readonly 'weightedUnits': number; }; } {
+    ContrastTestPort.configureCvdSearchBudgetForTesting(maximumCandidateScores, maximumWeightedUnits);
+    try {
+      const state = ContrastTestPort.runCompliance(roles, contrastPairs, logger, statedRoleNames);
+      const usage = enforceCvdSimulate.searchBudgetUsageForTesting();
+      if (usage === undefined) {
+        throw new TypeError('CVD test search budget did not report usage');
+      }
+      const result = { 'state': state, 'usage': usage };
+      return result;
+    } finally {
+      ContrastTestPort.clearCvdSearchBudgetForTesting();
+    }
+  }
+
+  static completeCompliance(
+    state: PaletteStateInterface,
+    logger: LoggerInterface
+  ): PaletteStateInterface {
+    const context = { 'logger': logger, 'startedAt': Date.now() };
+    enforceCompliance.run(state, context);
+    reportCompliance.run(state, context);
+    return state;
+  }
+
+  private static directState(
+    roles: Readonly<Record<string, ColorRecordEntity.Type>>,
+    contrastPairs: readonly JSONSchema7Type[],
+    statedRoleNames: readonly string[]
+  ): PaletteStateInterface {
+    const input = InputEntity.intake({
+      'colors': [],
+      'contrast': { 'cvdMode': 'enforce' },
+      'roles': { 'contrastPairs': contrastPairs, 'name': 'cvd-direct-probe', 'roles': [] }
+    });
+    const result = ContrastTestPort.stateFor(input, roles, statedRoleNames);
+    return result;
+  }
+
+  private static stateFor(
+    input: ReturnType<typeof InputEntity.intake>,
+    roles: Readonly<Record<string, ColorRecordEntity.Type>>,
+    statedRoleNames: readonly string[]
+  ): PaletteStateInterface {
+    const state: PaletteStateInterface = {
+      'colors': [], 'input': input, 'metadata': {}, 'outputs': {}, 'roles': { ...roles },
+      'runtime': RuntimeOptionsEntity.intake({ 'colorSpace': 'srgb', 'extra': {}, 'framing': 'dark' }), 'variants': {}
+    };
+    const provenance = new Map();
+    for (let index = 0; index < statedRoleNames.length; index += 1) {
+      const name = statedRoleNames[index];
+      if (name !== undefined) {
+        provenance.set(name, RoleProvenanceEntity.create({ 'adjustments': [], 'origin': 'stated' }));
+      }
+    }
+    Metadata.writeRoleProvenance(state.metadata, provenance);
+    return state;
   }
 }

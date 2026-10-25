@@ -1,6 +1,6 @@
-import type { InputInterfaceTypeEntity } from '@studnicky/iridis';
+import type { InputEntity } from '@studnicky/iridis';
 
-import { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis';
+import { RoleSchemaEntity } from '@studnicky/iridis';
 import assert from 'node:assert/strict';
 
 import type { ScenarioInterface } from '../../../_runner/ScenarioInterface.ts';
@@ -12,14 +12,14 @@ import { StylesheetRoleSchemas } from '../StylesheetRoleSchemas.ts';
 import { StylesheetScenarioFixture } from '../StylesheetScenarioFixture.ts';
 
 interface CellFourInputInterface {
-  readonly 'colors': InputInterfaceTypeEntity.Type['colors'];
-  readonly 'metadata': InputInterfaceTypeEntity.Type['metadata'];
-  readonly 'roles': RoleSchemaInterfaceTypeEntity.Type;
+  readonly 'colors': InputEntity.Type['colors'];
+  readonly 'metadata': InputEntity.Type['metadata'];
+  readonly 'roles': RoleSchemaEntity.Type;
 }
 
 /** Frozen behavioral scenarios for emit:cssVars custom-property naming. */
 export class StylesheetCellFourScenarioSuite {
-  private static readonly camelRoles = RoleSchemaInterfaceTypeEntity.intake({
+  private static readonly camelRoles = RoleSchemaEntity.intake({
     'name': 'camel',
     'roles': [
       { 'name': 'primaryText', 'required': true },

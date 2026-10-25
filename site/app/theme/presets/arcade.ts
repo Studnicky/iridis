@@ -1,10 +1,10 @@
-import type { ThemeDefinitionInterfaceType } from '../ThemeDefinitionInterfaceType.ts';
+import type { ThemeDefinitionInterface } from '../ThemeDefinitionInterface.ts';
 
 import { DataLayoutStrategy } from '../DataLayoutStrategy.ts';
 import { renderSquare } from '../particles/renderSquare.ts';
 
 /** Retro pixel-art — scattered chunky pixel-blinks, visible grid, snappy pace. Visual (fonts/radius/border) lives in ./arcade.css. */
-export const arcade: ThemeDefinitionInterfaceType = {
+export const arcade: ThemeDefinitionInterface = {
   'ambient': {
     'blobCount':       0,
     'gooFilter':       'none',

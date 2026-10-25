@@ -1,6 +1,6 @@
-import type { PaletteStateInterface, RoleSchemaInterfaceTypeEntity, RuntimeOptionsInterfaceTypeEntity } from '@studnicky/iridis';
+import type { PaletteStateInterface, RoleSchemaEntity, RuntimeOptionsEntity } from '@studnicky/iridis';
 
-import { InputInterfaceTypeEntity } from '@studnicky/iridis';
+import { InputEntity } from '@studnicky/iridis';
 import { vscodePlugin } from '@studnicky/iridis-vscode';
 import { Engine } from '@studnicky/iridis/engine';
 import { coreTasks } from '@studnicky/iridis/tasks';
@@ -72,14 +72,14 @@ export class VscodePluginFixture {
   static runFull(seeds: readonly string[], pipeline: readonly string[] = VscodePluginFixture.pipelineHex): PaletteStateInterface {
     const engine = VscodePluginFixture.engine();
     engine.pipeline(pipeline);
-    const result = engine.run(InputInterfaceTypeEntity.create({ 'colors': [...seeds], 'roles': VSCODE_ROLE_SCHEMAS_16.dark }));
+    const result = engine.run(InputEntity.create({ 'colors': [...seeds], 'roles': VSCODE_ROLE_SCHEMAS_16.dark }));
     return result;
   }
 
-  static runFullWithOptions(seeds: readonly string[], options?: { readonly 'pipeline'?: readonly string[]; readonly 'roles'?: RoleSchemaInterfaceTypeEntity.Type; readonly 'runtime'?: RuntimeOptionsInterfaceTypeEntity.Type; }): PaletteStateInterface {
+  static runFullWithOptions(seeds: readonly string[], options?: { readonly 'pipeline'?: readonly string[]; readonly 'roles'?: RoleSchemaEntity.Type; readonly 'runtime'?: RuntimeOptionsEntity.Type; }): PaletteStateInterface {
     const engine = VscodePluginFixture.engine();
     engine.pipeline(options?.pipeline ?? VscodePluginFixture.pipelineHex);
-    const input = InputInterfaceTypeEntity.create({
+    const input = InputEntity.create({
       'colors': [...seeds],
       'roles': options?.roles ?? VSCODE_ROLE_SCHEMAS_16.dark,
       ...(options?.runtime === undefined ? {} : { 'runtime': options.runtime })

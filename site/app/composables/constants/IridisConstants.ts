@@ -1,4 +1,4 @@
-import type { ColorRecordInterfaceTypeEntity } from '@studnicky/iridis';
+import type { ColorRecordEntity } from '@studnicky/iridis';
 import type { GalleryAlgorithmTypeEntity } from '@studnicky/iridis-image';
 
 import { Tokens } from '../../theme/Tokens.ts';
@@ -20,7 +20,7 @@ export namespace IRIDIS_CONSTANTS {
   export const IMAGE_ENTRY_STAGES = ['intake:any', 'gallery:histogram', 'gallery:extractCandidates', 'gallery:extract'];
 
   /** Empty placeholder replaced by gallery:extractCandidates. */
-  export const EMPTY_CANDIDATE_COLORS: ColorRecordInterfaceTypeEntity.Type[] = [];
+  export const EMPTY_CANDIDATE_COLORS: ColorRecordEntity.Type[] = [];
 
   /** All supported clustering algorithms. */
   export const ALL_CANDIDATE_ALGORITHM_NAMES: readonly GalleryAlgorithmTypeEntity.Type[] = ['median-cut', 'wu-quantize', 'k-means', 'delta-e'];

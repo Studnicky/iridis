@@ -5,7 +5,7 @@ import type {
 } from '@studnicky/iridis';
 import type { JSONSchema7Type } from 'json-schema';
 
-import { TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { TaskManifestEntity } from '@studnicky/iridis';
 import { LOG_STATUS, LogBody, LogFault } from '@studnicky/logger/node';
 import { JsonValue } from '@studnicky/types/node';
 import { Parser, Store, Writer } from 'n3';
@@ -51,7 +51,7 @@ class SerializedStore {
 class ReasonSerialize implements TaskInterface {
   readonly 'name' = 'reason:serialize';
 
-  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest' = TaskManifestEntity.create({
     'description': 'Serialize rdf:reasoningGraph to Turtle / TriG / N-Quads / JSON-LD',
     'name':        'reason:serialize',
     'reads':       ['rdf:reasoningGraph', 'rdf:format'],

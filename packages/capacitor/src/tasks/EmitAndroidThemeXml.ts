@@ -1,18 +1,18 @@
 import type {
-  ColorRecordInterfaceTypeEntity,
+  ColorRecordEntity,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface
 } from '@studnicky/iridis';
 
-import { TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { TaskManifestEntity } from '@studnicky/iridis';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
 import { CapacitorOutputsEntity } from '../entities/CapacitorOutputsEntity.ts';
 
 class HexRole {
   static resolve(
-    roles: Record<string, ColorRecordInterfaceTypeEntity.Type>,
+    roles: Record<string, ColorRecordEntity.Type>,
     ...names: string[]
   ): string {
     for (let index = 0; index < names.length; index += 1) {
@@ -39,7 +39,7 @@ class XmlItem {
 class EmitAndroidThemeXml implements TaskInterface {
   readonly 'name' = 'emit:androidThemeXml';
 
-  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest': TaskManifestEntity.Type = TaskManifestEntity.create({
     'description': 'Emit Android themes.xml fragment for Capacitor splash screen and status bar.',
     'name':        'emit:androidThemeXml',
     'reads':       ['roles', 'outputs.capacitor:statusBar', 'outputs.capacitor:splashScreen'],

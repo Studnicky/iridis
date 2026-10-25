@@ -1,9 +1,9 @@
-import type { RoleSortableRowInterfaceTypeEntity } from '../composables/entities/RoleSortableRowInterfaceTypeEntity.ts';
+import type { RoleSortableRowEntity } from '../composables/entities/RoleSortableRowEntity.ts';
 import type { RoleSortFieldBehaviorInterface } from './roleSortFieldBehaviorInterface.ts';
 
 /** Applies the selected role-sort behaviors in priority order, falling through on ties. */
 class SortRoleRowsOperation {
-  static run<T extends RoleSortableRowInterfaceTypeEntity.Type>(
+  static run<T extends RoleSortableRowEntity.Type>(
     rows: readonly T[],
     behaviors: readonly RoleSortFieldBehaviorInterface[]
   ): T[] {

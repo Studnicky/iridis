@@ -1,4 +1,4 @@
-import type { ColorRecordInterfaceTypeEntity } from '../entities/ColorRecordInterfaceTypeEntity.ts';
+import type { ColorRecordEntity } from '../entities/ColorRecordEntity.ts';
 
 import { clamp01 } from './Clamp01.ts';
 import { colorRecordFactory } from './ColorRecordFactory.ts';
@@ -21,7 +21,7 @@ class Hue {
     return result;
   }
 
-  static resolve(a: ColorRecordInterfaceTypeEntity.Type, b: ColorRecordInterfaceTypeEntity.Type, t: number): number {
+  static resolve(a: ColorRecordEntity.Type, b: ColorRecordEntity.Type, t: number): number {
     const aAchromatic = Hue.isAchromatic(a.oklch.c);
     const bAchromatic = Hue.isAchromatic(b.oklch.c);
 
@@ -42,7 +42,7 @@ class Hue {
 class MixOklch {
   readonly 'name' = 'mixOklch';
 
-  apply(a: ColorRecordInterfaceTypeEntity.Type, b: ColorRecordInterfaceTypeEntity.Type, t: number): ColorRecordInterfaceTypeEntity.Type {
+  apply(a: ColorRecordEntity.Type, b: ColorRecordEntity.Type, t: number): ColorRecordEntity.Type {
     const tc = clamp01.apply(t);
     const l = a.oklch.l + (b.oklch.l - a.oklch.l) * tc;
     const c = a.oklch.c + (b.oklch.c - a.oklch.c) * tc;

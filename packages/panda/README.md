@@ -21,27 +21,29 @@ the `@studnicky` scope before installing:
 ```
 
 ```bash
-npm install @studnicky/iridis @studnicky/iridis-panda
+npm install @studnicky/iridis @studnicky/iridis-contrast @studnicky/iridis-panda
 ```
 
 ## Usage
 
 ```ts
-import type { RoleSchemaInterfaceType } from '@studnicky/iridis';
+import type { RoleSchemaEntity } from '@studnicky/iridis';
 
 import { Engine, coreTasks } from '@studnicky/iridis';
+import { contrastPlugin } from '@studnicky/iridis-contrast';
 import { pandaPlugin }       from '@studnicky/iridis-panda';
 
-export function generatePandaTheme(roleSchema: RoleSchemaInterfaceType) {
+export function generatePandaTheme(roleSchema: RoleSchemaEntity.Type) {
   const engine = new Engine();
   for (const task of coreTasks) engine.tasks.register(task);
   engine.adopt(pandaPlugin);
+  engine.adopt(contrastPlugin);
 
   engine.pipeline([
     'intake:any',
     'resolve:roles',
     'expand:family',
-    'enforce:contrast',
+    'enforce:compliance',
     'derive:variant',
     'emit:pandaTheme',
   ]);
@@ -51,7 +53,7 @@ export function generatePandaTheme(roleSchema: RoleSchemaInterfaceType) {
     'colors':   ['#8B5CF6'],
     'contrast': {
       'algorithm':  'wcag21',
-      'cvdCorrect': undefined,
+      'cvdMode': 'nudge',
       'extra':      undefined,
       'level':      'AA',
     },
@@ -71,7 +73,7 @@ export function generatePandaTheme(roleSchema: RoleSchemaInterfaceType) {
 }
 ```
 
-`state.outputs['panda:theme']` is typed as `PandaOutputInterfaceType`:
+`state.outputs['panda:theme']` is typed as `PandaOutputEntity`:
 
 | Field | Shape | Notes |
 |---|---|---|

@@ -1,6 +1,6 @@
 import type { JSONSchema7Type } from 'json-schema';
 
-export abstract class StatusBarOutputInterfaceType {
+export abstract class StatusBarOutputEntity {
   [key: string]: JSONSchema7Type;
 
   abstract 'backgroundColor': string;
@@ -8,7 +8,7 @@ export abstract class StatusBarOutputInterfaceType {
   abstract 'style':           JSONSchema7Type;
 }
 
-export abstract class CapacitorThemeOutputInterfaceType {
+export abstract class CapacitorThemeOutputEntity {
   [key: string]: JSONSchema7Type;
 
   abstract 'accent':         string;
@@ -26,7 +26,7 @@ export abstract class CapacitorThemeOutputInterfaceType {
   abstract 'warning':        string;
 }
 
-export abstract class SplashScreenOutputInterfaceType {
+export abstract class SplashScreenOutputEntity {
   [key: string]: JSONSchema7Type;
 
   abstract 'androidSplashResourceName'?: string;

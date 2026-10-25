@@ -1,17 +1,17 @@
 import type {
-  ColorRecordInterfaceTypeEntity,
+  ColorRecordEntity,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface
 } from '@studnicky/iridis';
 
 import { ModuleError } from '@studnicky/errors/node';
-import { FramingSurface, Metadata, mixHsl, TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { FramingSurface, Metadata, mixHsl, TaskManifestEntity } from '@studnicky/iridis';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
 
 class Role {
-  static get(roles: Readonly<Record<string, ColorRecordInterfaceTypeEntity.Type>>, name: string): ColorRecordInterfaceTypeEntity.Type {
+  static get(roles: Readonly<Record<string, ColorRecordEntity.Type>>, name: string): ColorRecordEntity.Type {
     const record = roles[name];
     if (record === undefined) {
       throw ModuleError.create(`EmitVscodeUiPalette: role '${name}' not found in state.roles`, {
@@ -26,8 +26,8 @@ class Role {
 class EmitVscodeUiPalette implements TaskInterface {
   readonly 'name' = 'emit:vscodeUiPalette';
 
-  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
-    'description': 'Emits 129 VS Code workbench colors from the resolved 64-role VS Code vocabulary.',
+  readonly 'manifest' = TaskManifestEntity.create({
+    'description': 'Emits 132 VS Code workbench colors from the resolved 64-role VS Code vocabulary.',
     'name':        'emit:vscodeUiPalette',
     'reads':       ['roles', 'metadata.core:roleProvenance', 'runtime.framing', 'variants'],
     'requires':    ['vscode:deriveUiRoles'],
@@ -147,6 +147,9 @@ class EmitVscodeUiPalette implements TaskInterface {
       'statusBar.debuggingBackground':                 color('accent'),
       'statusBar.debuggingForeground':                 color('onAccent'),
       'statusBar.foreground':                          color('chromeForeground'),
+      'statusBar.noFolderBackground':                  color('chrome'),
+      'statusBar.noFolderBorder':                      color('border'),
+      'statusBar.noFolderForeground':                  color('chromeForeground'),
       'tab.activeBackground':                          color('background'),
       'tab.activeBorder':                              color('accent'),
       'tab.activeForeground':                          color('foreground'),

@@ -1,4 +1,4 @@
-import type { PaletteInterfaceTypeEntity } from '@studnicky/iridis-algebra';
+import type { PaletteEntity } from '@studnicky/iridis-algebra';
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -26,7 +26,7 @@ class TestMachine extends PaletteStateMachine {
     this.events.push({ 'state': state, 'type': 'exit' });
   }
 
-  protected override onTick(_palette: PaletteInterfaceTypeEntity.Type, progress: number): void {
+  protected override onTick(_palette: PaletteEntity.Type, progress: number): void {
     this.events.push({ 't': progress, 'type': 'tick' });
   }
 

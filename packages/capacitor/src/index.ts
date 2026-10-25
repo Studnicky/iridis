@@ -10,7 +10,7 @@ export { emitCapacitorSplashScreen } from './tasks/EmitCapacitorSplashScreen.ts'
 export { emitCapacitorStatusBar }    from './tasks/EmitCapacitorStatusBar.ts';
 export { emitCapacitorTheme }        from './tasks/EmitCapacitorTheme.ts';
 export type {
-  CapacitorThemeOutputInterfaceType,
-  SplashScreenOutputInterfaceType,
-  StatusBarOutputInterfaceType
+  CapacitorThemeOutputEntity,
+  SplashScreenOutputEntity,
+  StatusBarOutputEntity
 } from './types/index.ts';

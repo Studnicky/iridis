@@ -4,7 +4,7 @@ import * as VueModule from 'vue';
 
 import { useNuxtApp } from '#imports';
 
-import type { DerivationConfigInterfaceTypeEntity } from './entities/DerivationConfigInterfaceTypeEntity.ts';
+import type { DerivationConfigEntity } from './entities/DerivationConfigEntity.ts';
 import type { IridisUiEffect, IridisUiEvent } from './types/index.ts';
 import type { RoleSortKeyType } from './types/roleSortKeyType.ts';
 
@@ -14,10 +14,10 @@ import { logger } from './logger.ts';
 interface IridisUiEffectHandlersInterface {
   addSeed(hex: string | undefined): void;
   clearCvdPreviews(): void;
-  disableCvdCorrection(): void;
   disableSemanticHues(): void;
-  enableCvdCorrection(): void;
+  disableStrictCompliance(): void;
   enableSemanticHues(): void;
+  enableStrictCompliance(): void;
   extractImageFiles(files: File | File[]): void;
   extractSampleImage(): void;
   fitDiagram(): void;
@@ -29,9 +29,10 @@ interface IridisUiEffectHandlersInterface {
   resetDiagram(): void;
   selectImageCandidate(hexes: string[], label: string): void;
   setContrastStrictness(strictness: number): void;
+  setCvdMode(cvdMode: string): void;
   setDarkFraming(): void;
   setDeltaEImageAlgorithm(): void;
-  setDerivationConfig(config: DerivationConfigInterfaceTypeEntity.Type): void;
+  setDerivationConfig(config: DerivationConfigEntity.Type): void;
   setDisplayP3ColorSpace(): void;
   setImageChromaRange(range: [number, number][]): void;
   setImageDeltaECap(cap: number): void;
@@ -42,6 +43,7 @@ interface IridisUiEffectHandlersInterface {
   setKMeansImageAlgorithm(): void;
   setLightFraming(): void;
   setMedianCutImageAlgorithm(): void;
+  setNonMandatoryLevel(nonMandatoryLevel: string): void;
   setRoleSort(keys: RoleSortKeyType[]): void;
   setSchema(schemaName: string): void;
   setSeed(index: number, hex: string): void;

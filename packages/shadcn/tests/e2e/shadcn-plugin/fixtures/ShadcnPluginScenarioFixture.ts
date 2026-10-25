@@ -1,7 +1,7 @@
 import {
-  InputInterfaceTypeEntity,
-  RoleDefinitionInterfaceTypeEntity,
-  RoleSchemaInterfaceTypeEntity
+  InputEntity,
+  RoleDefinitionEntity,
+  RoleSchemaEntity
 } from '@studnicky/iridis';
 import { shadcnPlugin } from '@studnicky/iridis-shadcn';
 import { Engine } from '@studnicky/iridis/engine';
@@ -117,8 +117,8 @@ export class ShadcnPluginScenarioFixture {
     return result;
   }
 
-  static fullCoverageRoles(): RoleSchemaInterfaceTypeEntity.Type {
-    const roles: RoleDefinitionInterfaceTypeEntity.Type[] = [];
+  static fullCoverageRoles(): RoleSchemaEntity.Type {
+    const roles: RoleDefinitionEntity.Type[] = [];
     const nameCount = ShadcnPluginScenarioFixture.fullCoverageRoleNames.length;
     for (let index = 0; index < nameCount; index += 1) {
       const name = ShadcnPluginScenarioFixture.fullCoverageRoleNames[index];
@@ -130,8 +130,8 @@ export class ShadcnPluginScenarioFixture {
     return result;
   }
 
-  static fullCoverageColors(): InputInterfaceTypeEntity.Type['colors'] {
-    const colors: InputInterfaceTypeEntity.Type['colors'] = [];
+  static fullCoverageColors(): InputEntity.Type['colors'] {
+    const colors: InputEntity.Type['colors'] = [];
     const nameCount = ShadcnPluginScenarioFixture.fullCoverageRoleNames.length;
     for (let index = 0; index < nameCount; index += 1) {
       colors.push({ 'c': 0.10, 'h': index * 30, 'l': 0.60 });
@@ -139,7 +139,7 @@ export class ShadcnPluginScenarioFixture {
     return colors;
   }
 
-  static partialRoles(): RoleSchemaInterfaceTypeEntity.Type {
+  static partialRoles(): RoleSchemaEntity.Type {
     const result = ShadcnPluginScenarioFixture.schema('partial', [
       ShadcnPluginScenarioFixture.requiredRole('background', 0),
       ShadcnPluginScenarioFixture.requiredRole('text', 180)
@@ -147,7 +147,7 @@ export class ShadcnPluginScenarioFixture {
     return result;
   }
 
-  static partialColors(): InputInterfaceTypeEntity.Type['colors'] {
+  static partialColors(): InputEntity.Type['colors'] {
     const result = [
       { 'c': 0.10, 'h': 0, 'l': 0.60 },
       { 'c': 0.10, 'h': 180, 'l': 0.60 }
@@ -155,21 +155,21 @@ export class ShadcnPluginScenarioFixture {
     return result;
   }
 
-  static irrelevantRoles(): RoleSchemaInterfaceTypeEntity.Type {
+  static irrelevantRoles(): RoleSchemaEntity.Type {
     const result = ShadcnPluginScenarioFixture.schema('irrelevant', [
-      RoleDefinitionInterfaceTypeEntity.create({ 'name': 'irrelevant' })
+      RoleDefinitionEntity.create({ 'name': 'irrelevant' })
     ]);
     return result;
   }
 
   static run(
-    colors: InputInterfaceTypeEntity.Type['colors'],
+    colors: InputEntity.Type['colors'],
     pipeline: readonly string[],
-    roles: RoleSchemaInterfaceTypeEntity.Type | undefined
+    roles: RoleSchemaEntity.Type | undefined
   ): ShadcnThemeScenarioOutputEntity.Type {
     const engine = ShadcnPluginScenarioFixture.freshEngine();
     engine.pipeline(pipeline);
-    const state = engine.run(InputInterfaceTypeEntity.create({
+    const state = engine.run(InputEntity.create({
       'colors': colors,
       ...(roles === undefined ? {} : { 'roles': roles })
     }));
@@ -179,16 +179,16 @@ export class ShadcnPluginScenarioFixture {
     return result;
   }
 
-  private static requiredRole(name: string, hueOffset: number): RoleDefinitionInterfaceTypeEntity.Type {
-    const result = RoleDefinitionInterfaceTypeEntity.create({ 'hueOffset': hueOffset, 'name': name, 'required': true });
+  private static requiredRole(name: string, hueOffset: number): RoleDefinitionEntity.Type {
+    const result = RoleDefinitionEntity.create({ 'hueOffset': hueOffset, 'name': name, 'required': true });
     return result;
   }
 
   private static schema(
     name: string,
-    roles: RoleDefinitionInterfaceTypeEntity.Type[]
-  ): RoleSchemaInterfaceTypeEntity.Type {
-    const result = RoleSchemaInterfaceTypeEntity.create({ 'name': name, 'roles': roles });
+    roles: RoleDefinitionEntity.Type[]
+  ): RoleSchemaEntity.Type {
+    const result = RoleSchemaEntity.create({ 'name': name, 'roles': roles });
     return result;
   }
 }

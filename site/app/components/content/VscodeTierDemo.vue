@@ -141,7 +141,7 @@ function downloadTheme(): void {
               v-for="entry in result.theme.contrast"
               :key="`${entry.foreground}-${entry.background}`"
             >
-              <strong :class="entry.passed ? 'text-success' : 'text-error'">{{ entry.passed ? 'Pass' : 'Fail' }}</strong> {{ entry.foreground }} / {{ entry.background }}: {{ entry.ratio.toFixed(2) }} ({{ entry.minimumContrastRatio }}–{{ entry.maximumContrastRatio === undefined ? '∞' : entry.maximumContrastRatio }})
+              <strong :class="entry.passed ? 'text-success' : 'text-error'">{{ entry.passed ? 'Pass' : 'Fail' }}</strong> {{ entry.foreground }} / {{ entry.background }}: {{ entry.actual.toFixed(2) }} (requires {{ entry.required }})
             </li>
           </ul>
         </details>

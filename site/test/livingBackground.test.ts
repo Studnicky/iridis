@@ -3,7 +3,7 @@
  * targeting, and OKLCH->hex conversion — none of which need a real DOM.
  */
 
-import type { PaletteInterfaceTypeEntity } from '@studnicky/iridis-algebra';
+import type { PaletteEntity } from '@studnicky/iridis-algebra';
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -85,7 +85,7 @@ await test('oklchToHex composes oklchToRgb + rgbToHex into a valid hex string', 
 });
 
 await test('tokensForFrame emits one --ui-color-{alias}-500 token per decorative alias, each a valid hex', () => {
-  const palette: PaletteInterfaceTypeEntity.Type = buildDecorativePalette(views);
+  const palette: PaletteEntity.Type = buildDecorativePalette(views);
   const tokens = tokensForFrame(palette);
   assert.deepEqual(new Set(Object.keys(tokens)), new Set([
     '--ui-color-error-500', '--ui-color-info-500', '--ui-color-primary-500',

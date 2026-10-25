@@ -1,20 +1,20 @@
 import type {
-  ColorRecordInterfaceTypeEntity,
+  ColorRecordEntity,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface
 } from '@studnicky/iridis';
 
-import { PaletteMetadataSlot, TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { PaletteMetadataSlot, TaskManifestEntity } from '@studnicky/iridis';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
 import { CapacitorOutputsEntity } from '../entities/CapacitorOutputsEntity.ts';
 
 class SplashColor {
   static resolve(
-    roles: Record<string, ColorRecordInterfaceTypeEntity.Type>,
+    roles: Record<string, ColorRecordEntity.Type>,
     splashRole: string | undefined
-  ): ColorRecordInterfaceTypeEntity.Type | undefined {
+  ): ColorRecordEntity.Type | undefined {
     if (splashRole !== undefined) {
       return roles[splashRole];
     }
@@ -26,7 +26,7 @@ class SplashColor {
 class EmitCapacitorSplashScreen implements TaskInterface {
   readonly 'name' = 'emit:capacitorSplashScreen';
 
-  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest': TaskManifestEntity.Type = TaskManifestEntity.create({
     'description': 'Emit Capacitor splash screen configuration from surface or input-specified splashRole.',
     'name':        'emit:capacitorSplashScreen',
     'reads':       ['roles', 'metadata.capacitor.splashRole', 'metadata.capacitor.androidSplashResourceName'],

@@ -18,8 +18,8 @@
  */
 
 import {
-  InputInterfaceTypeEntity,
-  RoleSchemaInterfaceTypeEntity
+  InputEntity,
+  RoleSchemaEntity
 } from '@studnicky/iridis';
 import { stylesheetPlugin }            from '@studnicky/iridis-stylesheet';
 import { Engine }                      from '@studnicky/iridis/engine';
@@ -54,11 +54,11 @@ class StylesheetTestFixture {
   }
 
   static input(value: {
-    readonly 'colors': InputInterfaceTypeEntity.Type['colors'];
-    readonly 'metadata'?: InputInterfaceTypeEntity.Type['metadata'];
-    readonly 'roles': RoleSchemaInterfaceTypeEntity.Type;
-  }): InputInterfaceTypeEntity.Type {
-    const result = InputInterfaceTypeEntity.create({
+    readonly 'colors': InputEntity.Type['colors'];
+    readonly 'metadata'?: InputEntity.Type['metadata'];
+    readonly 'roles': RoleSchemaEntity.Type;
+  }): InputEntity.Type {
+    const result = InputEntity.create({
       'colors': value.colors,
       ...(value.metadata === undefined ? {} : { 'metadata': value.metadata }),
       'roles': value.roles
@@ -96,7 +96,7 @@ const CSS_VARS_GOLDEN = new URL(
   import.meta.url
 );
 
-const GOLDEN_ROLES = RoleSchemaInterfaceTypeEntity.intake({
+const GOLDEN_ROLES = RoleSchemaEntity.intake({
   'contrastPairs': [
     { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'foreground', 'minimumContrastRatio': 4.5 }
   ],

@@ -1,4 +1,4 @@
-import type { ColorRecordInterfaceTypeEntity, PaletteStateInterface, PipelineContextInterface, TaskInterface } from '@studnicky/iridis';
+import type { ColorRecordEntity, PaletteStateInterface, PipelineContextInterface, TaskInterface } from '@studnicky/iridis';
 
 import {
   colorRecordFactory,
@@ -9,12 +9,12 @@ import {
   lighten,
   mixHsl,
   saturate,
-  TaskManifestInterfaceTypeEntity
+  TaskManifestEntity
 } from '@studnicky/iridis';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 import { JsonObject } from '@studnicky/types/node';
 
-import type { SemanticRuleEntryInterfaceTypeEntity } from '../entities/SemanticRuleEntryInterfaceTypeEntity.ts';
+import type { SemanticRuleEntryEntity } from '../entities/SemanticRuleEntryEntity.ts';
 
 import { MODIFIER_TRANSFORMS } from '../data/modifierTransforms.ts';
 import { VscodeTokenData } from '../data/VscodeTokenData.ts';
@@ -23,7 +23,7 @@ import { VscodeMetadata } from '../VscodeMetadata.ts';
 class ApplyModifiers implements TaskInterface {
   readonly 'name' = 'vscode:applyModifiers';
 
-  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest' = TaskManifestEntity.create({
     'description': 'Produces base + per-modifier semantic token rules from MODIFIER_TRANSFORMS, ensuring each rule meets contrast against the background role.',
     'name':        'vscode:applyModifiers',
     'reads':       ['metadata.vscode:baseTokens', 'roles', 'runtime.framing', 'variants'],
@@ -31,7 +31,7 @@ class ApplyModifiers implements TaskInterface {
     'writes':      ['metadata.vscode:semanticTokenRules']
   });
 
-  static #applyLightness(color: ColorRecordInterfaceTypeEntity.Type, lightness: number | undefined): ColorRecordInterfaceTypeEntity.Type {
+  static #applyLightness(color: ColorRecordEntity.Type, lightness: number | undefined): ColorRecordEntity.Type {
     if (lightness === undefined || lightness === 0) {
       return color;
     }
@@ -39,7 +39,7 @@ class ApplyModifiers implements TaskInterface {
     return result;
   }
 
-  static #applySaturation(color: ColorRecordInterfaceTypeEntity.Type, saturation: number | undefined): ColorRecordInterfaceTypeEntity.Type {
+  static #applySaturation(color: ColorRecordEntity.Type, saturation: number | undefined): ColorRecordEntity.Type {
     if (saturation === undefined || saturation === 0) {
       return color;
     }
@@ -48,10 +48,10 @@ class ApplyModifiers implements TaskInterface {
   }
 
   static #applyMix(
-    color: ColorRecordInterfaceTypeEntity.Type,
+    color: ColorRecordEntity.Type,
     transform: typeof MODIFIER_TRANSFORMS[string],
-    roles: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>
-  ): ColorRecordInterfaceTypeEntity.Type {
+    roles: ReadonlyMap<string, ColorRecordEntity.Type>
+  ): ColorRecordEntity.Type {
     if (transform.mixWith === undefined || transform.mixWeight === undefined || transform.mixWeight === 0) {
       return color;
     }
@@ -64,8 +64,8 @@ class ApplyModifiers implements TaskInterface {
   }
 
   static #writeBaseRules(
-    baseTokens: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>,
-    rules: Map<string, SemanticRuleEntryInterfaceTypeEntity.Type>
+    baseTokens: ReadonlyMap<string, ColorRecordEntity.Type>,
+    rules: Map<string, SemanticRuleEntryEntity.Type>
   ): void {
     for (let typeIndex = 0; typeIndex < VscodeTokenData.TOKEN_TYPES.length; typeIndex += 1) {
       const tokenType = VscodeTokenData.TOKEN_TYPES.at(typeIndex);
@@ -81,11 +81,11 @@ class ApplyModifiers implements TaskInterface {
 
   static #writeTokenModifierRules(
     tokenType: string,
-    baseRecord: ColorRecordInterfaceTypeEntity.Type,
+    baseRecord: ColorRecordEntity.Type,
     transforms: ReadonlyMap<string, typeof MODIFIER_TRANSFORMS[string]>,
-    roles: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>,
-    background: ColorRecordInterfaceTypeEntity.Type,
-    rules: Map<string, SemanticRuleEntryInterfaceTypeEntity.Type>
+    roles: ReadonlyMap<string, ColorRecordEntity.Type>,
+    background: ColorRecordEntity.Type,
+    rules: Map<string, SemanticRuleEntryEntity.Type>
   ): void {
     for (let modifierIndex = 0; modifierIndex < VscodeTokenData.TOKEN_MODIFIERS.length; modifierIndex += 1) {
       const modifier = VscodeTokenData.TOKEN_MODIFIERS.at(modifierIndex);
@@ -105,10 +105,10 @@ class ApplyModifiers implements TaskInterface {
   }
 
   static #writeModifierRules(
-    baseTokens: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>,
-    roles: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>,
-    background: ColorRecordInterfaceTypeEntity.Type,
-    rules: Map<string, SemanticRuleEntryInterfaceTypeEntity.Type>
+    baseTokens: ReadonlyMap<string, ColorRecordEntity.Type>,
+    roles: ReadonlyMap<string, ColorRecordEntity.Type>,
+    background: ColorRecordEntity.Type,
+    rules: Map<string, SemanticRuleEntryEntity.Type>
   ): void {
     const transforms = new Map(Object.entries(MODIFIER_TRANSFORMS));
     for (let typeIndex = 0; typeIndex < VscodeTokenData.TOKEN_TYPES.length; typeIndex += 1) {
@@ -122,9 +122,9 @@ class ApplyModifiers implements TaskInterface {
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const baseTokens = VscodeMetadata.baseTokens(state.metadata);
-    const roles = new Map<string, ColorRecordInterfaceTypeEntity.Type>(Object.entries(FramingSurface.resolve(state)));
+    const roles = new Map<string, ColorRecordEntity.Type>(Object.entries(FramingSurface.resolve(state)));
     const background = roles.get('background') ?? colorRecordFactory.fromHex('#000000');
-    const rules = new Map<string, SemanticRuleEntryInterfaceTypeEntity.Type>();
+    const rules = new Map<string, SemanticRuleEntryEntity.Type>();
     ApplyModifiers.#writeBaseRules(baseTokens, rules);
     ApplyModifiers.#writeModifierRules(baseTokens, roles, background, rules);
     state.metadata['vscode:semanticTokenRules'] = JsonObject.fromEntries(rules);

@@ -1,4 +1,4 @@
-import type { PaletteInterfaceTypeEntity } from '@studnicky/iridis-algebra';
+import type { PaletteEntity } from '@studnicky/iridis-algebra';
 
 import { evaluateStops } from '@studnicky/iridis-anima';
 
@@ -16,7 +16,7 @@ export class TrajectoryRegistry {
   }
 
   /** Resolves the palette at `t` along the named trajectory. */
-  public resolve(name: string, t: number): PaletteInterfaceTypeEntity.Type {
+  public resolve(name: string, t: number): PaletteEntity.Type {
     const trajectory = this.trajectories.get(name);
     if (trajectory === undefined) {throw new Error(`Unknown trajectory "${name}"`);}
     const result = evaluateStops(trajectory.stops, t, trajectory.options);

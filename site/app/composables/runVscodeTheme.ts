@@ -1,6 +1,6 @@
-import type { ColorRecordInterfaceTypeEntity, PaletteStateInterface } from '@studnicky/iridis';
+import type { ColorRecordEntity, PaletteStateInterface } from '@studnicky/iridis';
 
-import { coreTasks, Engine, InputInterfaceTypeEntity } from '@studnicky/iridis';
+import { ContrastReportEntryEntity, coreTasks, Engine, InputEntity, Metadata } from '@studnicky/iridis';
 import { contrastPlugin } from '@studnicky/iridis-contrast';
 import { VSCODE_ROLE_SCHEMAS_64, vscodePlugin } from '@studnicky/iridis-vscode';
 
@@ -9,7 +9,7 @@ import { VscodeThemeRequestEntity } from './entities/VscodeThemeRequestEntity.ts
 import { VscodeThemeRuntimeEntity } from './entities/VscodeThemeRuntimeEntity.ts';
 
 class VscodeThemeRun {
-  readonly 'contrast': VscodeThemeRuntimeEntity.Type['contrastReport'];
+  readonly 'contrast': readonly ContrastReportEntryEntity.Type[];
   readonly 'palette': VscodeThemeRequestEntity.Type;
   readonly 'provenance': { readonly 'derivedRoles': readonly string[]; readonly 'pinnedRoles': readonly string[]; };
   readonly 'roles': Readonly<Record<string, string>>;
@@ -19,7 +19,7 @@ class VscodeThemeRun {
 
   constructor(
     palette: VscodeThemeRequestEntity.Type,
-    contrast: VscodeThemeRuntimeEntity.Type['contrastReport'],
+    contrast: readonly ContrastReportEntryEntity.Type[],
     derivedRoles: readonly string[],
     pinnedRoles: readonly string[],
     roles: Readonly<Record<string, string>>,
@@ -36,7 +36,7 @@ class VscodeThemeRun {
 }
 
 class VscodeThemeOutput {
-  private static roleColors(roles: Readonly<Record<string, ColorRecordInterfaceTypeEntity.Type>>): Readonly<Record<string, string>> {
+  private static roleColors(roles: Readonly<Record<string, ColorRecordEntity.Type>>): Readonly<Record<string, string>> {
     const colors: Record<string, string> = {};
     const entries = Object.entries(roles);
     for (let index = 0; index < entries.length; index += 1) {
@@ -60,14 +60,25 @@ class VscodeThemeOutput {
     return { 'derivedRoles': derivedRoles, 'pinnedRoles': pinnedRoles };
   }
 
+  static contrastPairs(state: PaletteStateInterface): readonly ContrastReportEntryEntity.Type[] {
+    const report = Metadata.contrastReport(state.metadata);
+    if (report !== undefined) {
+      const pairs = report.pairs.map((pair) => {
+        const entry = ContrastReportEntryEntity.intake(pair);
+        return entry;
+      });
+      return pairs;
+    }
+    throw new RangeError('The pipeline did not write a contrast report.');
+  }
+
   static result(palette: VscodeThemeRequestEntity.Type, state: PaletteStateInterface): VscodeThemeRun {
     const runtime = VscodeThemeRuntimeEntity.intake({
-      'contrastReport': state.metadata['core:contrastReport'],
       'roleProvenance': state.metadata['core:roleProvenance'],
       'themeJson': state.outputs['vscode:themeJson']
     });
     const provenance = VscodeThemeOutput.provenance(runtime);
-    const result = new VscodeThemeRun(palette, runtime.contrastReport, provenance.derivedRoles, provenance.pinnedRoles, VscodeThemeOutput.roleColors(state.roles), VscodeThemeJsonEntity.intake(runtime.themeJson));
+    const result = new VscodeThemeRun(palette, VscodeThemeOutput.contrastPairs(state), provenance.derivedRoles, provenance.pinnedRoles, VscodeThemeOutput.roleColors(state.roles), VscodeThemeJsonEntity.intake(runtime.themeJson));
     return result;
   }
 }
@@ -99,7 +110,7 @@ class VscodeThemePipeline {
       'derive:variant', 'vscode:expandTokens', 'vscode:applyModifiers', 'emit:vscodeSemanticRules',
       'emit:vscodeUiPalette', 'emit:vscodeThemeJson'
     ]);
-    const input = InputInterfaceTypeEntity.create({
+    const input = InputEntity.create({
       'colors': [{ 'framing': palette.framing, 'roles': palette.roles, 'tier': palette.tier }],
       'contrast': { 'algorithm': 'wcag21', 'level': 'AA' },
       'roles': palette.framing === 'dark' ? VSCODE_ROLE_SCHEMAS_64.dark : VSCODE_ROLE_SCHEMAS_64.light,

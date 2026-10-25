@@ -19,17 +19,18 @@
  * Derivations use derivedFrom + hueOffset so a single brand seed produces
  * the full syntax family in iridis-16. The engine's expand:family task
  * synthesizes derived roles; resolve:roles nudges seeds into their
- * lightness/chroma envelopes; enforce:contrast lifts pairs to threshold.
+ * lightness/chroma envelopes; enforce:compliance lifts pairs to threshold.
  */
 
-import { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis';
+import { RoleSchemaEntity } from '@studnicky/iridis';
 
+import type { SchemaNameEntity } from '../composables/entities/SchemaNameEntity.ts';
 import type { SchemaPair } from '../composables/types/index.ts';
 
 /* ─── iridis-4 ─────────────────────────────────────────────────────── */
 
 namespace RoleSchemas {
-  const iridis4Dark = RoleSchemaInterfaceTypeEntity.create({
+  const iridis4Dark = RoleSchemaEntity.create({
     'contrastPairs': [
       { 'algorithm': 'wcag21',  'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 4.5 },
       { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'brand', 'minimumContrastRatio': 4.5 },
@@ -40,12 +41,12 @@ namespace RoleSchemas {
     'roles': [
       { 'chromaRange': [0.00, 0.04], 'intent': 'background', 'lightnessRange': [0.04, 0.14], 'name': 'background', 'required': true },
       { 'chromaRange': [0.00, 0.04], 'intent': 'text', 'lightnessRange': [0.85, 0.96], 'name': 'text', 'required': true },
-      { 'chromaRange': [0.12, 0.30], 'intent': 'accent', 'lightnessRange': [0.55, 0.78], 'name': 'brand', 'required': true },
-      { 'chromaRange': [0.00, 0.06], 'intent': 'muted', 'lightnessRange': [0.50, 0.68], 'name': 'muted' }
+      { 'chromaRange': [0.12, 0.30], 'intent': 'accent', 'lightnessRange': [0.55, 0.84], 'name': 'brand', 'required': true },
+      { 'chromaRange': [0.00, 0.06], 'intent': 'muted', 'lightnessRange': [0.50, 0.77], 'name': 'muted' }
     ]
   });
 
-  const iridis4Light = RoleSchemaInterfaceTypeEntity.create({
+  const iridis4Light = RoleSchemaEntity.create({
     'contrastPairs': [
       { 'algorithm': 'wcag21',  'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 4.5 },
       { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'brand', 'minimumContrastRatio': 4.5 },
@@ -63,7 +64,7 @@ namespace RoleSchemas {
 
   /* ─── iridis-8 ─────────────────────────────────────────────────────── */
 
-  const iridis8Dark = RoleSchemaInterfaceTypeEntity.create({
+  const iridis8Dark = RoleSchemaEntity.create({
     'contrastPairs': [
       ...(iridis4Dark.contrastPairs ?? []),
       { 'algorithm': 'wcag21',     'background': 'surface',    'foreground': 'text', 'minimumContrastRatio': 4.5 },
@@ -77,12 +78,12 @@ namespace RoleSchemas {
       ...iridis4Dark.roles,
       { 'chromaRange': [0.00, 0.06], 'derivedFrom': 'background', 'intent': 'background', 'lightnessRange': [0.08, 0.18], 'name': 'surface', 'required': true },
       { 'chromaRange': [0.00, 0.08], 'derivedFrom': 'background', 'intent': 'background', 'lightnessRange': [0.10, 0.22], 'name': 'bg-soft' },
-      { 'chromaRange': [0.00, 0.06], 'derivedFrom': 'background', 'intent': 'muted', 'lightnessRange': [0.18, 0.32], 'name': 'divider' },
+      { 'chromaRange': [0.00, 0.06], 'derivedFrom': 'background', 'intent': 'muted', 'lightnessRange': [0.18, 0.70], 'name': 'divider' },
       { 'chromaRange': [0.00, 0.02], 'derivedFrom': 'brand', 'intent': 'text', 'lightnessRange': [0.04, 0.14], 'name': 'on-brand', 'required': true }
     ]
   });
 
-  const iridis8Light = RoleSchemaInterfaceTypeEntity.create({
+  const iridis8Light = RoleSchemaEntity.create({
     'contrastPairs': [
       ...(iridis4Light.contrastPairs ?? []),
       { 'algorithm': 'wcag21',     'background': 'surface',    'foreground': 'text', 'minimumContrastRatio': 4.5 },
@@ -96,14 +97,14 @@ namespace RoleSchemas {
       ...iridis4Light.roles,
       { 'chromaRange': [0.00, 0.04], 'derivedFrom': 'background', 'intent': 'background', 'lightnessRange': [0.88, 0.96], 'name': 'surface', 'required': true },
       { 'chromaRange': [0.00, 0.04], 'derivedFrom': 'background', 'intent': 'background', 'lightnessRange': [0.90, 0.98], 'name': 'bg-soft' },
-      { 'chromaRange': [0.00, 0.04], 'derivedFrom': 'background', 'intent': 'muted', 'lightnessRange': [0.72, 0.86], 'name': 'divider' },
+      { 'chromaRange': [0.00, 0.04], 'derivedFrom': 'background', 'intent': 'muted', 'lightnessRange': [0.60, 0.86], 'name': 'divider' },
       { 'chromaRange': [0.00, 0.02], 'derivedFrom': 'brand', 'intent': 'text', 'lightnessRange': [0.97, 1.00], 'name': 'on-brand', 'required': true }
     ]
   });
 
   /* ─── iridis-12 ────────────────────────────────────────────────────── */
 
-  const iridis12Dark = RoleSchemaInterfaceTypeEntity.create({
+  const iridis12Dark = RoleSchemaEntity.create({
     'contrastPairs': [
       ...(iridis8Dark.contrastPairs ?? []),
       { 'algorithm': 'wcag21',       'background': 'background', 'foreground': 'success', 'minimumContrastRatio': 4.5 },
@@ -117,12 +118,12 @@ namespace RoleSchemas {
       ...iridis8Dark.roles,
       { 'chromaRange': [0.14, 0.28], 'derivedFrom': 'brand', 'hueOffset': 120, 'intent': 'positive', 'lightnessRange': [0.65, 0.78], 'name': 'success' },
       { 'chromaRange': [0.16, 0.28], 'derivedFrom': 'brand', 'hueOffset': 85, 'intent': 'positive', 'lightnessRange': [0.70, 0.82], 'name': 'warning' },
-      { 'chromaRange': [0.18, 0.30], 'intent': 'critical', 'lightnessRange': [0.62, 0.76], 'name': 'error' },
+      { 'chromaRange': [0.10, 0.30], 'intent': 'critical', 'lightnessRange': [0.62, 0.84], 'name': 'error' },
       { 'chromaRange': [0.14, 0.28], 'derivedFrom': 'brand', 'intent': 'accent', 'lightnessRange': [0.68, 0.82], 'name': 'syntax-keyword' }
     ]
   });
 
-  const iridis12Light = RoleSchemaInterfaceTypeEntity.create({
+  const iridis12Light = RoleSchemaEntity.create({
     'contrastPairs': [
       ...(iridis8Light.contrastPairs ?? []),
       { 'algorithm': 'wcag21',       'background': 'background', 'foreground': 'success', 'minimumContrastRatio': 4.5 },
@@ -135,7 +136,7 @@ namespace RoleSchemas {
     'roles': [
       ...iridis8Light.roles,
       { 'chromaRange': [0.16, 0.30], 'derivedFrom': 'brand', 'hueOffset': 120, 'intent': 'positive', 'lightnessRange': [0.40, 0.52], 'name': 'success' },
-      { 'chromaRange': [0.18, 0.30], 'derivedFrom': 'brand', 'hueOffset': 85, 'intent': 'positive', 'lightnessRange': [0.50, 0.62], 'name': 'warning' },
+      { 'chromaRange': [0.18, 0.30], 'derivedFrom': 'brand', 'hueOffset': 85, 'intent': 'positive', 'lightnessRange': [0.45, 0.62], 'name': 'warning' },
       { 'chromaRange': [0.20, 0.32], 'intent': 'critical', 'lightnessRange': [0.40, 0.55], 'name': 'error' },
       { 'chromaRange': [0.16, 0.30], 'derivedFrom': 'brand', 'intent': 'accent', 'lightnessRange': [0.42, 0.56], 'name': 'syntax-keyword' }
     ]
@@ -143,7 +144,7 @@ namespace RoleSchemas {
 
   /* ─── iridis-16 ────────────────────────────────────────────────────── */
 
-  const iridis16Dark = RoleSchemaInterfaceTypeEntity.create({
+  const iridis16Dark = RoleSchemaEntity.create({
     'contrastPairs': [
       ...(iridis12Dark.contrastPairs ?? []),
       { 'algorithm': 'wcag21',   'background': 'bg-soft', 'foreground': 'syntax-string', 'minimumContrastRatio': 4.5 },
@@ -162,7 +163,7 @@ namespace RoleSchemas {
     ]
   });
 
-  const iridis16Light = RoleSchemaInterfaceTypeEntity.create({
+  const iridis16Light = RoleSchemaEntity.create({
     'contrastPairs': [
       ...(iridis12Light.contrastPairs ?? []),
       { 'algorithm': 'wcag21',   'background': 'bg-soft', 'foreground': 'syntax-string', 'minimumContrastRatio': 4.5 },
@@ -175,7 +176,7 @@ namespace RoleSchemas {
     'roles': [
       ...iridis12Light.roles,
       { 'chromaRange': [0.14, 0.26], 'derivedFrom': 'brand', 'hueOffset': 120, 'intent': 'accent', 'lightnessRange': [0.40, 0.52], 'name': 'syntax-string' },
-      { 'chromaRange': [0.16, 0.28], 'derivedFrom': 'brand', 'hueOffset': 60, 'intent': 'accent', 'lightnessRange': [0.45, 0.58], 'name': 'syntax-number' },
+      { 'chromaRange': [0.16, 0.28], 'derivedFrom': 'brand', 'hueOffset': 60, 'intent': 'accent', 'lightnessRange': [0.42, 0.58], 'name': 'syntax-number' },
       { 'chromaRange': [0.14, 0.26], 'derivedFrom': 'brand', 'hueOffset': 180, 'intent': 'accent', 'lightnessRange': [0.40, 0.52], 'name': 'syntax-function' },
       { 'chromaRange': [0.12, 0.22], 'derivedFrom': 'brand', 'hueOffset': 210, 'intent': 'accent', 'lightnessRange': [0.40, 0.52], 'name': 'syntax-type' }
     ]
@@ -188,7 +189,7 @@ namespace RoleSchemas {
    the conceptual surface that large-scale design systems (vscode,
    ide themes, full chrome+code+status surfaces) consume. */
 
-  const iridis32Dark = RoleSchemaInterfaceTypeEntity.create({
+  const iridis32Dark = RoleSchemaEntity.create({
     'contrastPairs': [
       ...(iridis16Dark.contrastPairs ?? []),
       { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'text-strong', 'minimumContrastRatio': 7.0 },
@@ -210,7 +211,7 @@ namespace RoleSchemas {
       ...iridis16Dark.roles,
       /* Emphasis tiers: text-strong reads as primary headings, text-subtle as captions / metadata. */
       { 'chromaRange': [0.00, 0.03], 'derivedFrom': 'text', 'intent': 'text', 'lightnessRange': [0.92, 0.99], 'name': 'text-strong' },
-      { 'chromaRange': [0.00, 0.04], 'derivedFrom': 'text', 'intent': 'muted', 'lightnessRange': [0.62, 0.74], 'name': 'text-subtle' },
+      { 'chromaRange': [0.00, 0.04], 'derivedFrom': 'text', 'intent': 'muted', 'lightnessRange': [0.62, 0.77], 'name': 'text-subtle' },
       /* Interaction family: link/link-hover for anchors, focus-ring for a11y outlines. */
       { 'chromaRange': [0.14, 0.28], 'derivedFrom': 'brand', 'hueOffset': -15, 'intent': 'link', 'lightnessRange': [0.62, 0.78], 'name': 'link' },
       { 'chromaRange': [0.16, 0.30], 'derivedFrom': 'brand', 'hueOffset': -15, 'intent': 'link', 'lightnessRange': [0.72, 0.86], 'name': 'link-hover' },
@@ -221,11 +222,11 @@ namespace RoleSchemas {
       { 'chromaRange': [0.00, 0.08], 'derivedFrom': 'divider', 'intent': 'muted', 'lightnessRange': [0.32, 0.46], 'name': 'border-strong' },
       { 'chromaRange': [0.00, 0.04], 'derivedFrom': 'bg-soft', 'intent': 'background', 'lightnessRange': [0.08, 0.16], 'name': 'code-bg' },
       /* Status family: info completes the warning/error/success quadrant. */
-      { 'chromaRange': [0.16, 0.28], 'derivedFrom': 'brand', 'hueOffset': -60, 'intent': 'accent', 'lightnessRange': [0.55, 0.72], 'name': 'info' },
+      { 'chromaRange': [0.16, 0.28], 'derivedFrom': 'brand', 'hueOffset': -60, 'intent': 'accent', 'lightnessRange': [0.55, 0.76], 'name': 'info' },
       /* Secondary accent: pairs with brand for two-color emphasis. */
-      { 'chromaRange': [0.14, 0.26], 'derivedFrom': 'brand', 'hueOffset': 150, 'intent': 'accent', 'lightnessRange': [0.58, 0.74], 'name': 'accent-alt' },
+      { 'chromaRange': [0.14, 0.26], 'derivedFrom': 'brand', 'hueOffset': 150, 'intent': 'accent', 'lightnessRange': [0.58, 0.77], 'name': 'accent-alt' },
       /* Extended syntax: comment / tag / attribute / operator / class / punctuation. */
-      { 'chromaRange': [0.00, 0.06], 'derivedFrom': 'muted', 'intent': 'muted', 'lightnessRange': [0.48, 0.60], 'name': 'syntax-comment' },
+      { 'chromaRange': [0.00, 0.06], 'derivedFrom': 'muted', 'intent': 'muted', 'lightnessRange': [0.48, 0.70], 'name': 'syntax-comment' },
       { 'chromaRange': [0.14, 0.26], 'derivedFrom': 'brand', 'hueOffset': 240, 'intent': 'accent', 'lightnessRange': [0.68, 0.82], 'name': 'syntax-tag' },
       { 'chromaRange': [0.12, 0.24], 'derivedFrom': 'brand', 'hueOffset': 270, 'intent': 'accent', 'lightnessRange': [0.68, 0.82], 'name': 'syntax-attribute' },
       { 'chromaRange': [0.10, 0.22], 'derivedFrom': 'brand', 'hueOffset': 300, 'intent': 'accent', 'lightnessRange': [0.70, 0.84], 'name': 'syntax-operator' },
@@ -234,7 +235,7 @@ namespace RoleSchemas {
     ]
   });
 
-  const iridis32Light = RoleSchemaInterfaceTypeEntity.create({
+  const iridis32Light = RoleSchemaEntity.create({
     'contrastPairs': [
       ...(iridis16Light.contrastPairs ?? []),
       { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'text-strong', 'minimumContrastRatio': 7.0 },
@@ -276,7 +277,7 @@ namespace RoleSchemas {
 
   /* ─── Public registry ─────────────────────────────────────────────── */
 
-  export const byName: Record<string, SchemaPair> = {
+  export const byName: Record<SchemaNameEntity.Type, SchemaPair> = {
     'iridis-12': { 'dark': iridis12Dark, 'light': iridis12Light },
     'iridis-16': { 'dark': iridis16Dark, 'light': iridis16Light },
     'iridis-32': { 'dark': iridis32Dark, 'light': iridis32Light },

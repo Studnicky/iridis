@@ -1,11 +1,11 @@
 import type {
-  ColorRecordInterfaceTypeEntity,
+  ColorRecordEntity,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface
 } from '@studnicky/iridis';
 
-import { TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { TaskManifestEntity } from '@studnicky/iridis';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
 import { ShadcnOutputEntity } from '../entities/ShadcnOutputEntity.ts';
@@ -34,9 +34,9 @@ const VAR_ROLE_CANDIDATES = [
 
 class RoleResolver {
   static resolve(
-    roles: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>,
+    roles: ReadonlyMap<string, ColorRecordEntity.Type>,
     candidates: readonly string[]
-  ): ColorRecordInterfaceTypeEntity.Type | undefined {
+  ): ColorRecordEntity.Type | undefined {
     for (let candidateIndex = 0; candidateIndex < candidates.length; candidateIndex += 1) {
       const candidate = candidates[candidateIndex];
       if (candidate === undefined) {continue;}
@@ -48,7 +48,7 @@ class RoleResolver {
 }
 
 class OklchTriple {
-  static format(oklch: ColorRecordInterfaceTypeEntity.Type['oklch']): string {
+  static format(oklch: ColorRecordEntity.Type['oklch']): string {
     const l = oklch.l.toFixed(4);
     const c = oklch.c.toFixed(4);
     const h = oklch.h.toFixed(2);
@@ -113,7 +113,7 @@ class ShadcnColors {
 }
 
 class ShadcnTheme {
-  static build(roles: Record<string, ColorRecordInterfaceTypeEntity.Type>): ShadcnOutputEntity.Type {
+  static build(roles: Record<string, ColorRecordEntity.Type>): ShadcnOutputEntity.Type {
     const roleMap = new Map(Object.entries(roles));
     const colors = new Map<string, string>();
     const declarations: string[] = [];
@@ -138,7 +138,7 @@ class ShadcnTheme {
 export class EmitShadcnTheme implements TaskInterface {
   readonly 'name' = 'emit:shadcnTheme';
 
-  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest' = TaskManifestEntity.create({
     'description': 'Emit a shadcn/ui-compatible CSS custom-property theme (OKLCH, Tailwind v4 convention) from resolved roles',
     'name':        'emit:shadcnTheme',
     'reads':       ['roles'],

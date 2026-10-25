@@ -1,7 +1,7 @@
-import { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis';
+import { RoleSchemaEntity } from '@studnicky/iridis';
 
 /** W3C-conformant role schema for per-category palettes. */
-export const categoryW3cRoleSchema = RoleSchemaInterfaceTypeEntity.create({
+export const categoryW3cRoleSchema = RoleSchemaEntity.create({
   'contrastPairs': [
     { 'algorithm': 'wcag21', 'background': 'canvas', 'foreground': 'text', 'minimumContrastRatio': 7 },
     { 'algorithm': 'wcag21', 'background': 'surface', 'foreground': 'text', 'minimumContrastRatio': 7 },

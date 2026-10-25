@@ -1,4 +1,4 @@
-import type { QuickPaletteInterfaceTypeEntity } from '@studnicky/iridis';
+import type { QuickPaletteEntity } from '@studnicky/iridis';
 import type { InferType } from '@studnicky/json-tology/types';
 
 import { QuickPalette } from '@studnicky/iridis';
@@ -142,8 +142,8 @@ export namespace QuickPaletteScenarios {
         'kind': 'edge',
         'name': 'single seed still returns all four roles'
       }
-    ] satisfies readonly ScenarioInterface<InferType<typeof QuickPaletteInputSchema>, QuickPaletteInterfaceTypeEntity.Type>[],
-    'subject': function(input: InferType<typeof QuickPaletteInputSchema>): QuickPaletteInterfaceTypeEntity.Type {
+    ] satisfies readonly ScenarioInterface<InferType<typeof QuickPaletteInputSchema>, QuickPaletteEntity.Type>[],
+    'subject': function(input: InferType<typeof QuickPaletteInputSchema>): QuickPaletteEntity.Type {
       const palette = QuickPalette.resolve(input.seeds, input.framing);
       return palette;
     }

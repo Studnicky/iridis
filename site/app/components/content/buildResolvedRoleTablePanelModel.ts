@@ -1,4 +1,4 @@
-import type { RoleSortableRowInterfaceTypeEntity } from '~/composables/entities/RoleSortableRowInterfaceTypeEntity.ts';
+import type { RoleSortableRowEntity } from '~/composables/entities/RoleSortableRowEntity.ts';
 
 class ResolvedRoleTableColumn {
   public readonly accessorKey: string;
@@ -16,12 +16,12 @@ class ResolvedRoleTableColumn {
 class ResolvedRoleTablePanelModel {
   public readonly columns: readonly ResolvedRoleTableColumn[];
   public readonly label: string;
-  public readonly rows: readonly (RoleSortableRowInterfaceTypeEntity.Type & { readonly 'hex': string })[];
+  public readonly rows: readonly (RoleSortableRowEntity.Type & { readonly 'hex': string })[];
 
   public constructor(
     columns: readonly ResolvedRoleTableColumn[],
     label: string,
-    rows: readonly (RoleSortableRowInterfaceTypeEntity.Type & { readonly 'hex': string })[]
+    rows: readonly (RoleSortableRowEntity.Type & { readonly 'hex': string })[]
   ) {
     this.columns = columns;
     this.label = label;
@@ -38,7 +38,7 @@ export const buildResolvedRoleTablePanelModel = class ResolvedRoleTablePanelMode
   ];
 
   public static build(
-    rows: readonly (RoleSortableRowInterfaceTypeEntity.Type & { readonly 'hex': string })[],
+    rows: readonly (RoleSortableRowEntity.Type & { readonly 'hex': string })[],
     visibleCount: number
   ): ResolvedRoleTablePanelModel {
     const visibleRows = rows.slice(0, visibleCount);

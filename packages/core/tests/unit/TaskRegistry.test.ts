@@ -5,7 +5,7 @@ import type { PaletteStateInterface } from '../../src/interfaces/PaletteStateInt
 import type { PipelineContextInterface } from '../../src/interfaces/PipelineContextInterface.ts';
 import type { TaskInterface } from '../../src/interfaces/TaskInterface.ts';
 
-import { TaskManifestInterfaceTypeEntity } from '../../src/entities/TaskManifestInterfaceTypeEntity.ts';
+import { TaskManifestEntity } from '../../src/entities/TaskManifestEntity.ts';
 import { TaskRegistry } from '../../src/registry/TaskRegistry.ts';
 import { TASK_REGISTRY_TEST_PATTERNS } from './task-registry/constants/TaskRegistryTestPatterns.ts';
 
@@ -14,7 +14,7 @@ class TaskRegistryTestFixture {
 
   static task(name: string): TaskInterface {
     const result: TaskInterface = {
-      'manifest': TaskManifestInterfaceTypeEntity.create({ 'name': name }),
+      'manifest': TaskManifestEntity.create({ 'name': name }),
       'name':     name,
       'run':      TaskRegistryTestFixture.noopRun
     };
@@ -23,7 +23,7 @@ class TaskRegistryTestFixture {
 
   static runEndTask(name: string): TaskInterface {
     const result: TaskInterface = {
-      'manifest': TaskManifestInterfaceTypeEntity.create({ 'name': name, 'phase': 'onRunEnd' }),
+      'manifest': TaskManifestEntity.create({ 'name': name, 'phase': 'onRunEnd' }),
       'name':     name,
       'run':      TaskRegistryTestFixture.noopRun
     };
@@ -32,7 +32,7 @@ class TaskRegistryTestFixture {
 
   static runStartTask(name: string): TaskInterface {
     const result: TaskInterface = {
-      'manifest': TaskManifestInterfaceTypeEntity.create({ 'name': name, 'phase': 'onRunStart' }),
+      'manifest': TaskManifestEntity.create({ 'name': name, 'phase': 'onRunStart' }),
       'name':     name,
       'run':      TaskRegistryTestFixture.noopRun
     };

@@ -40,3 +40,15 @@ For every registered, non-lifecycle task named by `manifest.requires`, the engin
 The manifest shape itself, along with the `TaskInterface` every task implements:
 
 <<< @/packages/core/src/types/pipeline.ts
+
+## Site State Machines
+
+The demo site drives its interaction state through `@studnicky/fsm` machines. Each machine owns a transition protocol; events carry their own transition behavior, so a new event adds a class rather than a branch.
+
+- **`IridisUiMachine`** owns carousel interaction: idle and dragging states for the picker and image modes, an active index that can never go negative, and effects that the composable applies to palette parameters such as the contrast standard, CVD mode, and strict compliance.
+- **`ColorGraphLifecycleMachine`** owns the color graph runtime: construct, device ready, fit, settle, and zoom.
+- **`TocBarMachine`** owns the table-of-contents bar presentation, from the top of the page to past the hero.
+
+## Worker Lanes
+
+Palette resolution and the schema reachability check run in one engine worker, each as its own request lane. The reachability lane uses latest-wins sequencing in the request client, so a stale reply is dropped instead of overwriting newer state. The worker is single-threaded; lanes run in arrival order.

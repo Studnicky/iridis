@@ -119,6 +119,9 @@ let graphBooting = false;
 const fitTimers: ReturnType<typeof setTimeout>[] = [];
 let captureFitZoomOnEnd = false;
 let startSimulationAfterFit = false;
+let zoomIdleTimer: ReturnType<typeof setTimeout> | null = null;
+const ZOOM_IDLE_MS = 250;
+const FIT_SETTLE_FALLBACK_MS = 600;
 const LABEL_PAINT_BUDGET_MS = 1000 / 30;
 const GRAPH_VISIBILITY_POLL_MS = 750;
 // Caps how many times initCosmos() is allowed to retry a failing
@@ -162,6 +165,30 @@ function stopVisibilityPoll(): void {
   if (visibilityPoll !== null) {
     clearInterval(visibilityPoll);
     visibilityPoll = null;
+  }
+}
+
+function armZoomIdle(): void {
+  if (zoomIdleTimer !== null) clearTimeout(zoomIdleTimer);
+  zoomIdleTimer = setTimeout(() => {
+    zoomIdleTimer = null;
+    signal(ColorGraphLifecycleEvent.zoomEnded());
+  }, ZOOM_IDLE_MS);
+}
+
+// A final fit that lands on the current zoom emits no zoom-end, so the fit settles on a timer too.
+function settleFit(): void {
+  if (!captureFitZoomOnEnd) return;
+  captureFitZoomOnEnd = false;
+  const shouldStartSimulation = startSimulationAfterFit;
+  startSimulationAfterFit = false;
+  const handle = graph.value;
+  if (handle === null) return;
+  try { fitZoomLevel.value = handle.getZoomLevel(); } catch { /* ignore */ }
+  signal(ColorGraphLifecycleEvent.fitSettled());
+  signal(ColorGraphLifecycleEvent.zoomEnded());
+  if (shouldStartSimulation) {
+    try { handle.start(1); } catch { /* ignore */ }
   }
 }
 
@@ -275,6 +302,10 @@ function teardownGraphRuntime(): void {
   }
   window.removeEventListener('keydown', onKeydown);
   cancelFitSequence();
+  if (zoomIdleTimer !== null) {
+    clearTimeout(zoomIdleTimer);
+    zoomIdleTimer = null;
+  }
   if (labelRaf !== null) {
     cancelAnimationFrame(labelRaf);
     labelRaf = null;
@@ -334,6 +365,7 @@ function initCosmos(container: HTMLDivElement): void {
       'onSimulationTick': () => { scheduleLabelPaint(); },
       'onZoom': () => {
         signal(ColorGraphLifecycleEvent.zoomed());
+        armZoomIdle();
         scheduleLabelPaint();
         pollZoom();
         const g = graph.value;
@@ -343,19 +375,10 @@ function initCosmos(container: HTMLDivElement): void {
         }
       },
       'onZoomEnd': () => {
-        if (!captureFitZoomOnEnd) {
+        if (captureFitZoomOnEnd) {
+          settleFit();
+        } else {
           signal(ColorGraphLifecycleEvent.zoomEnded());
-          return;
-        }
-        captureFitZoomOnEnd = false;
-        const shouldStartSimulation = startSimulationAfterFit;
-        startSimulationAfterFit = false;
-        const handle = graph.value;
-        if (handle === null) return;
-        try { fitZoomLevel.value = handle.getZoomLevel(); } catch { /* ignore */ }
-        signal(ColorGraphLifecycleEvent.fitSettled());
-        if (shouldStartSimulation) {
-          try { handle.start(1); } catch { /* ignore */ }
         }
       }
     });
@@ -482,6 +505,7 @@ function armFitSequence(armInitialSimulation = false): void {
         startSimulationAfterFit ||= armInitialSimulation;
       }
       handle.fitView(200, buildColorGraphViewModel.fitPadding, false);
+      if (delayMs === finalDelayMs) fitTimers.push(setTimeout(settleFit, FIT_SETTLE_FALLBACK_MS));
     }, delayMs));
   }
 }

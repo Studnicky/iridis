@@ -1,1 +1,1 @@
-/** Legacy module retained while consumers migrate to ModeInterfaceTypeEntity. */
+/** Legacy module retained while consumers migrate to ModeEntity. */

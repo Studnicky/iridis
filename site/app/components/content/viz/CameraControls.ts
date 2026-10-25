@@ -1,6 +1,6 @@
-import { DpadDirectionInterfaceTypeEntity } from './DpadDirectionInterfaceTypeEntity.ts';
+import { DpadDirectionEntity } from './DpadDirectionEntity.ts';
 import { DpadMachine } from './DpadMachine.ts';
-import { VisualizationModeInterfaceTypeEntity } from './VisualizationModeInterfaceTypeEntity.ts';
+import { VisualizationModeEntity } from './VisualizationModeEntity.ts';
 
 interface CameraControlSurfaceInterface {
   readonly 'can'?: (action: string) => boolean;
@@ -58,19 +58,19 @@ class CameraDpadHooks {
       return result;
     };
     const panDown = (): void | Promise<void> => {
-      const result = controls.pan(DpadDirectionInterfaceTypeEntity.intake('down'));
+      const result = controls.pan(DpadDirectionEntity.intake('down'));
       return result;
     };
     const panLeft = (): void | Promise<void> => {
-      const result = controls.pan(DpadDirectionInterfaceTypeEntity.intake('left'));
+      const result = controls.pan(DpadDirectionEntity.intake('left'));
       return result;
     };
     const panRight = (): void | Promise<void> => {
-      const result = controls.pan(DpadDirectionInterfaceTypeEntity.intake('right'));
+      const result = controls.pan(DpadDirectionEntity.intake('right'));
       return result;
     };
     const panUp = (): void | Promise<void> => {
-      const result = controls.pan(DpadDirectionInterfaceTypeEntity.intake('up'));
+      const result = controls.pan(DpadDirectionEntity.intake('up'));
       return result;
     };
     const zoomIn = (): void | Promise<void> => {
@@ -153,7 +153,7 @@ class CameraDpadHooks {
 
 export const CameraControls = class CameraControls {
   public static create(controls: CameraControlSurfaceInterface, mode = 'inline'): InstanceType<typeof DpadMachine> {
-    const resolvedMode = VisualizationModeInterfaceTypeEntity.intake(mode);
+    const resolvedMode = VisualizationModeEntity.intake(mode);
     const result = new DpadMachine(new CameraDpadHooks(controls), resolvedMode);
     return result;
   }

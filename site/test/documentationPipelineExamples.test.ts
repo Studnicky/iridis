@@ -1,4 +1,4 @@
-import { coreTasks, Engine, InputInterfaceTypeEntity } from '@studnicky/iridis';
+import { coreTasks, Engine, InputEntity } from '@studnicky/iridis';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
@@ -67,7 +67,7 @@ await test('canonical resolve and expand prefix produces the derived onAccent ro
   }
   engine.pipeline(['intake:any', 'resolve:roles', 'expand:family']);
 
-  const state = engine.run(InputInterfaceTypeEntity.create({
+  const state = engine.run(InputEntity.create({
     'colors': ['#8B5CF6'],
     'roles': categoryW3cRoleSchema
   }));

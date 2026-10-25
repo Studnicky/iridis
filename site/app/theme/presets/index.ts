@@ -1,4 +1,4 @@
-import type { ThemeDefinitionInterfaceType } from '../ThemeDefinitionInterfaceType.ts';
+import type { ThemeDefinitionInterface } from '../ThemeDefinitionInterface.ts';
 
 import { arcade } from './arcade.ts';
 import { backroads } from './backroads.ts';
@@ -19,7 +19,7 @@ import { romance } from './romance.ts';
 import { startup } from './startup.ts';
 import { streamer } from './streamer.ts';
 
-export const THEMES = new Map<string, ThemeDefinitionInterfaceType>([
+export const THEMES = new Map<string, ThemeDefinitionInterface>([
   [arcade.key, arcade],
   [backroads.key, backroads],
   [dayAtWork.key, dayAtWork],

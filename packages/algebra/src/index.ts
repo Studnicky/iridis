@@ -2,9 +2,9 @@ import { LerpHue } from './LerpHue.ts';
 import { Vector } from './Vector.ts';
 
 export { LerpHue };
-export { LerpOptionsInterfaceTypeEntity } from './entities/LerpOptionsInterfaceTypeEntity.ts';
-export { OklchInterfaceTypeEntity } from './entities/OklchInterfaceTypeEntity.ts';
-export { PaletteInterfaceTypeEntity } from './entities/PaletteInterfaceTypeEntity.ts';
+export { LerpOptionsEntity } from './entities/LerpOptionsEntity.ts';
+export { OklchEntity } from './entities/OklchEntity.ts';
+export { PaletteEntity } from './entities/PaletteEntity.ts';
 export type { PaletteDistanceMetricInterface } from './interfaces/PaletteDistanceMetricInterface.ts';
 
 export const lerpHue = LerpHue.shortestArc;

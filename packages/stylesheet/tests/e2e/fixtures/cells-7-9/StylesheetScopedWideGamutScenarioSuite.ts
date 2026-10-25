@@ -1,4 +1,4 @@
-import { type InputInterfaceTypeEntity, type RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis';
+import { type InputEntity, type RoleSchemaEntity } from '@studnicky/iridis';
 import assert from 'node:assert/strict';
 
 import type { ScenarioInterface } from '../../../_runner/ScenarioInterface.ts';
@@ -12,10 +12,10 @@ import { StylesheetCellsSevenToNinePatterns } from './StylesheetCellsSevenToNine
 import { StylesheetCellsSevenToNineRoleSchemas } from './StylesheetCellsSevenToNineRoleSchemas.ts';
 
 interface CssVarsScopedWideGamutInputInterface {
-  readonly 'colors': InputInterfaceTypeEntity.Type['colors'];
-  readonly 'metadata'?: InputInterfaceTypeEntity.Type['metadata'];
+  readonly 'colors': InputEntity.Type['colors'];
+  readonly 'metadata'?: InputEntity.Type['metadata'];
   readonly 'pipeline': readonly string[];
-  readonly 'roles': RoleSchemaInterfaceTypeEntity.Type;
+  readonly 'roles': RoleSchemaEntity.Type;
 }
 
 export class StylesheetScopedWideGamutScenarioSuite {
