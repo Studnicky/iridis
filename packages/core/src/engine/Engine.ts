@@ -15,7 +15,6 @@ import type {
 } from '../types/index.ts';
 
 import { InputEntity } from '../entities/InputEntity.ts';
-import { RoleSchemaEntity } from '../entities/RoleSchemaEntity.ts';
 import { RuntimeOptionsEntity } from '../entities/RuntimeOptionsEntity.ts';
 import { ContrastRatioSchema } from '../model/ContrastRatioSchema.ts';
 import { PaletteStateSchema }  from '../model/PaletteStateSchema.ts';
@@ -425,10 +424,11 @@ export class Engine implements EngineInterface {
       if (roleResult.errors.length > 0) {
         this.throwInvalid('input.roles invalid', 'input.roles', roleResult.errors);
       }
-      const admittedRoleSchema = RoleSchemaEntity.intake(input.roles);
-      const integrityErrors = RoleRelationshipGraphIntegrity.validate(admittedRoleSchema);
-      if (integrityErrors.length > 0) {
-        this.throwInvalid('input.roles invalid', 'input.roles', integrityErrors);
+      if (input.roles.relationshipGraph !== undefined) {
+        const integrityErrors = RoleRelationshipGraphIntegrity.validate(input.roles);
+        if (integrityErrors.length > 0) {
+          this.throwInvalid('input.roles invalid', 'input.roles', integrityErrors);
+        }
       }
     }
     this.validateContrastPairBounds(input);

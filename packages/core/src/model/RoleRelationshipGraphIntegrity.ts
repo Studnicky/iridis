@@ -1,5 +1,8 @@
-import type { RoleSchemaEntity } from '../entities/RoleSchemaEntity.ts';
+import type { InputEntity } from '../entities/InputEntity.ts';
 
+import { HarmonyModeEntity } from '../entities/HarmonyModeEntity.ts';
+import { RoleRelationshipEntity } from '../entities/RoleRelationshipEntity.ts';
+import { RoleRelationshipGroupEntity } from '../entities/RoleRelationshipGroupEntity.ts';
 import { ValidationErrorEntity } from '../entities/ValidationErrorEntity.ts';
 
 class GraphIntegrityContext {
@@ -7,7 +10,7 @@ class GraphIntegrityContext {
   readonly groupIds: Set<string> = new Set();
   readonly roleNames: ReadonlySet<string>;
 
-  constructor(schema: RoleSchemaEntity.Type) {
+  constructor(schema: NonNullable<InputEntity.Type['roles']>) {
     this.roleNames = new Set(schema.roles.map((role) => {
       return role.name;
     }));
@@ -16,7 +19,7 @@ class GraphIntegrityContext {
 
 /** Validates graph references that JSON Schema cannot express. */
 export class RoleRelationshipGraphIntegrity {
-  static validate(schema: RoleSchemaEntity.Type): ValidationErrorEntity.Type[] {
+  static validate(schema: NonNullable<InputEntity.Type['roles']>): ValidationErrorEntity.Type[] {
     const graph = schema.relationshipGraph;
     if (graph === undefined) {
       return [];
@@ -26,7 +29,8 @@ export class RoleRelationshipGraphIntegrity {
     for (let groupIndex = 0; groupIndex < graph.groups.length; groupIndex += 1) {
       const group = graph.groups[groupIndex];
       if (group !== undefined) {
-        this.#validateGroup(context, group, groupIndex);
+        const admittedGroup = RoleRelationshipGroupEntity.intake(group);
+        this.#validateGroup(context, admittedGroup, groupIndex);
       }
     }
     return context.errors;
@@ -34,7 +38,7 @@ export class RoleRelationshipGraphIntegrity {
 
   static #validateGroup(
     context: GraphIntegrityContext,
-    group: NonNullable<RoleSchemaEntity.Type['relationshipGraph']>['groups'][number],
+    group: RoleRelationshipGroupEntity.Type,
     groupIndex: number
   ): void {
     const path = `relationshipGraph.groups[${groupIndex}]`;
@@ -50,20 +54,21 @@ export class RoleRelationshipGraphIntegrity {
 
   static #validateModes(
     context: GraphIntegrityContext,
-    group: NonNullable<RoleSchemaEntity.Type['relationshipGraph']>['groups'][number],
+    group: RoleRelationshipGroupEntity.Type,
     groupPath: string
-  ): Map<string, NonNullable<RoleSchemaEntity.Type['relationshipGraph']>['groups'][number]['modes'][number]> {
-    const modes = new Map<string, NonNullable<RoleSchemaEntity.Type['relationshipGraph']>['groups'][number]['modes'][number]>();
+  ): Map<string, HarmonyModeEntity.Type> {
+    const modes = new Map<string, HarmonyModeEntity.Type>();
     for (let modeIndex = 0; modeIndex < group.modes.length; modeIndex += 1) {
       const mode = group.modes[modeIndex];
       if (mode !== undefined) {
+        const admittedMode = HarmonyModeEntity.intake(mode);
         const path = `${groupPath}.modes[${modeIndex}]`;
-        if (modes.has(mode.id)) {
+        if (modes.has(admittedMode.id)) {
           context.errors.push(this.#error(`${path}.id`, 'must be unique within its group'));
         } else {
-          modes.set(mode.id, mode);
+          modes.set(admittedMode.id, admittedMode);
         }
-        this.#validateVariants(context, mode.hueOffsets, path);
+        this.#validateVariants(context, admittedMode.hueOffsets, path);
       }
     }
     return modes;
@@ -71,7 +76,7 @@ export class RoleRelationshipGraphIntegrity {
 
   static #validateVariants(
     context: GraphIntegrityContext,
-    variants: NonNullable<RoleSchemaEntity.Type['relationshipGraph']>['groups'][number]['modes'][number]['hueOffsets'],
+    variants: HarmonyModeEntity.Type['hueOffsets'],
     modePath: string
   ): void {
     const variantIds = new Set<string>();
@@ -85,22 +90,23 @@ export class RoleRelationshipGraphIntegrity {
 
   static #validateRelationships(
     context: GraphIntegrityContext,
-    group: NonNullable<RoleSchemaEntity.Type['relationshipGraph']>['groups'][number],
+    group: RoleRelationshipGroupEntity.Type,
     groupPath: string,
-    modes: ReadonlyMap<string, NonNullable<RoleSchemaEntity.Type['relationshipGraph']>['groups'][number]['modes'][number]>,
-    defaultMode: NonNullable<RoleSchemaEntity.Type['relationshipGraph']>['groups'][number]['modes'][number] | undefined
+    modes: ReadonlyMap<string, HarmonyModeEntity.Type>,
+    defaultMode: HarmonyModeEntity.Type | undefined
   ): void {
     const relationshipIds = new Set<string>();
     const prioritiesByTarget = new Map<string, Set<number>>();
     for (let index = 0; index < group.relationships.length; index += 1) {
       const relationship = group.relationships[index];
       if (relationship !== undefined) {
+        const admittedRelationship = RoleRelationshipEntity.intake(relationship);
         const path = `${groupPath}.relationships[${index}]`;
-        this.#requireSetUnique(context, relationshipIds, relationship.id, `${path}.id`, 'must be unique within its group');
-        this.#requireRole(context, relationship.target, `${path}.target`);
-        this.#requirePriority(context, prioritiesByTarget, relationship, path);
-        this.#validateReferences(context, relationship, path);
-        this.#validateHueVariant(context, relationship, path, modes, defaultMode);
+        this.#requireSetUnique(context, relationshipIds, admittedRelationship.id, `${path}.id`, 'must be unique within its group');
+        this.#requireRole(context, admittedRelationship.target, `${path}.target`);
+        this.#requirePriority(context, prioritiesByTarget, admittedRelationship, path);
+        this.#validateReferences(context, admittedRelationship, path);
+        this.#validateHueVariant(context, admittedRelationship, path, modes, defaultMode);
       }
     }
   }
@@ -108,7 +114,7 @@ export class RoleRelationshipGraphIntegrity {
   static #requirePriority(
     context: GraphIntegrityContext,
     prioritiesByTarget: Map<string, Set<number>>,
-    relationship: NonNullable<RoleSchemaEntity.Type['relationshipGraph']>['groups'][number]['relationships'][number],
+    relationship: RoleRelationshipEntity.Type,
     path: string
   ): void {
     const priorities = prioritiesByTarget.get(relationship.target) ?? new Set<number>();
@@ -121,7 +127,7 @@ export class RoleRelationshipGraphIntegrity {
 
   static #validateReferences(
     context: GraphIntegrityContext,
-    relationship: NonNullable<RoleSchemaEntity.Type['relationshipGraph']>['groups'][number]['relationships'][number],
+    relationship: RoleRelationshipEntity.Type,
     path: string
   ): void {
     if ('source' in relationship) {
@@ -140,10 +146,10 @@ export class RoleRelationshipGraphIntegrity {
 
   static #validateHueVariant(
     context: GraphIntegrityContext,
-    relationship: NonNullable<RoleSchemaEntity.Type['relationshipGraph']>['groups'][number]['relationships'][number],
+    relationship: RoleRelationshipEntity.Type,
     path: string,
-    modes: ReadonlyMap<string, NonNullable<RoleSchemaEntity.Type['relationshipGraph']>['groups'][number]['modes'][number]>,
-    defaultMode: NonNullable<RoleSchemaEntity.Type['relationshipGraph']>['groups'][number]['modes'][number] | undefined
+    modes: ReadonlyMap<string, HarmonyModeEntity.Type>,
+    defaultMode: HarmonyModeEntity.Type | undefined
   ): void {
     if (relationship.operation !== 'hue-offset') {
       return;
