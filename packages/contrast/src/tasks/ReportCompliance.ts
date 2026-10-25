@@ -57,6 +57,7 @@ class ComplianceSerialization {
     const cvd = CvdResultSetEntity.intake(state.metadata['contrast:cvd'] ?? {
       'blocked': [],
       'corrections': [],
+      'relationshipCandidateRejections': {},
       'warnings': []
     });
     const failurePolicy = CvdFailurePolicy.resolve(state.input.contrast);

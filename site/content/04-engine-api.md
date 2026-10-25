@@ -69,7 +69,7 @@ Construct `new Engine()`, register the core tasks (`coreTasks`), `adopt()` the p
 
 `report:compliance` writes `metadata['contrast:complianceReport']` as `{ compliant, disposition, selected, pairs, problemPairs }`. `problemPairs` is the stable failing subset of `pairs`. Every pair reports `foreground`, `background`, `required`, `actual`, `shortfall`, `passed`, `adjustedRoles`, and `constraints`. A relationship-constrained pair also carries sorted `relationIds`, which join it to `core:relationshipResolution`. A failing pair can carry `proof`, which identifies the best reachable value and its limiting bounds.
 
-A relationship graph resolves role targets before compliance. Fixed relationships retain their resolved record; tolerant relationships constrain movement to their declared channel deltas. An `alpha-overlay` target is evaluated as its source-over composite. Schema analysis marks an alpha-overlay pair indeterminate with sampled evidence unless interval bounds can certify it.
+A relationship graph resolves role targets before compliance. Fixed relationships retain their resolved record; tolerant relationships constrain movement to their declared channel deltas. `relationIds` identifies relationships incident to a pair rather than CVD causation. CVD metadata records `relationshipCandidateRejections` per mover group as diagnostic evidence when a relationship rejects candidate colors. An `alpha-overlay` target is evaluated as its source-over composite. Schema analysis marks an alpha-overlay pair indeterminate with sampled evidence unless interval bounds can certify it.
 
 Schema authors can inspect constraints before running a palette:
 

@@ -73,9 +73,13 @@ Safety: stated roles are never mutated, `enableStrictCompliance` withholds throu
 The CVD record lands in `state.metadata['contrast:cvd']`.
 `warnings` retain `belowFloor` and `exceedsDrop` evidence for every mode;
 `corrections[].adjustedRoles` lists roles changed by `nudge` or `enforce`;
-and `blocked` is populated only by unresolved `enforce` constraints. Each
+and `blocked` is populated only by unresolved `enforce` constraints.
+`relationshipCandidateRejections` maps each CVD mover group to candidates
+rejected by relationship constraints; it is diagnostic evidence only. Each
 per-pair CVD evaluation carries `belowFloor`, `exceedsDrop`, and `fail`;
-`fail` is true only for unresolved `enforce` evidence.
+`fail` is true only for unresolved `enforce` evidence. `relationIds` names
+relationships incident to a pair rather than a CVD cause; `hue-relationship`
+names only standard-compliance bounds that prevent the selected target.
 
 ## Install
 

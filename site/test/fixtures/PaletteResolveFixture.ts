@@ -59,6 +59,7 @@ export class PaletteResolveFixture {
       'cvd': ({
         'blocked': ([]),
         'corrections': ([]),
+        'relationshipCandidateRejections': ({}),
         'warnings': ([])
       }),
       'distances': ({ 'brand': ({ '#445566': 0.12 }) }),

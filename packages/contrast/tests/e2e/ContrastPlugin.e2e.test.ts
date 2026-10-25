@@ -171,12 +171,13 @@ await test('ContrastPlugin compiles metadata schemas and rejects incomplete repo
     () => {
       const result = CvdResultSetEntity.intake({
         'blocked': [],
-        'corrections': []
+        'corrections': [],
+        'warnings': []
       });
       return result;
     },
     Error,
-    'CVD metadata requires warnings'
+    'CVD metadata requires relationship candidate diagnostics'
   );
 });
 
