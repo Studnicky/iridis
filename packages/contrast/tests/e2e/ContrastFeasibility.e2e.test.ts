@@ -532,6 +532,114 @@ await test('ContrastFeasibility leaves alpha-overlay schema targets indeterminat
   assert.ok(pair.sampled !== undefined, 'source-over targets retain labelled sampled evidence until compositing intervals are bounded');
 });
 
+await test('ContrastFeasibility projects hue-target relationships through the authored clamp', () => {
+  const roles = [
+    ContrastFeasibilityFixture.role('background', 0.05, 0.01, 0),
+    ContrastFeasibilityFixture.role('source', 0.85, 0.01, 120),
+    RoleDefinitionEntity.intake({
+      'chromaRange': [0.01, 0.01],
+      'lightnessRange': [0.85, 0.85],
+      'name': 'fixed-target'
+    }),
+    RoleDefinitionEntity.intake({
+      'chromaRange': [0.01, 0.01],
+      'lightnessRange': [0.85, 0.85],
+      'name': 'bounded-target'
+    })
+  ];
+  const schema = RoleSchemaEntity.intake({
+    'contrastPairs': [
+      { 'background': 'background', 'foreground': 'fixed-target', 'minimumContrastRatio': 4.5 },
+      { 'background': 'background', 'foreground': 'bounded-target', 'minimumContrastRatio': 4.5 }
+    ],
+    'name': 'hue-target-feasibility',
+    'relationshipGraph': {
+      'groups': [{
+        'anchor': 'source',
+        'defaultMode': 'semantic',
+        'id': 'semantic',
+        'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'semantic' }], 'id': 'semantic' }],
+        'name': 'Semantic',
+        'relationships': [
+          {
+            'clamp': 180,
+            'hue': 25,
+            'id': 'fixed-target',
+            'operation': 'hue-target',
+            'priority': 0,
+            'relaxability': 'fixed',
+            'source': 'source',
+            'target': 'fixed-target'
+          },
+          {
+            'hue': 25,
+            'id': 'bounded-target',
+            'operation': 'hue-target',
+            'priority': 1,
+            'relaxability': 'fixed',
+            'source': 'source',
+            'target': 'bounded-target'
+          }
+        ]
+      }]
+    },
+    'roles': roles
+  });
+
+  const pairs = ContrastFeasibility.analyzeSchema(schema, ContrastFeasibilityFixture.options()).pairs;
+  const fixed = pairs.find((pair) => {
+    const result = pair.foreground === 'fixed-target';
+    return result;
+  });
+  const bounded = pairs.find((pair) => {
+    const result = pair.foreground === 'bounded-target';
+    return result;
+  });
+
+  assert.ok(fixed !== undefined, 'fixed hue-target pair receives a feasibility result');
+  assert.strictEqual(fixed.reachability, 'always-reachable', 'a full clamp fixes the target hue for every source hue');
+  assert.strictEqual(fixed.sampled, undefined, 'fixed hue-targets use a continuous certificate');
+  assert.ok(bounded !== undefined, 'bounded hue-target pair receives a feasibility result');
+  assert.strictEqual(bounded.reachability, 'always-reachable', 'the bounded hue arc is certified when its full envelope clears');
+  assert.strictEqual(bounded.sampled, undefined, 'bounded hue-target certificates do not rely on sampled evidence');
+});
+
+await test('ContrastFeasibility certifies a source-derived hue-target arc across the zero-degree wrap', () => {
+  const schema = RoleSchemaEntity.intake({
+    'contrastPairs': [{ 'background': 'background', 'foreground': 'semantic', 'minimumContrastRatio': 4.5 }],
+    'name': 'wrapped-hue-target-feasibility',
+    'relationshipGraph': {
+      'groups': [{
+        'anchor': 'source',
+        'defaultMode': 'semantic',
+        'id': 'semantic',
+        'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'semantic' }], 'id': 'semantic' }],
+        'name': 'Semantic',
+        'relationships': [{
+          'hue': 25,
+          'id': 'semantic',
+          'operation': 'hue-target',
+          'priority': 0,
+          'relaxability': 'fixed',
+          'source': 'source',
+          'target': 'semantic'
+        }]
+      }]
+    },
+    'roles': [
+      ContrastFeasibilityFixture.role('background', 0.05, 0.01, 0),
+      ContrastFeasibilityFixture.role('source', 0.85, 0.01),
+      ContrastFeasibilityFixture.role('semantic', 0.85, 0.01)
+    ]
+  });
+
+  const pair = ContrastFeasibility.analyzeSchema(schema, ContrastFeasibilityFixture.options()).pairs[0];
+
+  assert.ok(pair !== undefined, 'source-derived hue-target pair receives a feasibility result');
+  assert.strictEqual(pair.reachability, 'always-reachable');
+  assert.strictEqual(pair.sampled, undefined, 'the bounded target arc is certified through both wrapped segments');
+});
+
 await test('ContrastFeasibility classifies graph alias, hue-offset, and OKLCH delta targets like legacy hue derivation', () => {
   const roles = [
     ContrastFeasibilityFixture.role('background', 0.05, 0.01),
