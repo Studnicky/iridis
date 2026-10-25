@@ -4,6 +4,7 @@ import type { HueTargetOverrideEntity } from '../entities/HueTargetOverrideEntit
 
 import { ContrastReportEntity } from '../entities/ContrastReportEntity.ts';
 import { EngineMetadataEntity } from '../entities/EngineMetadataEntity.ts';
+import { RelationshipResolutionEntity } from '../entities/RelationshipResolutionEntity.ts';
 import { RoleProvenanceEntity } from '../entities/RoleProvenanceEntity.ts';
 
 /** Validates known metadata slots at intake and serializes dynamic runtime Maps at the metadata boundary. */
@@ -106,6 +107,33 @@ export class Metadata {
     return result;
   }
 
+  static relationshipResolution(
+    metadataRecord: Record<string, JSONSchema7Type>
+  ): Map<string, RelationshipResolutionEntity.Type> {
+    const value = metadataRecord['core:relationshipResolution'];
+    if (value === undefined) {
+      return new Map();
+    }
+    const normalized = EngineMetadataEntity.intake({
+      'core:relationshipResolution': value
+    });
+    const source = normalized['core:relationshipResolution'];
+    const result = new Map<string, RelationshipResolutionEntity.Type>();
+    if (source === undefined) {
+      return result;
+    }
+    const entries = Object.entries(source);
+    for (let entryIndex = 0; entryIndex < entries.length; entryIndex += 1) {
+      const entry = entries.at(entryIndex);
+      if (entry === undefined) {
+        continue;
+      }
+      const [roleName, resolution] = entry;
+      result.set(roleName, RelationshipResolutionEntity.intake(resolution));
+    }
+    return result;
+  }
+
   static contrastReport(
     metadataRecord: Record<string, JSONSchema7Type>
   ): ContrastReportEntity.Type | undefined {
@@ -157,6 +185,19 @@ export class Metadata {
     const value = normalized['core:roleProvenance'];
     if (value !== undefined) {
       metadataRecord['core:roleProvenance'] = value;
+    }
+  }
+
+  static writeRelationshipResolution(
+    metadataRecord: Record<string, JSONSchema7Type>,
+    resolution: Map<string, RelationshipResolutionEntity.Type>
+  ): void {
+    const normalized = EngineMetadataEntity.create({
+      'core:relationshipResolution': Metadata.#recordFromEntries(resolution)
+    });
+    const value = normalized['core:relationshipResolution'];
+    if (value !== undefined) {
+      metadataRecord['core:relationshipResolution'] = value;
     }
   }
 }

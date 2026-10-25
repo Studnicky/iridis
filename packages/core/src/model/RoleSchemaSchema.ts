@@ -1,4 +1,5 @@
 import { ContrastPairEntity } from '../entities/ContrastPairEntity.ts';
+import { RoleRelationshipGraphEntity } from '../entities/RoleRelationshipGraphEntity.ts';
 
 export const RoleSchemaSchema = {
   '$id':       'https://studnicky.dev/iridis/RoleSchema',
@@ -10,6 +11,7 @@ export const RoleSchemaSchema = {
     },
     'description': { 'type': 'string' },
     'name':        { 'type': 'string' },
+    'relationshipGraph': RoleRelationshipGraphEntity.Schema,
     'roles': {
       'items': {
         'additionalProperties': false,
