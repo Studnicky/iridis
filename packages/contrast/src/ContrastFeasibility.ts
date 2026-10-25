@@ -113,6 +113,10 @@ class ContrastFeasibilityDomain {
     background: RoleDomainInterface,
     requirement: ContrastPolicy.RequirementInterface
   ): ContrastPairFeasibilityEntity.Type {
+    const relationshipHue = ContrastFeasibilityDomain.relationshipHueCertificate(foreground, background, requirement);
+    if (relationshipHue !== undefined) {
+      return relationshipHue;
+    }
     const neutral = ContrastFeasibilityDomain.neutralEvaluation(foreground, background, requirement);
     if (neutral !== undefined && neutral.actual >= requirement.minimumContrastRatio) {
       const result = ContrastFeasibilityDomain.alwaysReachable(foreground, background);
@@ -156,6 +160,110 @@ class ContrastFeasibilityDomain {
         : []
     });
     return result;
+  }
+
+  private static relationshipHueCertificate(
+    foreground: RoleDomainInterface,
+    background: RoleDomainInterface,
+    requirement: ContrastPolicy.RequirementInterface
+  ): ContrastPairFeasibilityEntity.Type | undefined {
+    const foregroundArcs = ContrastFeasibilityDomain.relationshipHueArcs(foreground);
+    const backgroundArcs = ContrastFeasibilityDomain.relationshipHueArcs(background);
+    if (foregroundArcs === undefined && backgroundArcs === undefined) {
+      return undefined;
+    }
+    const foregroundCandidates = foregroundArcs ?? ContrastFeasibilityDomain.fixedHueArcs(foreground);
+    const backgroundCandidates = backgroundArcs ?? ContrastFeasibilityDomain.fixedHueArcs(background);
+    if (foregroundCandidates === undefined || backgroundCandidates === undefined) {
+      const result = ContrastFeasibilityDomain.sampledIndeterminate(foreground, background, requirement);
+      return result;
+    }
+    for (let foregroundIndex = 0; foregroundIndex < foregroundCandidates.length; foregroundIndex += 1) {
+      const foregroundArc = foregroundCandidates[foregroundIndex];
+      if (foregroundArc === undefined) {
+        continue;
+      }
+      for (let backgroundIndex = 0; backgroundIndex < backgroundCandidates.length; backgroundIndex += 1) {
+        const backgroundArc = backgroundCandidates[backgroundIndex];
+        if (backgroundArc === undefined || !ContrastFeasibilityDomain.arcsAlwaysPass(foreground, background, foregroundArc, backgroundArc, requirement)) {
+          const result = ContrastFeasibilityDomain.sampledIndeterminate(foreground, background, requirement);
+          return result;
+        }
+      }
+    }
+    const result = ContrastFeasibilityDomain.alwaysReachable(foreground, background);
+    return result;
+  }
+
+  private static relationshipHueArcs(domain: RoleDomainInterface): readonly HueArcInterface[] | undefined {
+    const tolerance = domain.relationship?.tolerance?.hue;
+    const baseline = domain.relationship?.baseline.oklch.h;
+    if (tolerance === undefined || tolerance <= 0 || baseline === undefined) {
+      return undefined;
+    }
+    const lower = baseline - tolerance;
+    const upper = baseline + tolerance;
+    if (lower < 0) {
+      return [{ 'end': upper, 'start': 0 }, { 'end': lower + 360, 'start': 360 }];
+    }
+    if (upper > 360) {
+      return [{ 'end': upper - 360, 'start': 0 }, { 'end': 360, 'start': lower }];
+    }
+    return [{ 'end': upper, 'start': lower }];
+  }
+
+  private static fixedHueArcs(domain: RoleDomainInterface): readonly HueArcInterface[] | undefined {
+    const hue = domain.fixedRecord?.oklch.h ?? domain.hue;
+    if (hue === undefined) {
+      return undefined;
+    }
+    const result: readonly HueArcInterface[] = [{ 'end': hue, 'start': hue }];
+    return result;
+  }
+
+  private static arcsAlwaysPass(
+    foreground: RoleDomainInterface,
+    background: RoleDomainInterface,
+    foregroundArc: HueArcInterface,
+    backgroundArc: HueArcInterface,
+    requirement: ContrastPolicy.RequirementInterface
+  ): boolean {
+    const foregroundBounds = ContrastFeasibilityDomain.hueBounds(foreground, foregroundArc);
+    const backgroundBounds = ContrastFeasibilityDomain.hueBounds(background, backgroundArc);
+    const minimum = requirement.algorithm === 'apca'
+      ? HueIntervalBounds.apcaMagnitudeBounds(
+        foregroundBounds.minimumApca,
+        foregroundBounds.maximumApca,
+        backgroundBounds.minimumApca,
+        backgroundBounds.maximumApca
+      )[0]
+      : ContrastFeasibilityDomain.wcagLowerBound(
+        foregroundBounds.minimumWcag,
+        foregroundBounds.maximumWcag,
+        backgroundBounds.minimumWcag,
+        backgroundBounds.maximumWcag
+      );
+    const result = minimum >= requirement.minimumContrastRatio;
+    return result;
+  }
+
+  private static hueBounds(domain: RoleDomainInterface, arc: HueArcInterface): LuminanceBoundsInterface {
+    if (domain.fixedRecord !== undefined) {
+      const coordinate = ColorCoordinate.fromRecord(domain.fixedRecord);
+      return {
+        'maximumApca': coordinate.apcaLuminance,
+        'maximumWcag': coordinate.relativeLuminance,
+        'minimumApca': coordinate.apcaLuminance,
+        'minimumWcag': coordinate.relativeLuminance
+      };
+    }
+    const bounds = HueIntervalBounds.range(domain.lightness, domain.chroma, arc.start, arc.end);
+    return {
+      'maximumApca': bounds.maximumApcaLuminance,
+      'maximumWcag': bounds.maximumRelativeLuminance,
+      'minimumApca': bounds.minimumApcaLuminance,
+      'minimumWcag': bounds.minimumRelativeLuminance
+    };
   }
 
   static sampledIndeterminate(
