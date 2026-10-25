@@ -140,7 +140,6 @@ class ReasonAnnotate implements TaskInterface {
       }
       const roleNode = DataFactory.namedNode(Iri.role(roleName));
       const decimalNode = DataFactory.namedNode(XSD_IRI.DECIMAL);
-      if (definition.derivedFrom !== undefined) {store.addQuad(DataFactory.quad(roleNode, DataFactory.namedNode(iridisVocab.derivedFrom), DataFactory.namedNode(Iri.role(definition.derivedFrom))));}
       if (definition.intent !== undefined) {store.addQuad(DataFactory.quad(roleNode, DataFactory.namedNode(iridisVocab.intent), DataFactory.literal(definition.intent, DataFactory.namedNode(XSD_IRI.STRING))));}
       if (definition.lightnessRange !== undefined) {
         store.addQuad(DataFactory.quad(roleNode, DataFactory.namedNode(iridisVocab.leastPermittedLightness), DataFactory.literal(definition.lightnessRange[0].toFixed(4), decimalNode)));
@@ -150,7 +149,6 @@ class ReasonAnnotate implements TaskInterface {
         store.addQuad(DataFactory.quad(roleNode, DataFactory.namedNode(iridisVocab.leastPermittedChroma), DataFactory.literal(definition.chromaRange[0].toFixed(4), decimalNode)));
         store.addQuad(DataFactory.quad(roleNode, DataFactory.namedNode(iridisVocab.greatestPermittedChroma), DataFactory.literal(definition.chromaRange[1].toFixed(4), decimalNode)));
       }
-      if (definition.hueClamp !== undefined) {store.addQuad(DataFactory.quad(roleNode, DataFactory.namedNode(iridisVocab.hueClamp), DataFactory.literal(definition.hueClamp.toFixed(2), decimalNode)));}
       return;
     }
   }

@@ -15,6 +15,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 class ContrastFeasibilityFixture {
+  static readonly #hues = new WeakMap<RoleDefinitionEntity.Type, number>();
+
   static options(): ContrastOptionsEntity.Type {
     const result = ContrastOptionsEntity.intake({ 'algorithm': 'wcag21', 'level': 'AA' });
     return result;
@@ -28,10 +30,12 @@ class ContrastFeasibilityFixture {
   ): RoleDefinitionEntity.Type {
     const result = RoleDefinitionEntity.intake({
       'chromaRange': [chroma, chroma],
-      ...(hue === undefined ? {} : { 'hue': hue }),
       'lightnessRange': [lightness, lightness],
       'name': name
     });
+    if (hue !== undefined) {
+      ContrastFeasibilityFixture.#hues.set(result, hue);
+    }
     return result;
   }
 
@@ -40,6 +44,20 @@ class ContrastFeasibilityFixture {
     background: RoleDefinitionEntity.Type,
     minimumContrastRatio: number
   ): RoleSchemaEntity.Type {
+    const roles = [foreground, background];
+    const relationships = roles.flatMap((role, priority) => {
+      const hue = ContrastFeasibilityFixture.#hues.get(role);
+      const result = hue === undefined ? [] : [{
+        'clamp': 180,
+        'hue': hue,
+        'id': `fixed-hue-${role.name}`,
+        'operation': 'hue-target',
+        'priority': priority,
+        'relaxability': 'fixed',
+        'target': role.name
+      }];
+      return result;
+    });
     const result = RoleSchemaEntity.intake({
       'contrastPairs': [{
         'background': background.name,
@@ -47,7 +65,19 @@ class ContrastFeasibilityFixture {
         'minimumContrastRatio': minimumContrastRatio
       }],
       'name': 'contrast-feasibility',
-      'roles': [foreground, background]
+      ...(relationships.length === 0 ? {} : {
+        'relationshipGraph': {
+          'groups': [{
+            'anchor': foreground.name,
+            'defaultMode': 'fixed',
+            'id': 'fixed-hues',
+            'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'fixed' }], 'id': 'fixed' }],
+            'name': 'Fixed hues',
+            'relationships': relationships
+          }]
+        }
+      }),
+      'roles': roles
     });
     return result;
   }
@@ -237,112 +267,6 @@ await test('ContrastFeasibility proves a resolved run with the same canonical re
 
   assert.ok(pair !== undefined, 'run pair receives a feasibility result');
   assert.strictEqual(pair.reachability, 'always-reachable');
-});
-
-await test('ContrastFeasibility certifies derived hue offsets from their shared root', () => {
-  const schema = RoleSchemaEntity.intake({
-    'contrastPairs': [{
-      'background': 'brand',
-      'foreground': 'opposite',
-      'minimumContrastRatio': 1
-    }],
-    'name': 'derived-hue-sampling',
-    'roles': [
-      RoleDefinitionEntity.intake({
-        'chromaRange': [0.2, 0.2],
-        'lightnessRange': [0.15, 0.15],
-        'name': 'brand'
-      }),
-      RoleDefinitionEntity.intake({
-        'chromaRange': [0.2, 0.2],
-        'derivedFrom': 'brand',
-        'hueOffset': 180,
-        'lightnessRange': [0.85, 0.85],
-        'name': 'opposite'
-      })
-    ]
-  });
-  const report = ContrastFeasibility.analyzeSchema(schema, ContrastFeasibilityFixture.options());
-  const pair = report.pairs[0];
-  const measured: number[] = [];
-  for (let hue = 0; hue <= 360; hue += 30) {
-    const foreground = colorRecordFactory.fromOklch(0.85, 0.2, (hue + 180) % 360);
-    const background = colorRecordFactory.fromOklch(0.15, 0.2, hue);
-    measured.push(contrastWcag21.apply(foreground, background));
-  }
-
-  assert.ok(pair !== undefined, 'derived pair receives a feasibility result');
-  assert.strictEqual(pair.reachability, 'always-reachable', 'bounded affine arcs certify every root hue');
-  assert.strictEqual(pair.sampled, undefined, 'the affine certificate does not depend on sampled evidence');
-  assert.ok(
-    Math.min(...measured) >= 1,
-    'the certificate holds at each coarse independent hue probe through the emitted color records'
-  );
-});
-
-await test('ContrastFeasibility certifies an affine derived hue arc when its gamut bounds clear the requirement', () => {
-  const schema = RoleSchemaEntity.intake({
-    'contrastPairs': [{
-      'background': 'brand',
-      'foreground': 'opposite',
-      'minimumContrastRatio': 4.5
-    }],
-    'name': 'derived-hue-arc-certificate',
-    'roles': [
-      RoleDefinitionEntity.intake({
-        'chromaRange': [0.01, 0.01],
-        'lightnessRange': [0.05, 0.05],
-        'name': 'brand'
-      }),
-      RoleDefinitionEntity.intake({
-        'chromaRange': [0.01, 0.01],
-        'derivedFrom': 'brand',
-        'hueOffset': 180,
-        'lightnessRange': [0.95, 0.95],
-        'name': 'opposite'
-      })
-    ]
-  });
-
-  const report = ContrastFeasibility.analyzeSchema(schema, ContrastFeasibilityFixture.options());
-  const pair = report.pairs[0];
-
-  assert.ok(pair !== undefined, 'declared pair receives an affine-arc result');
-  assert.strictEqual(pair.reachability, 'always-reachable');
-  assert.strictEqual(pair.sampled, undefined, 'the certificate does not depend on sampled evidence');
-});
-
-await test('ContrastFeasibility retains sampled evidence for hue-target clamp relationships', () => {
-  const schema = RoleSchemaEntity.intake({
-    'contrastPairs': [{
-      'background': 'brand',
-      'foreground': 'semantic',
-      'minimumContrastRatio': 4.5
-    }],
-    'name': 'hue-target-clamp-indeterminate',
-    'roles': [
-      RoleDefinitionEntity.intake({
-        'chromaRange': [0.1, 0.1],
-        'lightnessRange': [0.1, 0.1],
-        'name': 'brand'
-      }),
-      RoleDefinitionEntity.intake({
-        'chromaRange': [0.1, 0.1],
-        'derivedFrom': 'brand',
-        'hue': 25,
-        'hueClamp': 45,
-        'lightnessRange': [0.9, 0.9],
-        'name': 'semantic'
-      })
-    ]
-  });
-
-  const report = ContrastFeasibility.analyzeSchema(schema, ContrastFeasibilityFixture.options());
-  const pair = report.pairs[0];
-
-  assert.ok(pair !== undefined, 'hue-target pair receives a feasibility result');
-  assert.strictEqual(pair.reachability, 'indeterminate', 'non-affine hue clamp relations do not receive a continuous certificate');
-  assert.ok(pair.sampled !== undefined, 'indeterminate hue clamp relations retain sampled evidence');
 });
 
 await test('ContrastFeasibility uses resolved run hues without unanchored sampling', () => {
@@ -563,10 +487,28 @@ await test('ContrastFeasibility projects hue-target relationships through the au
         'relationships': [
           {
             'clamp': 180,
+            'hue': 0,
+            'id': 'background-hue',
+            'operation': 'hue-target',
+            'priority': 0,
+            'relaxability': 'fixed',
+            'target': 'background'
+          },
+          {
+            'clamp': 180,
+            'hue': 120,
+            'id': 'source-hue',
+            'operation': 'hue-target',
+            'priority': 1,
+            'relaxability': 'fixed',
+            'target': 'source'
+          },
+          {
+            'clamp': 180,
             'hue': 25,
             'id': 'fixed-target',
             'operation': 'hue-target',
-            'priority': 0,
+            'priority': 2,
             'relaxability': 'fixed',
             'source': 'source',
             'target': 'fixed-target'
@@ -575,7 +517,7 @@ await test('ContrastFeasibility projects hue-target relationships through the au
             'hue': 25,
             'id': 'bounded-target',
             'operation': 'hue-target',
-            'priority': 1,
+            'priority': 3,
             'relaxability': 'fixed',
             'source': 'source',
             'target': 'bounded-target'
@@ -615,15 +557,26 @@ await test('ContrastFeasibility certifies a source-derived hue-target arc across
         'id': 'semantic',
         'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'semantic' }], 'id': 'semantic' }],
         'name': 'Semantic',
-        'relationships': [{
-          'hue': 25,
-          'id': 'semantic',
-          'operation': 'hue-target',
-          'priority': 0,
-          'relaxability': 'fixed',
-          'source': 'source',
-          'target': 'semantic'
-        }]
+        'relationships': [
+          {
+            'clamp': 180,
+            'hue': 0,
+            'id': 'background-hue',
+            'operation': 'hue-target',
+            'priority': 0,
+            'relaxability': 'fixed',
+            'target': 'background'
+          },
+          {
+            'hue': 25,
+            'id': 'semantic',
+            'operation': 'hue-target',
+            'priority': 1,
+            'relaxability': 'fixed',
+            'source': 'source',
+            'target': 'semantic'
+          }
+        ]
       }]
     },
     'roles': [
@@ -640,44 +593,13 @@ await test('ContrastFeasibility certifies a source-derived hue-target arc across
   assert.strictEqual(pair.sampled, undefined, 'the bounded target arc is certified through both wrapped segments');
 });
 
-await test('ContrastFeasibility classifies graph alias, hue-offset, and OKLCH delta targets like legacy hue derivation', () => {
-  const roles = [
-    ContrastFeasibilityFixture.role('background', 0.05, 0.01),
-    ContrastFeasibilityFixture.role('source', 0.85, 0.01),
-    RoleDefinitionEntity.intake({
-      'chromaRange': [0.01, 0.01],
-      'derivedFrom': 'source',
-      'lightnessRange': [0.85, 0.85],
-      'name': 'alias-target'
-    }),
-    RoleDefinitionEntity.intake({
-      'chromaRange': [0.01, 0.01],
-      'derivedFrom': 'source',
-      'hueOffset': 180,
-      'lightnessRange': [0.85, 0.85],
-      'name': 'offset-target'
-    }),
-    RoleDefinitionEntity.intake({
-      'chromaRange': [0.01, 0.01],
-      'derivedFrom': 'source',
-      'lightnessRange': [0.95, 0.95],
-      'name': 'delta-target'
-    })
-  ];
-  const pairs = ['alias-target', 'offset-target', 'delta-target'].map((foreground) => {
-    return {
-      'background': 'background',
-      'foreground': foreground,
-      'minimumContrastRatio': 4.5
-    };
-  });
-  const legacy = RoleSchemaEntity.intake({
-    'contrastPairs': pairs,
-    'name': 'legacy-derived-feasibility',
-    'roles': roles
-  });
-  const graph = RoleSchemaEntity.intake({
-    'contrastPairs': pairs,
+await test('ContrastFeasibility certifies graph alias, hue-offset, and OKLCH delta targets', () => {
+  const schema = RoleSchemaEntity.intake({
+    'contrastPairs': [
+      { 'background': 'background', 'foreground': 'alias-target', 'minimumContrastRatio': 4.5 },
+      { 'background': 'background', 'foreground': 'offset-target', 'minimumContrastRatio': 4.5 },
+      { 'background': 'background', 'foreground': 'delta-target', 'minimumContrastRatio': 4.5 }
+    ],
     'name': 'graph-derived-feasibility',
     'relationshipGraph': {
       'groups': [{
@@ -688,9 +610,18 @@ await test('ContrastFeasibility classifies graph alias, hue-offset, and OKLCH de
         'name': 'Derived',
         'relationships': [
           {
+            'clamp': 180,
+            'hue': 0,
+            'id': 'background-hue',
+            'operation': 'hue-target',
+            'priority': 0,
+            'relaxability': 'fixed',
+            'target': 'background'
+          },
+          {
             'id': 'alias',
             'operation': 'alias',
-            'priority': 0,
+            'priority': 1,
             'relaxability': 'fixed',
             'source': 'source',
             'target': 'alias-target'
@@ -698,7 +629,7 @@ await test('ContrastFeasibility classifies graph alias, hue-offset, and OKLCH de
           {
             'id': 'offset',
             'operation': 'hue-offset',
-            'priority': 1,
+            'priority': 2,
             'relaxability': 'fixed',
             'source': 'source',
             'target': 'offset-target',
@@ -708,7 +639,7 @@ await test('ContrastFeasibility classifies graph alias, hue-offset, and OKLCH de
             'id': 'delta',
             'lightnessOffset': 0.1,
             'operation': 'oklch-delta',
-            'priority': 2,
+            'priority': 3,
             'relaxability': 'fixed',
             'source': 'source',
             'target': 'delta-target'
@@ -716,79 +647,24 @@ await test('ContrastFeasibility classifies graph alias, hue-offset, and OKLCH de
         ]
       }]
     },
-    'roles': roles
+    'roles': [
+      ContrastFeasibilityFixture.role('background', 0.05, 0.01),
+      ContrastFeasibilityFixture.role('source', 0.85, 0.01),
+      ContrastFeasibilityFixture.role('alias-target', 0.85, 0.01),
+      ContrastFeasibilityFixture.role('offset-target', 0.85, 0.01),
+      ContrastFeasibilityFixture.role('delta-target', 0.95, 0.01)
+    ]
   });
 
-  const legacyPairs = ContrastFeasibility.analyzeSchema(legacy, ContrastFeasibilityFixture.options()).pairs;
-  const graphPairs = ContrastFeasibility.analyzeSchema(graph, ContrastFeasibilityFixture.options()).pairs;
+  const pairs = ContrastFeasibility.analyzeSchema(schema, ContrastFeasibilityFixture.options()).pairs;
 
   assert.deepStrictEqual(
-    graphPairs.map((pair) => { return [pair.foreground, pair.reachability]; }),
-    legacyPairs.map((pair) => { return [pair.foreground, pair.reachability]; }),
-    'graph operations preserve the certified classification of equivalent legacy derivations'
-  );
-  const everyGraphPairIsReachable = graphPairs.every((pair) => {
-    const result = pair.reachability === 'always-reachable';
-    return result;
-  });
-  assert.ok(everyGraphPairIsReachable, 'bounded graph targets receive continuous certificates');
-});
-
-await test('ContrastFeasibility classifies an active target-envelope graph clamp like legacy derivation', () => {
-  const background = ContrastFeasibilityFixture.role('background', 0.05, 0, 0);
-  const source = RoleDefinitionEntity.intake({
-    'chromaRange': [0, 0],
-    'lightnessRange': [0.5, 0.95],
-    'name': 'source'
-  });
-  const legacyTarget = RoleDefinitionEntity.intake({
-    'chromaRange': [0, 0],
-    'derivedFrom': 'source',
-    'lightnessRange': [0.8, 0.9],
-    'name': 'target'
-  });
-  const graphTarget = RoleDefinitionEntity.intake({
-    'chromaRange': [0, 0],
-    'lightnessRange': [0.8, 0.9],
-    'name': 'target'
-  });
-  const pairs = [{ 'background': 'background', 'foreground': 'target', 'minimumContrastRatio': 4.5 }];
-  const legacy = RoleSchemaEntity.intake({
-    'contrastPairs': pairs,
-    'name': 'legacy-envelope-clamp',
-    'roles': [background, source, legacyTarget]
-  });
-  const graph = RoleSchemaEntity.intake({
-    'contrastPairs': pairs,
-    'name': 'graph-envelope-clamp',
-    'relationshipGraph': {
-      'groups': [{
-        'anchor': 'source',
-        'defaultMode': 'base',
-        'id': 'derived',
-        'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'base' }], 'id': 'base' }],
-        'name': 'Derived',
-        'relationships': [{
-          'id': 'target',
-          'operation': 'alias',
-          'priority': 0,
-          'relaxability': 'fixed',
-          'source': 'source',
-          'target': 'target'
-        }]
-      }]
-    },
-    'roles': [background, source, graphTarget]
-  });
-
-  const legacyPair = ContrastFeasibility.analyzeSchema(legacy, ContrastFeasibilityFixture.options()).pairs[0];
-  const graphPair = ContrastFeasibility.analyzeSchema(graph, ContrastFeasibilityFixture.options()).pairs[0];
-
-  assert.ok(legacyPair !== undefined, 'legacy derived pair is analyzed');
-  assert.ok(graphPair !== undefined, 'graph derived pair is analyzed');
-  assert.strictEqual(
-    graphPair.reachability,
-    legacyPair.reachability,
-    'the graph source domain intersects the target envelope when the envelope actively narrows it'
+    pairs.map((pair) => { return [pair.foreground, pair.reachability]; }),
+    [
+      ['alias-target', 'always-reachable'],
+      ['offset-target', 'always-reachable'],
+      ['delta-target', 'always-reachable']
+    ],
+    'graph operations retain continuous feasibility certificates'
   );
 });

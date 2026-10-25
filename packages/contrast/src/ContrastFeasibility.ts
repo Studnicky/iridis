@@ -644,7 +644,7 @@ class ContrastFeasibilityDomain {
       ? role.chromaRange ?? [0, 0.5]
       : ContrastFeasibilityDomain.intersection(role.chromaRange ?? [0, 0.5], baseline.oklch.c, tolerance.chroma));
     const fixedRecord = options?.fixedRecord ?? (relationship?.tolerance === undefined ? baseline : undefined);
-    const hue = baseline?.oklch.h ?? options?.resolvedHue ?? (role.derivedFrom === undefined ? role.hue : undefined);
+    const hue = baseline?.oklch.h ?? options?.resolvedHue;
     const result: RoleDomainInterface = {
       'chroma': chroma,
       ...(fixedRecord === undefined ? {} : { 'fixedRecord': fixedRecord }),
@@ -1101,7 +1101,6 @@ export class ContrastFeasibility {
     options?: DomainsOptionsInterface
   ): ReadonlyMap<string, RoleDomainInterface> {
     const roles = ContrastFeasibility.roleIndex(schema);
-    const relations = ContrastFeasibility.hueRelations(roles);
     const resolving = new Set<string>();
     const result = new Map<string, RoleDomainInterface>();
     const resolve = (role: RoleSchemaEntity.Type['roles'][number]): RoleDomainInterface => {
@@ -1113,13 +1112,13 @@ export class ContrastFeasibility {
         throw new TypeError(`Relationship domain cycle includes "${role.name}"`);
       }
       resolving.add(role.name);
-      const domainOptions = ContrastFeasibility.domainOptions(role, relations, options);
+      const domainOptions = ContrastFeasibility.domainOptions(role, options);
       const relationship = domainOptions.relationship;
       let source: RoleDomainInterface | undefined;
       if (relationship !== undefined && relationship.baseline === undefined) {
         source = ContrastFeasibility.relationshipSource(relationship, roles, resolve);
       }
-      const projected = relationship === undefined || source === undefined
+      const projected = relationship === undefined
         ? undefined
         : ContrastFeasibility.projectedOptions(role, relationship, source);
       const effectiveOptions: RoleDomainOptionsInterface = { ...domainOptions, ...projected };
@@ -1139,21 +1138,16 @@ export class ContrastFeasibility {
 
   private static domainOptions(
     role: RoleSchemaEntity.Type['roles'][number],
-    relations: ReadonlyMap<string, HueRelationInterface>,
     options: DomainsOptionsInterface | undefined
   ): RoleDomainOptionsInterface {
     const resolved = options?.roles?.[role.name];
     const fixed = options?.provenance?.get(role.name)?.origin === 'stated' ? resolved : undefined;
     const resolvedHue = resolved?.oklch.h;
-    const relation = resolvedHue === undefined && role.derivedFrom !== undefined
-      ? relations.get(role.name)
-      : undefined;
     const relationship = fixed === undefined && options?.input?.roles?.relationshipGraph !== undefined && options.metadata !== undefined
       ? RelationshipConstraint.domain(options.input, options.metadata, role.name)
       : undefined;
     const result: RoleDomainOptionsInterface = {
       ...(fixed === undefined ? {} : { 'fixedRecord': fixed }),
-      ...(relation === undefined ? {} : { 'relation': relation }),
       ...(relationship === undefined ? {} : { 'relationship': relationship }),
       ...(resolvedHue === undefined ? {} : { 'resolvedHue': resolvedHue })
     };
@@ -1180,12 +1174,18 @@ export class ContrastFeasibility {
   private static projectedOptions(
     role: RoleSchemaEntity.Type['roles'][number],
     relationship: RelationshipConstraintDomain,
-    source: RoleDomainInterface
+    source: RoleDomainInterface | undefined
   ): RoleDomainOptionsInterface | undefined {
     if (relationship.operation === 'alpha-overlay' || relationship.operation === 'oklch-interpolate') {
       return undefined;
     }
     const definition = relationship.relationship;
+    if (source === undefined) {
+      if (definition.operation !== 'hue-target' || (definition.clamp ?? RoleGeometry.DEFAULT_HUE_CLAMP) < 180) {
+        return undefined;
+      }
+      return { 'resolvedHue': definition.hue };
+    }
     const delta = definition.operation === 'oklch-delta' ? definition : undefined;
     const lightnessOffset = delta?.lightnessOffset ?? 0;
     const chromaScale = delta?.chromaScale ?? 1;
@@ -1345,58 +1345,6 @@ export class ContrastFeasibility {
       if (role !== undefined) {
         result.set(role.name, role);
       }
-    }
-    return result;
-  }
-
-  private static hueRelations(
-    roles: ReadonlyMap<string, RoleSchemaEntity.Type['roles'][number]>
-  ): ReadonlyMap<string, HueRelationInterface> {
-    const resolving = new Set<string>();
-    const result = new Map<string, HueRelationInterface>();
-    const resolve = (role: RoleSchemaEntity.Type['roles'][number]): HueRelationInterface | undefined => {
-      const existing = result.get(role.name);
-      if (existing !== undefined) {
-        return existing;
-      }
-      if (resolving.has(role.name)) {
-        return undefined;
-      }
-      resolving.add(role.name);
-      const source = role.derivedFrom === undefined || role.derivedFrom.length === 0
-        ? undefined
-        : roles.get(role.derivedFrom);
-      const sourceRelation = source === undefined ? undefined : resolve(source);
-      const isDerived = role.derivedFrom !== undefined && role.derivedFrom.length > 0;
-      if (isDerived && sourceRelation === undefined) {
-        resolving.delete(role.name);
-        return undefined;
-      }
-      const root = sourceRelation?.root ?? role.name;
-      const sourceOffset = sourceRelation?.affineOffset;
-      const ownOffset = role.hueOffset ?? 0;
-      const affineOffset = role.hue === undefined && (sourceRelation === undefined || sourceOffset !== undefined)
-        ? ((sourceOffset ?? 0) + ownOffset) % 360
-        : undefined;
-      const relation: HueRelationInterface = {
-        ...(affineOffset === undefined ? {} : { 'affineOffset': affineOffset }),
-        'resolve': (rootHue: number): number => {
-          const sourceHue = sourceRelation === undefined ? rootHue : sourceRelation.resolve(rootHue);
-          if (role.hue !== undefined) {
-            const result = RoleGeometry.hueTowards(sourceHue, role.hue, role.hueClamp ?? RoleGeometry.DEFAULT_HUE_CLAMP);
-            return result;
-          }
-          const result = ((sourceHue + ownOffset) % 360 + 360) % 360;
-          return result;
-        },
-        'root': root
-      };
-      resolving.delete(role.name);
-      result.set(role.name, relation);
-      return relation;
-    };
-    for (const role of roles.values()) {
-      resolve(role);
     }
     return result;
   }
