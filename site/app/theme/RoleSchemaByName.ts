@@ -31,9 +31,9 @@ import type { SchemaPair } from '../composables/types/index.ts';
 namespace RoleSchemas {
   class RelationshipGraphs {
     private static readonly toleranceByOperation = {
-      'alias': { 'alpha': 1, 'chroma': 0.1, 'hue': 180, 'lightness': 0.3 },
-      'hue-offset': { 'alpha': 1, 'chroma': 0.1, 'hue': 5, 'lightness': 0.4 },
-      'hue-target': { 'alpha': 1, 'chroma': 0.1, 'hue': 5, 'lightness': 0.4 }
+      'alias': { 'alpha': 1, 'chroma': 0.5, 'hue': 5, 'lightness': 1 },
+      'hue-offset': { 'alpha': 1, 'chroma': 0.5, 'hue': 5, 'lightness': 1 },
+      'hue-target': { 'alpha': 1, 'chroma': 0.5, 'hue': 5, 'lightness': 1 }
     } as const;
 
     static create(
