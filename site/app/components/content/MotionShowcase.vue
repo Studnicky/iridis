@@ -2,7 +2,6 @@
 import { computed, onMounted, ref, watch } from 'vue';
 
 import { useColorStreamHistory } from '../../composables/useColorStreamHistory.ts';
-import { useLivingBackground } from '../../composables/useLivingBackground.ts';
 import { buildMotionShowcaseModel } from './motion/buildMotionShowcaseModel.ts';
 
 /**
@@ -19,7 +18,6 @@ const tuneMs = ref<number>(550);
 const easeKey = ref<string>('Smooth (default)');
 const reducedMotion = ref<boolean>(false);
 
-useLivingBackground();
 const colorStreamHistory = useColorStreamHistory();
 
 /** Current (most recent) hex per decorative role, falling back to the role's static token when the history is still empty. */

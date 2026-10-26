@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, provide } from 'vue';
 
 import { useHead } from '#imports';
 
+import { ColorStreamHistoryState } from '~/composables/colorStreamHistoryState.ts';
 import { useIridis } from '~/composables/useIridis.ts';
 import { usePauseOffscreenAnimations } from '~/composables/usePauseOffscreenAnimations.ts';
 import { Tokens } from '~/theme/Tokens.ts';
 import { CodeSampleChrome } from '~/components/content/CodeSampleChrome.ts';
 
 usePauseOffscreenAnimations();
+provide(ColorStreamHistoryState.injectionKey, new ColorStreamHistoryState());
 
 /**
  * Booting the engine here, at the app root, means the theme is computed and

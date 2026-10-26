@@ -389,7 +389,7 @@ html.anims-paused *::after {
    to any stage/doc section (or standalone loader) scrolled out of view via one
    IntersectionObserver. Freezes that subtree's animations while it isn't on
    screen, so a tall page's below-the-fold carousels/showcases cost nothing.
-   The fixed ambient (starfield + lava blobs) is always intersecting, so it is
+   The fixed ambient (starfield + colour field) is always intersecting, so it is
    never tagged and keeps animating. ─── */
 .anim-offscreen,
 .anim-offscreen *,

@@ -1,6 +1,6 @@
 import { onMounted, onUnmounted } from 'vue';
 
-/** Sections + standalone animation hosts to pause when off-screen. Excludes the fixed ambient (`.lava-blob`/`.star-layer`), which must keep animating. */
+/** Sections + standalone animation hosts to pause when off-screen. Excludes the fixed ambient (`.star-layer`), which must keep animating. */
 const OFFSCREEN_HOSTS = '.toc-scroll-target, .pulse, .orbit-rig, .sonar-ring, .radar-sweep, .chroma-cycle';
 
 /**

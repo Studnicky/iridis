@@ -11,12 +11,12 @@ import { test } from 'node:test';
 import type { RoleViewType } from '../app/composables/types/roleViewType.ts';
 
 import { buildDecorativePalette } from '../app/composables/buildDecorativePalette.ts';
+import { ColorStreamHistoryState } from '../app/composables/colorStreamHistoryState.ts';
 import { createRingBuffer } from '../app/composables/createRingBuffer.ts';
 import { driftTarget } from '../app/composables/driftTarget.ts';
-import { resolveFromPalette } from '../app/composables/resolveFromPalette.ts';
 import { tokensForFrame } from '../app/composables/tokensForFrame.ts';
-import { useColorStreamHistory } from '../app/composables/useColorStreamHistory.ts';
 import { oklchToHex } from '../app/utils/oklchToHex.ts';
+import { HistoryStateResolver } from './fixtures/HistoryStateResolver.ts';
 import { TestPatterns } from './fixtures/TestPatterns.ts';
 
 const views: RoleViewType[] = [
@@ -65,20 +65,6 @@ await test('driftTarget keeps l and h fixed per role, nudges c within the subtle
   }
 });
 
-await test('resolveFromPalette retries the build when the initial roleViews read was empty, instead of staying stuck', () => {
-  const stillEmpty = resolveFromPalette({}, []);
-  assert.deepEqual(stillEmpty, {});
-
-  const nowPopulated = resolveFromPalette({}, views);
-  assert.deepEqual(new Set(Object.keys(nowPopulated)), new Set(['accent-alt', 'brand', 'error', 'info', 'success', 'warning']));
-});
-
-await test('resolveFromPalette leaves an already-populated palette untouched', () => {
-  const from = buildDecorativePalette(views);
-  const resolved = resolveFromPalette(from, []);
-  assert.equal(resolved, from);
-});
-
 await test('oklchToHex composes oklchToRgb + rgbToHex into a valid hex string', () => {
   const hex = oklchToHex(0.55, 0.2, 290);
   assert.match(hex, TestPatterns.HEX);
@@ -111,11 +97,46 @@ await test('createRingBuffer evicts the oldest entries once past capacity, maint
   assert.deepEqual(buffer.toArray(), [3, 4, 5]);
 });
 
-await test('useColorStreamHistory returns empty arrays for every decorative alias before any ticks have run', () => {
-  const history = useColorStreamHistory();
+await test('a fresh colour-stream history holds empty arrays for every decorative alias', () => {
+  const history = new ColorStreamHistoryState().histories;
   assert.deepEqual(new Set(Object.keys(history)), new Set(['error', 'info', 'primary', 'secondary', 'success', 'warning']));
   const histories = Object.values(history);
   for (let index = 0; index < histories.length; index += 1) {
     assert.deepEqual(histories[index]!, []);
   }
+});
+
+await test('record appends one sample per decorative alias and advances the sample version', () => {
+  const state = new ColorStreamHistoryState();
+  state.record(buildDecorativePalette(views));
+  state.record(buildDecorativePalette(views));
+  assert.equal(state.sampleVersion, 2);
+  assert.equal(state.sampleArray('primary').length, 2);
+  assert.match(state.sampleArray('primary')[0]!.hex, TestPatterns.HEX);
+  assert.deepEqual(state.sampleArray('unknown'), []);
+});
+
+await test('two app instances keep independent colour-stream history', () => {
+  const firstApp = HistoryStateResolver.createApp();
+  const secondApp = HistoryStateResolver.createApp();
+  firstApp.provide(ColorStreamHistoryState.injectionKey, new ColorStreamHistoryState());
+  secondApp.provide(ColorStreamHistoryState.injectionKey, new ColorStreamHistoryState());
+
+  const firstState = HistoryStateResolver.resolve(firstApp);
+  const secondState = HistoryStateResolver.resolve(secondApp);
+  firstState.record(buildDecorativePalette(views));
+  firstState.refreshSnapshot();
+
+  assert.notEqual(firstState, secondState);
+  assert.equal(HistoryStateResolver.resolve(firstApp), firstState);
+  assert.equal(firstState.sampleArray('primary').length, 1);
+  assert.equal(firstState.histories.primary!.length, 1);
+  assert.equal(secondState.sampleArray('primary').length, 0);
+  assert.equal(secondState.histories.primary!.length, 0);
+  assert.equal(secondState.sampleVersion, 0);
+});
+
+await test('useColorStreamHistoryState throws when no app provides a history', () => {
+  const app = HistoryStateResolver.createApp();
+  assert.throws(() => { HistoryStateResolver.resolve(app); }, RangeError);
 });

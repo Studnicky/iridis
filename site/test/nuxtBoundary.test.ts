@@ -345,6 +345,52 @@ await test('carousel mounts only its active face and neighbours while the active
   assert.ok(promotedFaces.placeholderKeys.includes('rolesTable'));
 });
 
+await test('ambient canvas paints the colour drift without writing document root styles', { 'timeout': 180_000 }, async (context) => {
+  assert.ok(ProductionNitroServer.isBuilt());
+  const { 'child': nitro, 'origin': origin } = await ProductionNitroServer.start();
+  context.after(async () => {await ProductionNitroServer.stop(nitro);});
+  await NuxtBoundaryHarness.waitForSsr(origin);
+
+  const browser = await chromium.launch({ 'headless': true });
+  context.after(async () => {await browser.close();});
+  const page = await browser.newPage({ 'reducedMotion': 'no-preference', 'viewport': { 'height': 900, 'width': 1280 } });
+  await page.goto(origin, { 'waitUntil': 'networkidle' });
+  await page.waitForSelector('canvas.ambient-field');
+  await page.waitForFunction(() => {
+    const revision = Number(document.documentElement.dataset.iridisPaletteRevision);
+    const committed = revision > 0;
+    return committed;
+  });
+
+  const observed = await page.evaluate(async () => {
+    const root = document.documentElement;
+    let rootStyleMutations = 0;
+    const observer = new MutationObserver((records) => {
+      rootStyleMutations += records.length;
+    });
+    observer.observe(root, { 'attributeFilter': ['style'], 'attributes': true });
+    await new Promise<void>((resolveWindow) => {
+      window.setTimeout(() => {resolveWindow();}, 1000);
+    });
+    observer.disconnect();
+    const canvas = document.querySelector<HTMLCanvasElement>('canvas.ambient-field');
+    const context2d = canvas?.getContext('2d') ?? null;
+    const pixels = canvas !== null && context2d !== null
+      ? context2d.getImageData(0, 0, canvas.width, canvas.height).data
+      : new Uint8ClampedArray(0);
+    let paintedPixels = 0;
+    for (let index = 3; index < pixels.length; index += 4) {
+      if ((pixels[index] ?? 0) > 0) {
+        paintedPixels += 1;
+      }
+    }
+    const result = { 'paintedPixels': paintedPixels, 'rootStyleMutations': rootStyleMutations };
+    return result;
+  });
+  assert.equal(observed.rootStyleMutations, 0, 'the drift must not write root styles');
+  assert.ok(observed.paintedPixels > 0, 'the ambient canvas must carry painted colour');
+});
+
 await test('built Nuxt app SSRs and hydrates the rendered navigation order', { 'timeout': 240_000 }, async (context) => {
   // The production build is produced once by site's `pretest` script, not
   // here. Nuxt takes a lockfile for the duration of a build, and `node --test`
@@ -501,11 +547,9 @@ await test('built Nuxt app SSRs and hydrates the rendered navigation order', { '
     shape.className = 'particle particle-shape';
     const glyph = document.createElement('span');
     glyph.className = 'particle particle-glyph';
-    const lavaBlob = document.createElement('span');
-    lavaBlob.className = 'lava-blob';
     const heroOrb = document.createElement('span');
     heroOrb.className = 'hero-orb float';
-    probe.append(shape, glyph, lavaBlob);
+    probe.append(shape, glyph);
     document.body.append(probe, heroOrb);
 
     const animationNames = new Map<string, readonly string[]>();
@@ -521,7 +565,6 @@ await test('built Nuxt app SSRs and hydrates the rendered navigation order', { '
         getComputedStyle(probe, '::after').animationName,
         getComputedStyle(shape).animationName,
         getComputedStyle(glyph).animationName,
-        getComputedStyle(lavaBlob).animationName,
         getComputedStyle(heroOrb).animationName,
         getComputedStyle(heroOrb, '::before').animationName,
         getComputedStyle(heroOrb, '::after').animationName
