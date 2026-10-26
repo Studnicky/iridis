@@ -351,6 +351,18 @@ void test('enforce:contrast preserves an unconstrained terminal inside a relatio
   assert.equal(Metadata.contrastReport(constrained.metadata)?.compliant, true);
 });
 
+void test('RelationshipConstraint admits the on-brand near-white terminal inside its declared domain', () => {
+  const baseline = colorRecordFactory.fromHex('#0a1018');
+  const terminal = colorRecordFactory.fromHex('#ffffff');
+  const input = RelationshipConstraintFixture.input({
+    'tolerance': { 'alpha': 1, 'chroma': 0.5, 'hue': 180, 'lightness': 1 }
+  });
+  const metadata = RelationshipConstraintFixture.metadata(baseline);
+
+  assert.ok(terminal.oklch.c < 1e-7);
+  assert.equal(RelationshipConstraint.allows(input, metadata, 'text', terminal), true);
+});
+
 void test('enforce:contrast records deviation without replacing a tolerant resolution baseline', () => {
   const baseline = colorRecordFactory.fromHex('#777777');
   const input = RelationshipConstraintFixture.input({
