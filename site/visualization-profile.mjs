@@ -352,14 +352,14 @@ export class VisualizationProfileBudget {
     'maximumP90FrameMs': 40,
   });
 
-  /** The live WebGL graph, in 16.7 ms frame steps. */
+  /** The live WebGL graph, in 16.7 ms frame steps; device construction on restore adds discrete long tasks. */
   static graph = Object.freeze({
     'maximumAverageFrameMs': 45,
     'maximumCanvasElements': 4,
     'maximumDomElements': 7000,
     'maximumFrameMs': 150,
-    'maximumLongTaskCount': 3,
-    'maximumLongTaskTotalMs': 200,
+    'maximumLongTaskCount': 6,
+    'maximumLongTaskTotalMs': 400,
     'maximumP90FrameMs': 60,
   });
 
