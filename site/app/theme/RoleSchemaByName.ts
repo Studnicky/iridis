@@ -16,10 +16,9 @@
  *   iridis-12 : + success, warning, error, syntaxKeyword
  *   iridis-16 : + syntaxString, syntaxNumber, syntaxFunction, syntaxType
  *
- * Derivations use derivedFrom + hueOffset so a single brand seed produces
- * the full syntax family in iridis-16. The engine's expand:family task
- * synthesizes derived roles; resolve:roles nudges seeds into their
- * lightness/chroma envelopes; enforce:compliance lifts pairs to threshold.
+ * Relationship graphs define the schema-authored role derivations. The
+ * canonical resolver applies target envelopes, and contrast enforcement
+ * maintains each selected standard.
  */
 
 import { RoleRelationshipEntity, RoleRelationshipGraphEntity, RoleSchemaEntity } from '@studnicky/iridis';
@@ -31,6 +30,12 @@ import type { SchemaPair } from '../composables/types/index.ts';
 
 namespace RoleSchemas {
   class RelationshipGraphs {
+    private static readonly toleranceByOperation = {
+      'alias': { 'alpha': 1, 'chroma': 0.1, 'hue': 180, 'lightness': 0.2 },
+      'hue-offset': { 'alpha': 1, 'chroma': 0.1, 'hue': 5, 'lightness': 0.05 },
+      'hue-target': { 'alpha': 1, 'chroma': 0.1, 'hue': 5, 'lightness': 0.05 }
+    } as const;
+
     static create(
       relationships: RoleRelationshipEntity.Type[]
     ): RoleRelationshipGraphEntity.Type {
@@ -49,21 +54,21 @@ namespace RoleSchemas {
 
     static alias(id: string, source: string, target: string): RoleRelationshipEntity.Type {
       const result = RoleRelationshipEntity.create({
-        'id': id, 'operation': 'alias', 'priority': 0, 'relaxability': 'fixed', 'source': source, 'target': target
+        'id': id, 'operation': 'alias', 'priority': 0, 'relaxability': 'tolerant', 'source': source, 'target': target, 'tolerance': RelationshipGraphs.toleranceByOperation.alias
       });
       return result;
     }
 
     static hueOffset(id: string, source: string, target: string, degrees: number): RoleRelationshipEntity.Type {
       const result = RoleRelationshipEntity.create({
-        'degrees': degrees, 'id': id, 'operation': 'hue-offset', 'priority': 0, 'relaxability': 'fixed', 'source': source, 'target': target
+        'degrees': degrees, 'id': id, 'operation': 'hue-offset', 'priority': 0, 'relaxability': 'tolerant', 'source': source, 'target': target, 'tolerance': RelationshipGraphs.toleranceByOperation['hue-offset']
       });
       return result;
     }
 
     static hueTarget(id: string, target: string, hue: number, source?: string): RoleRelationshipEntity.Type {
       const result = RoleRelationshipEntity.create({
-        'clamp': 90, 'hue': hue, 'id': id, 'operation': 'hue-target', 'priority': 0, 'relaxability': 'fixed', 'target': target,
+        'clamp': 90, 'hue': hue, 'id': id, 'operation': 'hue-target', 'priority': 0, 'relaxability': 'tolerant', 'target': target, 'tolerance': RelationshipGraphs.toleranceByOperation['hue-target'],
         ...(source === undefined ? {} : { 'source': source })
       });
       return result;
@@ -142,10 +147,10 @@ namespace RoleSchemas {
     'relationshipGraph': RelationshipGraphs.create(iridis8Relationships),
     'roles': [
       ...iridis4Dark.roles,
-      { 'chromaRange': [0.00, 0.06], 'derivedFrom': 'background', 'intent': 'background', 'lightnessRange': [0.08, 0.18], 'name': 'surface', 'required': true },
-      { 'chromaRange': [0.00, 0.08], 'derivedFrom': 'background', 'intent': 'background', 'lightnessRange': [0.10, 0.22], 'name': 'bg-soft' },
-      { 'chromaRange': [0.00, 0.06], 'derivedFrom': 'background', 'intent': 'muted', 'lightnessRange': [0.18, 0.70], 'name': 'divider' },
-      { 'chromaRange': [0.00, 0.02], 'derivedFrom': 'brand', 'intent': 'text', 'lightnessRange': [0.04, 0.14], 'name': 'on-brand', 'required': true }
+      { 'chromaRange': [0.00, 0.06], 'intent': 'background', 'lightnessRange': [0.08, 0.18], 'name': 'surface', 'required': true },
+      { 'chromaRange': [0.00, 0.08], 'intent': 'background', 'lightnessRange': [0.10, 0.22], 'name': 'bg-soft' },
+      { 'chromaRange': [0.00, 0.06], 'intent': 'muted', 'lightnessRange': [0.18, 0.70], 'name': 'divider' },
+      { 'chromaRange': [0.00, 0.02], 'intent': 'text', 'lightnessRange': [0.04, 0.14], 'name': 'on-brand', 'required': true }
     ]
   });
 
@@ -162,10 +167,10 @@ namespace RoleSchemas {
     'relationshipGraph': RelationshipGraphs.create(iridis8Relationships),
     'roles': [
       ...iridis4Light.roles,
-      { 'chromaRange': [0.00, 0.04], 'derivedFrom': 'background', 'intent': 'background', 'lightnessRange': [0.88, 0.96], 'name': 'surface', 'required': true },
-      { 'chromaRange': [0.00, 0.04], 'derivedFrom': 'background', 'intent': 'background', 'lightnessRange': [0.90, 0.98], 'name': 'bg-soft' },
-      { 'chromaRange': [0.00, 0.04], 'derivedFrom': 'background', 'intent': 'muted', 'lightnessRange': [0.60, 0.86], 'name': 'divider' },
-      { 'chromaRange': [0.00, 0.02], 'derivedFrom': 'brand', 'intent': 'text', 'lightnessRange': [0.97, 1.00], 'name': 'on-brand', 'required': true }
+      { 'chromaRange': [0.00, 0.04], 'intent': 'background', 'lightnessRange': [0.88, 0.96], 'name': 'surface', 'required': true },
+      { 'chromaRange': [0.00, 0.04], 'intent': 'background', 'lightnessRange': [0.90, 0.98], 'name': 'bg-soft' },
+      { 'chromaRange': [0.00, 0.04], 'intent': 'muted', 'lightnessRange': [0.60, 0.86], 'name': 'divider' },
+      { 'chromaRange': [0.00, 0.02], 'intent': 'text', 'lightnessRange': [0.97, 1.00], 'name': 'on-brand', 'required': true }
     ]
   });
 
@@ -184,10 +189,10 @@ namespace RoleSchemas {
     'relationshipGraph': RelationshipGraphs.create(iridis12Relationships),
     'roles': [
       ...iridis8Dark.roles,
-      { 'chromaRange': [0.14, 0.28], 'derivedFrom': 'brand', 'hueOffset': 120, 'intent': 'positive', 'lightnessRange': [0.65, 0.78], 'name': 'success' },
-      { 'chromaRange': [0.16, 0.28], 'derivedFrom': 'brand', 'hueOffset': 85, 'intent': 'positive', 'lightnessRange': [0.70, 0.82], 'name': 'warning' },
+      { 'chromaRange': [0.14, 0.28], 'intent': 'positive', 'lightnessRange': [0.65, 0.78], 'name': 'success' },
+      { 'chromaRange': [0.16, 0.28], 'intent': 'positive', 'lightnessRange': [0.70, 0.82], 'name': 'warning' },
       { 'chromaRange': [0.10, 0.30], 'intent': 'critical', 'lightnessRange': [0.62, 0.84], 'name': 'error' },
-      { 'chromaRange': [0.14, 0.28], 'derivedFrom': 'brand', 'intent': 'accent', 'lightnessRange': [0.68, 0.82], 'name': 'syntax-keyword' }
+      { 'chromaRange': [0.14, 0.28], 'intent': 'accent', 'lightnessRange': [0.68, 0.82], 'name': 'syntax-keyword' }
     ]
   });
 
@@ -204,10 +209,10 @@ namespace RoleSchemas {
     'relationshipGraph': RelationshipGraphs.create(iridis12Relationships),
     'roles': [
       ...iridis8Light.roles,
-      { 'chromaRange': [0.16, 0.30], 'derivedFrom': 'brand', 'hueOffset': 120, 'intent': 'positive', 'lightnessRange': [0.40, 0.52], 'name': 'success' },
-      { 'chromaRange': [0.18, 0.30], 'derivedFrom': 'brand', 'hueOffset': 85, 'intent': 'positive', 'lightnessRange': [0.45, 0.62], 'name': 'warning' },
+      { 'chromaRange': [0.16, 0.30], 'intent': 'positive', 'lightnessRange': [0.40, 0.52], 'name': 'success' },
+      { 'chromaRange': [0.18, 0.30], 'intent': 'positive', 'lightnessRange': [0.45, 0.62], 'name': 'warning' },
       { 'chromaRange': [0.20, 0.32], 'intent': 'critical', 'lightnessRange': [0.40, 0.55], 'name': 'error' },
-      { 'chromaRange': [0.16, 0.30], 'derivedFrom': 'brand', 'intent': 'accent', 'lightnessRange': [0.42, 0.56], 'name': 'syntax-keyword' }
+      { 'chromaRange': [0.16, 0.30], 'intent': 'accent', 'lightnessRange': [0.42, 0.56], 'name': 'syntax-keyword' }
     ]
   });
 
@@ -226,10 +231,10 @@ namespace RoleSchemas {
     'relationshipGraph': RelationshipGraphs.create(iridis16Relationships),
     'roles': [
       ...iridis12Dark.roles,
-      { 'chromaRange': [0.14, 0.26], 'derivedFrom': 'brand', 'hueOffset': 120, 'intent': 'accent', 'lightnessRange': [0.70, 0.85], 'name': 'syntax-string' },
-      { 'chromaRange': [0.14, 0.28], 'derivedFrom': 'brand', 'hueOffset': 60, 'intent': 'accent', 'lightnessRange': [0.70, 0.85], 'name': 'syntax-number' },
-      { 'chromaRange': [0.12, 0.24], 'derivedFrom': 'brand', 'hueOffset': 180, 'intent': 'accent', 'lightnessRange': [0.68, 0.82], 'name': 'syntax-function' },
-      { 'chromaRange': [0.10, 0.22], 'derivedFrom': 'brand', 'hueOffset': 210, 'intent': 'accent', 'lightnessRange': [0.70, 0.84], 'name': 'syntax-type' }
+      { 'chromaRange': [0.14, 0.26], 'intent': 'accent', 'lightnessRange': [0.70, 0.85], 'name': 'syntax-string' },
+      { 'chromaRange': [0.14, 0.28], 'intent': 'accent', 'lightnessRange': [0.70, 0.85], 'name': 'syntax-number' },
+      { 'chromaRange': [0.12, 0.24], 'intent': 'accent', 'lightnessRange': [0.68, 0.82], 'name': 'syntax-function' },
+      { 'chromaRange': [0.10, 0.22], 'intent': 'accent', 'lightnessRange': [0.70, 0.84], 'name': 'syntax-type' }
     ]
   });
 
@@ -246,10 +251,10 @@ namespace RoleSchemas {
     'relationshipGraph': RelationshipGraphs.create(iridis16Relationships),
     'roles': [
       ...iridis12Light.roles,
-      { 'chromaRange': [0.14, 0.26], 'derivedFrom': 'brand', 'hueOffset': 120, 'intent': 'accent', 'lightnessRange': [0.40, 0.52], 'name': 'syntax-string' },
-      { 'chromaRange': [0.16, 0.28], 'derivedFrom': 'brand', 'hueOffset': 60, 'intent': 'accent', 'lightnessRange': [0.42, 0.58], 'name': 'syntax-number' },
-      { 'chromaRange': [0.14, 0.26], 'derivedFrom': 'brand', 'hueOffset': 180, 'intent': 'accent', 'lightnessRange': [0.40, 0.52], 'name': 'syntax-function' },
-      { 'chromaRange': [0.12, 0.22], 'derivedFrom': 'brand', 'hueOffset': 210, 'intent': 'accent', 'lightnessRange': [0.40, 0.52], 'name': 'syntax-type' }
+      { 'chromaRange': [0.14, 0.26], 'intent': 'accent', 'lightnessRange': [0.40, 0.52], 'name': 'syntax-string' },
+      { 'chromaRange': [0.16, 0.28], 'intent': 'accent', 'lightnessRange': [0.42, 0.58], 'name': 'syntax-number' },
+      { 'chromaRange': [0.14, 0.26], 'intent': 'accent', 'lightnessRange': [0.40, 0.52], 'name': 'syntax-function' },
+      { 'chromaRange': [0.12, 0.22], 'intent': 'accent', 'lightnessRange': [0.40, 0.52], 'name': 'syntax-type' }
     ]
   });
 
@@ -282,28 +287,28 @@ namespace RoleSchemas {
     'roles': [
       ...iridis16Dark.roles,
       /* Emphasis tiers: text-strong reads as primary headings, text-subtle as captions / metadata. */
-      { 'chromaRange': [0.00, 0.03], 'derivedFrom': 'text', 'intent': 'text', 'lightnessRange': [0.92, 0.99], 'name': 'text-strong' },
-      { 'chromaRange': [0.00, 0.04], 'derivedFrom': 'text', 'intent': 'muted', 'lightnessRange': [0.62, 0.77], 'name': 'text-subtle' },
+      { 'chromaRange': [0.00, 0.03], 'intent': 'text', 'lightnessRange': [0.92, 0.99], 'name': 'text-strong' },
+      { 'chromaRange': [0.00, 0.04], 'intent': 'muted', 'lightnessRange': [0.62, 0.77], 'name': 'text-subtle' },
       /* Interaction family: link/link-hover for anchors, focus-ring for a11y outlines. */
-      { 'chromaRange': [0.14, 0.28], 'derivedFrom': 'brand', 'hueOffset': -15, 'intent': 'link', 'lightnessRange': [0.62, 0.78], 'name': 'link' },
-      { 'chromaRange': [0.16, 0.30], 'derivedFrom': 'brand', 'hueOffset': -15, 'intent': 'link', 'lightnessRange': [0.72, 0.86], 'name': 'link-hover' },
-      { 'chromaRange': [0.20, 0.34], 'derivedFrom': 'brand', 'intent': 'accent', 'lightnessRange': [0.60, 0.75], 'name': 'focus-ring' },
+      { 'chromaRange': [0.14, 0.28], 'intent': 'link', 'lightnessRange': [0.62, 0.78], 'name': 'link' },
+      { 'chromaRange': [0.16, 0.30], 'intent': 'link', 'lightnessRange': [0.72, 0.86], 'name': 'link-hover' },
+      { 'chromaRange': [0.20, 0.34], 'intent': 'accent', 'lightnessRange': [0.60, 0.75], 'name': 'focus-ring' },
       /* Chrome variants: overlays, alternate borders, code surfaces. */
       { 'chromaRange': [0.00, 0.04], 'intent': 'background', 'lightnessRange': [0.02, 0.10], 'name': 'overlay' },
-      { 'chromaRange': [0.00, 0.06], 'derivedFrom': 'divider', 'intent': 'muted', 'lightnessRange': [0.22, 0.34], 'name': 'border' },
-      { 'chromaRange': [0.00, 0.08], 'derivedFrom': 'divider', 'intent': 'muted', 'lightnessRange': [0.32, 0.46], 'name': 'border-strong' },
-      { 'chromaRange': [0.00, 0.04], 'derivedFrom': 'bg-soft', 'intent': 'background', 'lightnessRange': [0.08, 0.16], 'name': 'code-bg' },
+      { 'chromaRange': [0.00, 0.06], 'intent': 'muted', 'lightnessRange': [0.22, 0.34], 'name': 'border' },
+      { 'chromaRange': [0.00, 0.08], 'intent': 'muted', 'lightnessRange': [0.32, 0.46], 'name': 'border-strong' },
+      { 'chromaRange': [0.00, 0.04], 'intent': 'background', 'lightnessRange': [0.08, 0.16], 'name': 'code-bg' },
       /* Status family: info completes the warning/error/success quadrant. */
-      { 'chromaRange': [0.16, 0.28], 'derivedFrom': 'brand', 'hueOffset': -60, 'intent': 'accent', 'lightnessRange': [0.55, 0.76], 'name': 'info' },
+      { 'chromaRange': [0.16, 0.28], 'intent': 'accent', 'lightnessRange': [0.55, 0.76], 'name': 'info' },
       /* Secondary accent: pairs with brand for two-color emphasis. */
-      { 'chromaRange': [0.14, 0.26], 'derivedFrom': 'brand', 'hueOffset': 150, 'intent': 'accent', 'lightnessRange': [0.58, 0.77], 'name': 'accent-alt' },
+      { 'chromaRange': [0.14, 0.26], 'intent': 'accent', 'lightnessRange': [0.58, 0.77], 'name': 'accent-alt' },
       /* Extended syntax: comment / tag / attribute / operator / class / punctuation. */
-      { 'chromaRange': [0.00, 0.06], 'derivedFrom': 'muted', 'intent': 'muted', 'lightnessRange': [0.48, 0.70], 'name': 'syntax-comment' },
-      { 'chromaRange': [0.14, 0.26], 'derivedFrom': 'brand', 'hueOffset': 240, 'intent': 'accent', 'lightnessRange': [0.68, 0.82], 'name': 'syntax-tag' },
-      { 'chromaRange': [0.12, 0.24], 'derivedFrom': 'brand', 'hueOffset': 270, 'intent': 'accent', 'lightnessRange': [0.68, 0.82], 'name': 'syntax-attribute' },
-      { 'chromaRange': [0.10, 0.22], 'derivedFrom': 'brand', 'hueOffset': 300, 'intent': 'accent', 'lightnessRange': [0.70, 0.84], 'name': 'syntax-operator' },
-      { 'chromaRange': [0.14, 0.26], 'derivedFrom': 'brand', 'hueOffset': 30, 'intent': 'accent', 'lightnessRange': [0.70, 0.84], 'name': 'syntax-class' },
-      { 'chromaRange': [0.00, 0.08], 'derivedFrom': 'muted', 'intent': 'muted', 'lightnessRange': [0.58, 0.72], 'name': 'syntax-punctuation' }
+      { 'chromaRange': [0.00, 0.06], 'intent': 'muted', 'lightnessRange': [0.48, 0.70], 'name': 'syntax-comment' },
+      { 'chromaRange': [0.14, 0.26], 'intent': 'accent', 'lightnessRange': [0.68, 0.82], 'name': 'syntax-tag' },
+      { 'chromaRange': [0.12, 0.24], 'intent': 'accent', 'lightnessRange': [0.68, 0.82], 'name': 'syntax-attribute' },
+      { 'chromaRange': [0.10, 0.22], 'intent': 'accent', 'lightnessRange': [0.70, 0.84], 'name': 'syntax-operator' },
+      { 'chromaRange': [0.14, 0.26], 'intent': 'accent', 'lightnessRange': [0.70, 0.84], 'name': 'syntax-class' },
+      { 'chromaRange': [0.00, 0.08], 'intent': 'muted', 'lightnessRange': [0.58, 0.72], 'name': 'syntax-punctuation' }
     ]
   });
 
@@ -328,23 +333,23 @@ namespace RoleSchemas {
     'relationshipGraph': RelationshipGraphs.create(iridis32Relationships),
     'roles': [
       ...iridis16Light.roles,
-      { 'chromaRange': [0.00, 0.04], 'derivedFrom': 'text', 'intent': 'text', 'lightnessRange': [0.04, 0.12], 'name': 'text-strong' },
-      { 'chromaRange': [0.00, 0.05], 'derivedFrom': 'text', 'intent': 'muted', 'lightnessRange': [0.32, 0.46], 'name': 'text-subtle' },
-      { 'chromaRange': [0.14, 0.28], 'derivedFrom': 'brand', 'hueOffset': -15, 'intent': 'link', 'lightnessRange': [0.36, 0.50], 'name': 'link' },
-      { 'chromaRange': [0.16, 0.30], 'derivedFrom': 'brand', 'hueOffset': -15, 'intent': 'link', 'lightnessRange': [0.28, 0.42], 'name': 'link-hover' },
-      { 'chromaRange': [0.20, 0.34], 'derivedFrom': 'brand', 'intent': 'accent', 'lightnessRange': [0.40, 0.58], 'name': 'focus-ring' },
+      { 'chromaRange': [0.00, 0.04], 'intent': 'text', 'lightnessRange': [0.04, 0.12], 'name': 'text-strong' },
+      { 'chromaRange': [0.00, 0.05], 'intent': 'muted', 'lightnessRange': [0.32, 0.46], 'name': 'text-subtle' },
+      { 'chromaRange': [0.14, 0.28], 'intent': 'link', 'lightnessRange': [0.36, 0.50], 'name': 'link' },
+      { 'chromaRange': [0.16, 0.30], 'intent': 'link', 'lightnessRange': [0.28, 0.42], 'name': 'link-hover' },
+      { 'chromaRange': [0.20, 0.34], 'intent': 'accent', 'lightnessRange': [0.40, 0.58], 'name': 'focus-ring' },
       { 'chromaRange': [0.00, 0.03], 'intent': 'background', 'lightnessRange': [0.85, 0.94], 'name': 'overlay' },
-      { 'chromaRange': [0.00, 0.05], 'derivedFrom': 'divider', 'intent': 'muted', 'lightnessRange': [0.72, 0.84], 'name': 'border' },
-      { 'chromaRange': [0.00, 0.06], 'derivedFrom': 'divider', 'intent': 'muted', 'lightnessRange': [0.60, 0.72], 'name': 'border-strong' },
-      { 'chromaRange': [0.00, 0.03], 'derivedFrom': 'bg-soft', 'intent': 'background', 'lightnessRange': [0.92, 0.97], 'name': 'code-bg' },
-      { 'chromaRange': [0.16, 0.28], 'derivedFrom': 'brand', 'hueOffset': -60, 'intent': 'accent', 'lightnessRange': [0.36, 0.50], 'name': 'info' },
-      { 'chromaRange': [0.14, 0.26], 'derivedFrom': 'brand', 'hueOffset': 150, 'intent': 'accent', 'lightnessRange': [0.36, 0.50], 'name': 'accent-alt' },
-      { 'chromaRange': [0.00, 0.06], 'derivedFrom': 'muted', 'intent': 'muted', 'lightnessRange': [0.45, 0.58], 'name': 'syntax-comment' },
-      { 'chromaRange': [0.14, 0.26], 'derivedFrom': 'brand', 'hueOffset': 240, 'intent': 'accent', 'lightnessRange': [0.38, 0.52], 'name': 'syntax-tag' },
-      { 'chromaRange': [0.12, 0.24], 'derivedFrom': 'brand', 'hueOffset': 270, 'intent': 'accent', 'lightnessRange': [0.38, 0.52], 'name': 'syntax-attribute' },
-      { 'chromaRange': [0.10, 0.22], 'derivedFrom': 'brand', 'hueOffset': 300, 'intent': 'accent', 'lightnessRange': [0.40, 0.52], 'name': 'syntax-operator' },
-      { 'chromaRange': [0.14, 0.26], 'derivedFrom': 'brand', 'hueOffset': 30, 'intent': 'accent', 'lightnessRange': [0.38, 0.52], 'name': 'syntax-class' },
-      { 'chromaRange': [0.00, 0.08], 'derivedFrom': 'muted', 'intent': 'muted', 'lightnessRange': [0.40, 0.55], 'name': 'syntax-punctuation' }
+      { 'chromaRange': [0.00, 0.05], 'intent': 'muted', 'lightnessRange': [0.72, 0.84], 'name': 'border' },
+      { 'chromaRange': [0.00, 0.06], 'intent': 'muted', 'lightnessRange': [0.60, 0.72], 'name': 'border-strong' },
+      { 'chromaRange': [0.00, 0.03], 'intent': 'background', 'lightnessRange': [0.92, 0.97], 'name': 'code-bg' },
+      { 'chromaRange': [0.16, 0.28], 'intent': 'accent', 'lightnessRange': [0.36, 0.50], 'name': 'info' },
+      { 'chromaRange': [0.14, 0.26], 'intent': 'accent', 'lightnessRange': [0.36, 0.50], 'name': 'accent-alt' },
+      { 'chromaRange': [0.00, 0.06], 'intent': 'muted', 'lightnessRange': [0.45, 0.58], 'name': 'syntax-comment' },
+      { 'chromaRange': [0.14, 0.26], 'intent': 'accent', 'lightnessRange': [0.38, 0.52], 'name': 'syntax-tag' },
+      { 'chromaRange': [0.12, 0.24], 'intent': 'accent', 'lightnessRange': [0.38, 0.52], 'name': 'syntax-attribute' },
+      { 'chromaRange': [0.10, 0.22], 'intent': 'accent', 'lightnessRange': [0.40, 0.52], 'name': 'syntax-operator' },
+      { 'chromaRange': [0.14, 0.26], 'intent': 'accent', 'lightnessRange': [0.38, 0.52], 'name': 'syntax-class' },
+      { 'chromaRange': [0.00, 0.08], 'intent': 'muted', 'lightnessRange': [0.40, 0.55], 'name': 'syntax-punctuation' }
     ]
   });
 
