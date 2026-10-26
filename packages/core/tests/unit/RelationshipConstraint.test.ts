@@ -58,6 +58,28 @@ class RelationshipConstraintFixture {
     return result;
   }
 
+  static inputWithoutRelationship(
+    options: Readonly<{
+      'minimumContrastRatio'?: number;
+      'tolerance'?: Readonly<Record<string, number>>;
+    }> = {}
+  ): InputEntity.Type {
+    const withRelationship = RelationshipConstraintFixture.input(options);
+    const roleSchema = withRelationship.roles;
+    if (roleSchema === undefined) {
+      throw new TypeError('Relationship fixture requires a role schema');
+    }
+    const roles = RoleSchemaEntity.create({
+      ...(roleSchema.contrastPairs === undefined
+        ? {}
+        : { 'contrastPairs': roleSchema.contrastPairs }),
+      'name': roleSchema.name,
+      'roles': roleSchema.roles
+    });
+    const result = InputEntity.intake({ 'colors': [], 'roles': roles });
+    return result;
+  }
+
   static metadata(baseline: ColorRecordEntity.Type): Record<string, JSONSchema7Type> {
     const metadata: Record<string, JSONSchema7Type> = {};
     Metadata.writeRelationshipResolution(metadata, new Map([['text', RelationshipResolutionEntity.create({
@@ -309,6 +331,24 @@ void test('enforce:contrast retains a relationship-fixed role and reports its re
   assert.deepEqual(pair.constraints, ['hue-relationship']);
   assert.deepEqual(pair.relationIds, ['text-from-source']);
   assert.equal(state.roles.text?.hex, baseline.hex);
+});
+
+void test('enforce:contrast preserves an unconstrained terminal inside a relationship domain', () => {
+  const baseline = colorRecordFactory.fromHex('#777777');
+  const tolerance = { 'alpha': 1, 'chroma': 0.5, 'hue': 180, 'lightness': 1 };
+  const unconstrainedInput = RelationshipConstraintFixture.inputWithoutRelationship({
+    'minimumContrastRatio': 4.5,
+    'tolerance': tolerance
+  });
+  const constrainedInput = RelationshipConstraintFixture.input({
+    'minimumContrastRatio': 4.5,
+    'tolerance': tolerance
+  });
+  const unconstrained = RelationshipConstraintFixture.engine(unconstrainedInput, baseline).run(unconstrainedInput);
+  const constrained = RelationshipConstraintFixture.engine(constrainedInput, baseline).run(constrainedInput);
+
+  assert.equal(constrained.roles.text?.hex, unconstrained.roles.text?.hex);
+  assert.equal(Metadata.contrastReport(constrained.metadata)?.compliant, true);
 });
 
 void test('enforce:contrast records deviation without replacing a tolerant resolution baseline', () => {
