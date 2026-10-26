@@ -180,6 +180,7 @@ class DeriveRoleRelations implements TaskInterface {
     const graph = RoleRelationshipGraphEntity.intake(roleSchema.relationshipGraph);
     const roles = PaletteRoleState.admit(state.roles);
     const provenance = Metadata.roleProvenance(state.metadata);
+    const provenanceSize = provenance.size;
     const resolution = Metadata.relationshipResolution(state.metadata);
     const distances = Metadata.roleDistances(state.metadata);
     const targets = new Map(roleSchema.roles.map((role) => {
@@ -189,7 +190,9 @@ class DeriveRoleRelations implements TaskInterface {
     const unresolved = DeriveRoleRelations.resolvePending(roles, provenance, resolution, distances, targets, pending);
     DeriveRoleRelations.recordUnresolved(roles, resolution, unresolved);
     roles.commit();
-    Metadata.writeRoleProvenance(state.metadata, provenance);
+    if (provenance.size !== provenanceSize) {
+      Metadata.writeRoleProvenance(state.metadata, provenance);
+    }
     Metadata.writeRelationshipResolution(state.metadata, resolution);
     Metadata.writeRoleDistances(state.metadata, distances);
   }
