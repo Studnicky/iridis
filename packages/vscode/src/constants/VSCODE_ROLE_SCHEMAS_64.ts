@@ -8,6 +8,12 @@ type VscodeRoleDraft = Readonly<{
 }>;
 
 class VscodeRoleSchemas64 {
+  static readonly #toleranceByOperation = {
+    'alias': { 'alpha': 1, 'chroma': 0.5, 'hue': 5, 'lightness': 1 },
+    'hue-offset': { 'alpha': 1, 'chroma': 0.5, 'hue': 5, 'lightness': 1 },
+    'oklch-delta': { 'alpha': 1, 'chroma': 0.5, 'hue': 5, 'lightness': 1 }
+  } as const;
+
   static readonly #darkFraming = {
     'accentLightnessOffset': -0.14,
     'range': VscodeRoleSchemas64.darkRange,
@@ -241,22 +247,23 @@ class VscodeRoleSchemas64 {
       return undefined;
     }
     const identifier = [source, 'to', target].join('-');
-    const shared = { 'id': identifier, 'priority': 0, 'relaxability': 'fixed' as const, 'source': source, 'target': target };
+    const shared = { 'id': identifier, 'priority': 0, 'relaxability': 'tolerant' as const, 'source': source, 'target': target };
     if (options.chromaScale !== undefined || options.lightnessOffset !== undefined) {
       const result = RoleRelationshipEntity.create({
         ...shared,
         ...(options.hueOffset === undefined ? {} : { 'hueOffset': options.hueOffset }),
         ...(options.chromaScale === undefined ? {} : { 'chromaScale': options.chromaScale }),
         ...(options.lightnessOffset === undefined ? {} : { 'lightnessOffset': options.lightnessOffset }),
-        'operation': 'oklch-delta'
+        'operation': 'oklch-delta',
+        'tolerance': VscodeRoleSchemas64.#toleranceByOperation['oklch-delta']
       });
       return result;
     }
     if (options.hueOffset === undefined) {
-      const result = RoleRelationshipEntity.create({ ...shared, 'operation': 'alias' });
+      const result = RoleRelationshipEntity.create({ ...shared, 'operation': 'alias', 'tolerance': VscodeRoleSchemas64.#toleranceByOperation.alias });
       return result;
     }
-    const result = RoleRelationshipEntity.create({ ...shared, 'degrees': options.hueOffset, 'operation': 'hue-offset' });
+    const result = RoleRelationshipEntity.create({ ...shared, 'degrees': options.hueOffset, 'operation': 'hue-offset', 'tolerance': VscodeRoleSchemas64.#toleranceByOperation['hue-offset'] });
     return result;
   }
 
