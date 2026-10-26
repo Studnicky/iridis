@@ -58,9 +58,6 @@ export const colorGraphLabelPainter = class ColorGraphLabelPainter {
     labelMeta: readonly ColorGraphPointMeta[],
     categoryVisible: ColorGraphCategoryVisibility
   ): void {
-    const container = canvas.parentElement;
-    if (!(container instanceof HTMLDivElement)) {return;}
-    ColorGraphLabelPainter.resizeLabelCanvas(canvas, container);
     const devicePixelRatio = ColorGraphLabelPainter.devicePixelRatio();
     const context = canvas.getContext('2d');
     if (context === null) {return;}
@@ -150,17 +147,16 @@ export const colorGraphLabelPainter = class ColorGraphLabelPainter {
     return readableTextColor;
   }
 
-  public static resizeLabelCanvas(canvas: HTMLCanvasElement, container: HTMLDivElement): void {
+  public static resizeLabelCanvas(canvas: HTMLCanvasElement, cssWidth: number, cssHeight: number): void {
     const devicePixelRatio = ColorGraphLabelPainter.devicePixelRatio();
-    const rect = container.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) {return;}
-    const targetWidth = Math.round(rect.width * devicePixelRatio);
-    const targetHeight = Math.round(rect.height * devicePixelRatio);
+    if (cssWidth === 0 || cssHeight === 0) {return;}
+    const targetWidth = Math.round(cssWidth * devicePixelRatio);
+    const targetHeight = Math.round(cssHeight * devicePixelRatio);
     if (canvas.width === targetWidth && canvas.height === targetHeight) {return;}
     canvas.width = targetWidth;
     canvas.height = targetHeight;
-    canvas.style.width = `${String(rect.width)}px`;
-    canvas.style.height = `${String(rect.height)}px`;
+    canvas.style.width = `${String(cssWidth)}px`;
+    canvas.style.height = `${String(cssHeight)}px`;
   }
 
   private static rgbOf(hex: string): [number, number, number] {

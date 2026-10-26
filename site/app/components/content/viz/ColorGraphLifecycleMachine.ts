@@ -6,7 +6,7 @@ import type { ColorGraphLifecycleEvent } from './ColorGraphLifecycleEvent.ts';
 
 import { ColorGraphLifecycleState } from './ColorGraphLifecycleState.ts';
 
-/** Owns the color graph runtime lifecycle: construct, device ready, fit, settle, zoom. */
+/** Owns the color graph runtime lifecycle: construct, device ready, fit, settle, zoom, suspend. */
 export class ColorGraphLifecycleMachine extends StateMachine<ColorGraphLifecycleState, ColorGraphLifecycleEvent> {
   static create(): ColorGraphLifecycleMachine {
     const result = new ColorGraphLifecycleMachine();

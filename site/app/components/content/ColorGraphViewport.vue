@@ -16,6 +16,7 @@ const props = defineProps<{
 
 const containerRef = defineModel<HTMLDivElement | null>('containerRef', { default: null });
 const labelsRef = defineModel<HTMLCanvasElement | null>('labelsRef', { default: null });
+const snapshotRef = defineModel<HTMLDivElement | null>('snapshotRef', { default: null });
 </script>
 
 <template>
@@ -61,6 +62,11 @@ const labelsRef = defineModel<HTMLCanvasElement | null>('labelsRef', { default: 
         <canvas
           ref="labelsRef"
           class="cg-labels"
+          aria-hidden="true"
+        />
+        <div
+          ref="snapshotRef"
+          class="cg-snapshot"
           aria-hidden="true"
         />
 
@@ -117,6 +123,15 @@ const labelsRef = defineModel<HTMLCanvasElement | null>('labelsRef', { default: 
   width: 100%;
   height: 100%;
   pointer-events: none;
+}
+.cg-snapshot {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.cg-snapshot :deep(canvas) {
+  width: 100%;
+  height: 100%;
 }
 .cg-overlay {
   position: absolute;

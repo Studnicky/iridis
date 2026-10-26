@@ -55,7 +55,6 @@ class ColorGraphLegendSection {
 export const buildColorGraphViewModel = class ColorGraphViewModelBuilder {
   public static readonly fitDelaysMs: readonly number[] = [0, 250, 500, 750, 1200];
   public static readonly fitPadding = 0.15;
-  public static readonly maximumInitAttempts = 10;
   public static readonly panStep = 80;
   public static readonly spaceSize = 4096;
   public static readonly zoomStep = 1.25;

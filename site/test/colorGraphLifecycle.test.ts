@@ -150,6 +150,10 @@ class ColorGraphLifecycleBrowser {
     return result;
   }
 
+  static async awaitSuspended(page: Page): Promise<void> {
+    await page.locator('#explore .cyl-face:not(.active) .cg-wrap[data-graph-state="suspended"]').waitFor({ 'timeout': ColorGraphLifecycleBrowser.graphWaitMs });
+  }
+
   static async selectGraphCard(page: Page): Promise<void> {
     await page.locator('#explore').getByRole('button', {
       'exact': true,
@@ -232,4 +236,63 @@ await test('tearing down during a final fit cannot impose a zoom floor on a repl
     'afterZoomOut': afterZoomOut,
     'beforeZoomOut': beforeZoomOut
   }));
+});
+
+await test('a graph on an inactive neighbour face is disposed behind a snapshot and mounts again when the face activates', { 'timeout': 180_000 }, async (context) => {
+  assert.ok(ProductionNitroServer.isBuilt(), 'The production Nitro entrypoint is required; run through the site test script.');
+  const running = await ProductionNitroServer.start();
+
+  context.after(async () => {
+    await ProductionNitroServer.stop(running.child);
+  });
+
+  const browser = await chromium.launch({ 'headless': true });
+
+  context.after(async () => {
+    await browser.close();
+  });
+  const page = await browser.newPage({
+    'reducedMotion': 'reduce',
+    'viewport': {
+      'height': 900,
+      'width': 1280
+    }
+  });
+
+  await page.goto(running.origin, { 'waitUntil': 'networkidle' });
+  await page.locator('#explore').scrollIntoViewIfNeeded();
+  await ColorGraphLifecycleBrowser.selectGraphCard(page);
+  await ColorGraphLifecycleBrowser.awaitState(page, 'settled');
+
+  await page.locator('#explore').getByRole('button', {
+    'exact': true,
+    'name': 'Spectrum'
+  })
+    .click();
+  await ColorGraphLifecycleBrowser.awaitSuspended(page);
+
+  const suspended = await page.locator('#explore .cyl-face:not(.active) .cg-wrap[data-graph-state="suspended"]').evaluate((node) => {
+    const result = {
+      'liveCanvases': node.querySelectorAll('.cg-cosmos canvas').length,
+      'snapshotCanvases': node.querySelectorAll('.cg-snapshot canvas').length
+    };
+
+    return result;
+  });
+
+  assert.deepEqual(suspended, { 'liveCanvases': 0, 'snapshotCanvases': 1 });
+
+  await ColorGraphLifecycleBrowser.selectGraphCard(page);
+  await ColorGraphLifecycleBrowser.awaitState(page, 'settled');
+
+  const resumed = await page.locator('#explore .cyl-face.active .cg-wrap').evaluate((node) => {
+    const result = {
+      'liveCanvases': node.querySelectorAll('.cg-cosmos canvas').length,
+      'snapshotCanvases': node.querySelectorAll('.cg-snapshot canvas').length
+    };
+
+    return result;
+  });
+
+  assert.deepEqual(resumed, { 'liveCanvases': 1, 'snapshotCanvases': 0 });
 });
