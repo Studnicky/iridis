@@ -1,6 +1,7 @@
 import type { JSONSchema7Type } from 'json-schema';
 
 import type { InputEntity } from '../entities/InputEntity.ts';
+import type { ColorCoordinate } from '../math/ColorCoordinate.ts';
 import type { RelationshipGraphShape } from './RelationshipGraphShape.ts';
 
 import { ColorRecordEntity } from '../entities/ColorRecordEntity.ts';
@@ -28,12 +29,18 @@ class RelationshipConstraintContext {
   }
 }
 
+class RelationshipConstraintGraphContext {
+  readonly graph: RoleRelationshipGraphEntity.Type;
+  readonly resolutions = new WeakMap<object, RelationshipConstraintContext>();
+
+  constructor(graph: RoleRelationshipGraphEntity.Type) {
+    this.graph = graph;
+  }
+}
+
 /** Reads authored graph relationships and their optional exact runtime constraint baselines. */
 export class RelationshipConstraint {
-  static readonly #contexts = new WeakMap<
-    Record<string, JSONSchema7Type>,
-    WeakMap<object, RelationshipConstraintContext>
-  >();
+  static readonly #contexts = new WeakMap<object, RelationshipConstraintGraphContext>();
 
   static allows(
     input: InputEntity.Type,
@@ -41,12 +48,45 @@ export class RelationshipConstraint {
     roleName: string,
     candidate: ColorRecordEntity.Type
   ): boolean {
-    const state = RelationshipConstraint.domain(input, metadata, roleName);
-    const baseline = state?.baseline;
-    if (state === undefined || baseline === undefined) {
+    const result = RelationshipConstraint.allowsCoordinates(
+      input,
+      metadata,
+      roleName,
+      candidate.alpha,
+      candidate.oklch
+    );
+    return result;
+  }
+
+  static allowsCoordinates(
+    input: InputEntity.Type,
+    metadata: Record<string, JSONSchema7Type>,
+    roleName: string,
+    alpha: number,
+    candidate: Readonly<Pick<ColorCoordinate, 'c' | 'h' | 'l'>>
+  ): boolean {
+    const domain = RelationshipConstraint.domain(input, metadata, roleName);
+    const result = RelationshipConstraint.allowsDomain(domain, alpha, candidate);
+    return result;
+  }
+
+  static allowsDomain(
+    domain: RelationshipConstraintDomain | undefined,
+    alpha: number,
+    candidate: Readonly<Pick<ColorCoordinate, 'c' | 'h' | 'l'>>
+  ): boolean {
+    const baseline = domain?.baseline;
+    if (domain === undefined || baseline === undefined) {
       return true;
     }
-    const result = RelationshipConstraint.allowsState(state, baseline, candidate);
+    const result = RelationshipConstraint.allowsState(
+      domain,
+      baseline,
+      alpha,
+      candidate.c,
+      candidate.h,
+      candidate.l
+    );
     return result;
   }
 
@@ -101,17 +141,32 @@ export class RelationshipConstraint {
     metadata: Record<string, JSONSchema7Type>,
     graphSource: object
   ): RelationshipConstraintContext {
-    let byGraph = RelationshipConstraint.#contexts.get(metadata);
-    if (byGraph === undefined) {
-      byGraph = new WeakMap<object, RelationshipConstraintContext>();
-      RelationshipConstraint.#contexts.set(metadata, byGraph);
+    let graphContext = RelationshipConstraint.#contexts.get(graphSource);
+    if (graphContext === undefined) {
+      graphContext = new RelationshipConstraintGraphContext(
+        RoleRelationshipGraphEntity.intake(graphSource)
+      );
+      RelationshipConstraint.#contexts.set(graphSource, graphContext);
     }
-    let result = byGraph.get(graphSource);
+    const resolutionSource = metadata['core:relationshipResolution'];
+    if (
+      resolutionSource === undefined ||
+      typeof resolutionSource !== 'object' ||
+      resolutionSource === null ||
+      Array.isArray(resolutionSource)
+    ) {
+      return new RelationshipConstraintContext(
+        graphContext.graph,
+        Metadata.relationshipResolution(metadata)
+      );
+    }
+    let result = graphContext.resolutions.get(resolutionSource);
     if (result === undefined) {
-      const graph = RoleRelationshipGraphEntity.intake(graphSource);
-      const resolutions = Metadata.relationshipResolution(metadata);
-      result = new RelationshipConstraintContext(graph, resolutions);
-      byGraph.set(graphSource, result);
+      result = new RelationshipConstraintContext(
+        graphContext.graph,
+        Metadata.relationshipResolution(metadata)
+      );
+      graphContext.resolutions.set(resolutionSource, result);
     }
     return result;
   }
@@ -219,30 +274,25 @@ export class RelationshipConstraint {
   private static allowsState(
     state: RelationshipConstraintDomain,
     baseline: ColorRecordEntity.Type,
-    candidate: ColorRecordEntity.Type
+    alpha: number,
+    chroma: number,
+    hue: number,
+    lightness: number
   ): boolean {
     const tolerance = state.tolerance;
     if (tolerance === undefined) {
-      const result = RelationshipConstraint.sameColor(candidate, baseline);
+      const result =
+        alpha === baseline.alpha &&
+        lightness === baseline.oklch.l &&
+        chroma === baseline.oklch.c &&
+        hue === baseline.oklch.h;
       return result;
     }
     const result =
-      RelationshipConstraint.within(candidate.alpha, baseline.alpha, tolerance.alpha) &&
-      RelationshipConstraint.within(candidate.oklch.c, baseline.oklch.c, tolerance.chroma) &&
-      RelationshipConstraint.withinHue(candidate.oklch.h, baseline.oklch.h, tolerance.hue) &&
-      RelationshipConstraint.within(candidate.oklch.l, baseline.oklch.l, tolerance.lightness);
-    return result;
-  }
-
-  private static sameColor(
-    left: ColorRecordEntity.Type,
-    right: ColorRecordEntity.Type
-  ): boolean {
-    const result =
-      left.alpha === right.alpha &&
-      left.oklch.l === right.oklch.l &&
-      left.oklch.c === right.oklch.c &&
-      left.oklch.h === right.oklch.h;
+      RelationshipConstraint.within(alpha, baseline.alpha, tolerance.alpha) &&
+      RelationshipConstraint.within(chroma, baseline.oklch.c, tolerance.chroma) &&
+      RelationshipConstraint.withinHue(hue, baseline.oklch.h, tolerance.hue) &&
+      RelationshipConstraint.within(lightness, baseline.oklch.l, tolerance.lightness);
     return result;
   }
 

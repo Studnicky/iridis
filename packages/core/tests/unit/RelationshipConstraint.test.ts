@@ -14,6 +14,7 @@ import { RelationshipResolutionEntity } from '../../src/entities/RelationshipRes
 import { RoleProvenanceEntity } from '../../src/entities/RoleProvenanceEntity.ts';
 import { RoleSchemaEntity } from '../../src/entities/RoleSchemaEntity.ts';
 import { TaskManifestEntity } from '../../src/entities/TaskManifestEntity.ts';
+import { ColorCoordinate } from '../../src/math/ColorCoordinate.ts';
 import { colorRecordFactory } from '../../src/math/ColorRecordFactory.ts';
 import { RelationshipConstraint } from '../../src/model/RelationshipConstraint.ts';
 import { coreTasks } from '../../src/tasks/index.ts';
@@ -210,6 +211,36 @@ void test('RelationshipConstraint applies only declared tolerant lightness chrom
   );
 });
 
+void test('RelationshipConstraint compares coordinate candidates like canonical records', () => {
+  const baseline = colorRecordFactory.fromHex('#77777780');
+  const input = RelationshipConstraintFixture.input({ 'tolerance': {
+    'alpha': 0.1,
+    'chroma': 0.02,
+    'hue': 8,
+    'lightness': 0.03
+  } });
+  const metadata = RelationshipConstraintFixture.metadata(baseline);
+  const candidate = RelationshipConstraintFixture.candidate(baseline, {
+    'alpha': baseline.alpha + 0.05,
+    'chroma': baseline.oklch.c + 0.01,
+    'hue': baseline.oklch.h + 4,
+    'lightness': baseline.oklch.l + 0.02
+  });
+  const coordinate = ColorCoordinate.fromOklch(
+    candidate.oklch.l,
+    candidate.oklch.c,
+    candidate.oklch.h
+  );
+  const domain = RelationshipConstraint.domain(input, metadata, 'text');
+  const expected = RelationshipConstraint.allows(input, metadata, 'text', candidate);
+
+  assert.equal(
+    RelationshipConstraint.allowsCoordinates(input, metadata, 'text', candidate.alpha, coordinate),
+    expected
+  );
+  assert.equal(RelationshipConstraint.allowsDomain(domain, candidate.alpha, coordinate), expected);
+});
+
 void test('RelationshipConstraint exposes the resolved relationship domain without duplicating graph lookup', () => {
   const baseline = colorRecordFactory.fromHex('#77777780');
   const input = RelationshipConstraintFixture.input({ 'tolerance': {
@@ -240,6 +271,46 @@ void test('RelationshipConstraint exposes the resolved relationship domain witho
   ), true);
   assert.equal(RelationshipConstraint.limitsMovement(input, {}, 'text'), false);
   assert.deepEqual(RelationshipConstraint.relationIds(input, {}, ['text']), []);
+});
+
+void test('RelationshipConstraint reuses one domain for repeated calls on one graph and resolution record', () => {
+  const baseline = colorRecordFactory.fromHex('#777777');
+  const input = RelationshipConstraintFixture.input({ 'tolerance': { 'lightness': 0.03 } });
+  const metadata = RelationshipConstraintFixture.metadata(baseline);
+  const domain = RelationshipConstraint.domain(input, metadata, 'text');
+
+  assert.ok(domain !== undefined);
+  for (let index = 0; index < 8; index += 1) {
+    assert.equal(RelationshipConstraint.allows(input, metadata, 'text', baseline), true);
+    assert.strictEqual(RelationshipConstraint.domain(input, metadata, 'text'), domain);
+  }
+});
+
+void test('RelationshipConstraint rebuilds a domain after relationship resolution metadata changes', () => {
+  const baseline = colorRecordFactory.fromHex('#777777');
+  const replacement = RelationshipConstraintFixture.candidate(baseline, {
+    'lightness': baseline.oklch.l + 0.1
+  });
+  const input = RelationshipConstraintFixture.input();
+  const metadata = RelationshipConstraintFixture.metadata(baseline);
+  const initial = RelationshipConstraint.domain(input, metadata, 'text');
+
+  Metadata.writeRelationshipResolution(metadata, new Map([['text', RelationshipResolutionEntity.create({
+    'after': replacement,
+    'disposition': 'applied',
+    'groupId': 'text-group',
+    'operation': 'alias',
+    'relationshipId': 'text-from-source',
+    'sources': ['source']
+  })]]));
+  const updated = RelationshipConstraint.domain(input, metadata, 'text');
+
+  assert.ok(initial !== undefined);
+  assert.ok(updated !== undefined);
+  assert.notStrictEqual(updated, initial);
+  assert.equal(updated.baseline?.hex, replacement.hex);
+  assert.equal(RelationshipConstraint.allows(input, metadata, 'text', baseline), false);
+  assert.equal(RelationshipConstraint.allows(input, metadata, 'text', replacement), true);
 });
 
 void test('RelationshipConstraint resolves authored default hue-offset degrees without a runtime baseline', () => {

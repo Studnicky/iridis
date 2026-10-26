@@ -261,24 +261,54 @@ class ContrastRangeCache {
 }
 
 class RelationshipCandidateDomain {
-  readonly #state: PaletteStateInterface | undefined;
+  readonly #alphas: ReadonlyMap<string, number> | undefined;
+  readonly #domains: ReadonlyMap<string, ReturnType<typeof RelationshipConstraint.domain>> | undefined;
 
-  private constructor(state: PaletteStateInterface | undefined) {
-    this.#state = state;
+  private constructor(options: Readonly<{
+    'alphas'?: ReadonlyMap<string, number>;
+    'domains'?: ReadonlyMap<string, ReturnType<typeof RelationshipConstraint.domain>>;
+  }>) {
+    this.#alphas = options.alphas;
+    this.#domains = options.domains;
   }
 
-  static constrained(state: PaletteStateInterface): RelationshipCandidateDomain {
-    return new RelationshipCandidateDomain(state);
+  static constrained(
+    state: PaletteStateInterface,
+    roleNames: readonly string[],
+    initial: ReadonlyMap<string, ColorRecordEntity.Type>
+  ): RelationshipCandidateDomain {
+    const alphas = new Map<string, number>();
+    const domains = new Map<string, ReturnType<typeof RelationshipConstraint.domain>>();
+    for (let index = 0; index < roleNames.length; index += 1) {
+      const roleName = roleNames[index];
+      const record = roleName === undefined ? undefined : initial.get(roleName);
+      if (roleName === undefined || record === undefined) {
+        continue;
+      }
+      alphas.set(roleName, record.alpha);
+      domains.set(
+        roleName,
+        RelationshipConstraint.domain(state.input, state.metadata, roleName)
+      );
+    }
+    return new RelationshipCandidateDomain({ 'alphas': alphas, 'domains': domains });
   }
 
   static unconstrained(): RelationshipCandidateDomain {
-    return new RelationshipCandidateDomain(undefined);
+    return new RelationshipCandidateDomain({});
   }
 
   allows(roleName: string, coordinate: ColorCoordinate): boolean {
-    const state = this.#state;
-    const result = state === undefined ||
-      ContrastExecution.allowsRelationshipCandidate(state, roleName, coordinate);
+    const domains = this.#domains;
+    const alpha = this.#alphas?.get(roleName);
+    if (domains === undefined || alpha === undefined) {
+      return true;
+    }
+    const result = RelationshipConstraint.allowsDomain(
+      domains.get(roleName),
+      alpha,
+      coordinate
+    );
     return result;
   }
 }
@@ -500,7 +530,7 @@ class ContrastExecution {
         component,
         roleNames,
         initial,
-        RelationshipCandidateDomain.constrained(state)
+        RelationshipCandidateDomain.constrained(state, roleNames, initial)
       );
     ContrastExecution.restoreComponent(roles, state, roleNames, initial, bestCoordinates);
   }
@@ -1294,31 +1324,6 @@ class ContrastExecution {
     const result = relationIds.length === 0
       ? entry
       : PendingContrastEntryEntity.create({ ...entry, 'relationIds': relationIds });
-    return result;
-  }
-
-  static allowsRelationshipCandidate(
-    state: PaletteStateInterface,
-    roleName: string,
-    coordinate: ColorCoordinate
-  ): boolean {
-    if (state.input.roles?.relationshipGraph === undefined) {
-      return true;
-    }
-    const role = state.roles[roleName];
-    if (role === undefined) {
-      return true;
-    }
-    const candidate = colorRecordFactory.fromCoordinate(
-      coordinate,
-      { 'alpha': role.alpha, 'hints': role.hints, 'origin': role }
-    );
-    const result = RelationshipConstraint.allows(
-      state.input,
-      state.metadata,
-      roleName,
-      candidate
-    );
     return result;
   }
 
