@@ -18,21 +18,24 @@
  * import on mount keeps it out of the main bundle for visitors who never
  * scroll this far.
  */
-import { EffectInterpreter } from '@studnicky/fsm/browser';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/browser';
 import { nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 
 import type { Graph } from '@cosmos.gl/graph';
 import { logger } from '~/composables/logger.ts';
+import { AnimationFrameScheduler } from '~/composables/AnimationFrameScheduler.ts';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useRoleMathList } from '~/composables/useRoleMathList.ts';
 import { buildColorGraphBuffers } from './graph/buildColorGraphBuffers.ts';
+import { buildColorGraphConfig } from './graph/buildColorGraphConfig.ts';
 import { buildColorGraphViewModel } from './graph/buildColorGraphViewModel.ts';
 import { buildColorGraphViewportModel } from './graph/buildColorGraphViewportModel.ts';
 import { colorGraphLabelPainter } from './graph/colorGraphLabelPainter.ts';
 import { CameraControls } from './viz/CameraControls.ts';
 import { ColorGraphLifecycleEvent } from './viz/ColorGraphLifecycleEvent.ts';
-import { ColorGraphLifecycleMachine } from './viz/ColorGraphLifecycleMachine.ts';
+import { ColorGraphMountController } from './viz/ColorGraphMountController.ts';
+import type { ColorGraphViewStateInterface } from './viz/ColorGraphViewStateInterface.ts';
+import { ColorGraphViewRestorer } from './viz/ColorGraphViewRestorer.ts';
 import { LegendMachine } from './viz/LegendMachine.ts';
 import { ViewportStatus } from './viz/ViewportStatus.ts';
 
@@ -80,22 +83,144 @@ const dpadMachine = CameraControls.create({
 
 const containerRef = ref<HTMLDivElement | null>(null);
 const labelsRef = ref<HTMLCanvasElement | null>(null);
+const snapshotRef = ref<HTMLDivElement | null>(null);
 const loading = ref(true);
 const loadError = ref<string | null>(null);
 const zoomLevel = ref(1);
 const fitZoomLevel = ref<number | null>(null);
 const fullscreen = ref(false);
+const reframeCount = ref(0);
 
 const graph = shallowRef<Graph | null>(null);
 
-const lifecycle = EffectInterpreter.create(ColorGraphLifecycleMachine.create());
-lifecycle.start();
-const lifecycleState = shallowRef(lifecycle.getState());
-lifecycle.subscribe((next) => { lifecycleState.value = next; });
+let labelMeta: ReturnType<typeof buildColorGraphBuffers.build>['meta'] = [];
+let labelRaf: number | null = null;
+let paintRaf: number | null = null;
+let resizeObserver: ResizeObserver | null = null;
+let intersectionObserver: IntersectionObserver | null = null;
+let GraphCtor: typeof import('@cosmos.gl/graph').Graph | null = null;
+let graphBooting = false;
+let captureFitZoomOnEnd = false;
+let startSimulationAfterFit = false;
+const ZOOM_IDLE_MS = 250;
+const FIT_SETTLE_FALLBACK_MS = 600;
+const LABEL_PAINT_BUDGET_MS = 1000 / 30;
+let lastLabelPaintAt = 0;
+let pendingPaint = false;
+let pendingLabelPaint = false;
+let isGraphVisible = true;
+let isInView = true;
+let appliedLayoutKey: string | null = null;
+let savedView: ColorGraphViewStateInterface | null = null;
 
-// The transition and its notification run before the interpreter's first await.
-function signal(event: ColorGraphLifecycleEvent): void {
-  lifecycle.send(event).catch(() => {
+function isEnabled(): boolean {
+  const result = props.enabled ?? true;
+
+  return result;
+}
+
+function constructGraph(): Graph {
+  const container = containerRef.value;
+  const Ctor = GraphCtor;
+  if (container === null || Ctor === null) {
+    throw new Error('The color graph container is not mounted');
+  }
+  try {
+    // Cosmos creates its luma device internally; luma enables WebGL context
+    // instrumentation outside production unless this setting is explicit.
+    globalThis.luma.log.set('debug', false);
+    globalThis.luma.log.set('debug-webgl', false);
+    const constructed = new Ctor(container, buildColorGraphConfig.build(
+      // Cosmos's own dark-gray default ignores the site's light/dark framing;
+      // the resolved --ui-bg token is re-applied whenever framing changes.
+      colorGraphLabelPainter.backgroundColorFromTheme(),
+      () => { scheduleLabelPaint(); },
+      () => {
+        controller.signal(ColorGraphLifecycleEvent.zoomed());
+        armZoomIdle();
+        scheduleLabelPaint();
+        pollZoom();
+        const g = graph.value;
+        const floor = fitZoomLevel.value;
+        if (g !== null && floor !== null) {
+          try { if (g.getZoomLevel() < floor) g.setZoomLevel(floor, 0, false); } catch { /* ignore */ }
+        }
+      },
+      () => {
+        if (captureFitZoomOnEnd) {
+          settleFit();
+        } else {
+          controller.signal(ColorGraphLifecycleEvent.zoomEnded());
+        }
+      }
+    ));
+
+    return constructed;
+  } catch (error) {
+    // A failed construction can leave a partially built canvas behind.
+    container.replaceChildren();
+    throw error;
+  }
+}
+
+function disposeGraph(handle: Graph): void {
+  viewRestorer?.cancel();
+  cancelFitSequence();
+  if (labelRaf !== null) {
+    cancelAnimationFrame(labelRaf);
+    labelRaf = null;
+  }
+  if (paintRaf !== null) {
+    cancelAnimationFrame(paintRaf);
+    paintRaf = null;
+  }
+  handle.destroy();
+}
+
+function captureSnapshot(handle: Graph): HTMLCanvasElement | null {
+  const graphCanvas = containerRef.value?.querySelector('canvas') ?? null;
+  const isCapturable = handle === graph.value
+    && graphCanvas !== null
+    && graphCanvas.width > 0
+    && graphCanvas.height > 0;
+  if (!isCapturable) {
+    return null;
+  }
+  const snapshot = document.createElement('canvas');
+  snapshot.width = graphCanvas.width;
+  snapshot.height = graphCanvas.height;
+  const context = snapshot.getContext('2d');
+  if (context === null) {
+    return null;
+  }
+  context.drawImage(graphCanvas, 0, 0);
+  const labels = labelsRef.value;
+  if (labels !== null && labels.width > 0 && labels.height > 0) {
+    context.drawImage(labels, 0, 0, snapshot.width, snapshot.height);
+  }
+
+  return snapshot;
+}
+
+function presentSnapshot(snapshot: HTMLCanvasElement | null): void {
+  const target = snapshotRef.value;
+  if (target === null) {
+    return;
+  }
+  if (snapshot === null) {
+    target.replaceChildren();
+  } else {
+    target.replaceChildren(snapshot);
+  }
+}
+
+const controller = ColorGraphMountController.create<Graph, HTMLCanvasElement>({
+  'capture': captureSnapshot,
+  'construct': constructGraph,
+  'dispose': disposeGraph,
+  'idleElapsed': onIdleElapsed,
+  'presentSnapshot': presentSnapshot,
+  'reportRejection': () => {
     logger.error(
       LogBody.create({
         'component': 'ColorGraph',
@@ -105,75 +230,34 @@ function signal(event: ColorGraphLifecycleEvent): void {
         'status': LOG_STATUS.FAILED
       })
     );
-  });
-}
+  }
+}, buildColorGraphViewModel.idleSuspendMs);
+let viewRestorer: ColorGraphViewRestorer | null = null;
+const lifecycleState = shallowRef(controller.getState());
+controller.subscribe((next) => { lifecycleState.value = next; });
 
-let labelMeta: ReturnType<typeof buildColorGraphBuffers.build>['meta'] = [];
-let labelRaf: number | null = null;
-let paintRaf: number | null = null;
-let resizeObserver: ResizeObserver | null = null;
-let visibilityPoll: number | null = null;
-let GraphCtor: typeof import('@cosmos.gl/graph').Graph | null = null;
-let graphRuntimeArmed = false;
-let graphBooting = false;
-const fitTimers: ReturnType<typeof setTimeout>[] = [];
-let captureFitZoomOnEnd = false;
-let startSimulationAfterFit = false;
-let zoomIdleTimer: ReturnType<typeof setTimeout> | null = null;
-const ZOOM_IDLE_MS = 250;
-const FIT_SETTLE_FALLBACK_MS = 600;
-const LABEL_PAINT_BUDGET_MS = 1000 / 30;
-const GRAPH_VISIBILITY_POLL_MS = 750;
-// Caps how many times initCosmos() is allowed to retry a failing
-// construction (WebGL2 unavailable, GPU blocklisted, context lost, shader
-// compile failure): each failed `new GraphCtor()` call can allocate a WebGL2
-// context before throwing, and browsers cap concurrent contexts tab-wide —
-// an unbounded 400ms poll would keep re-allocating and thrashing that budget
-// for as long as the component stays mounted. 10 attempts at the poll's
-// 400ms cadence gives the failure a few seconds to be transient (e.g. a
-// momentary context loss) before giving up for good.
-let initAttempts = 0;
-let initFailed = false;
-let lastLabelPaintAt = 0;
-let pendingPaint = false;
-let pendingLabelPaint = false;
-let graphVisibilityPoll: number | null = null;
-let isGraphVisible = true;
-let onVisibilityChange: (() => void) | null = null;
-let appliedStructureKey: string | null = null;
-
-function syncGraphVisibility(): void {
-  const target = containerRef.value;
-  if (target === null || graph.value === null) return;
-  const rect = target.getBoundingClientRect();
-  const nextVisible = rect.width > 0 && rect.height > 0
-    && rect.bottom > 0 && rect.right > 0
-    && rect.top < window.innerHeight && rect.left < window.innerWidth
-    && !document.hidden;
+function applyGraphVisibility(): void {
+  const handle = graph.value;
+  if (handle === null) return;
+  const nextVisible = isInView && !document.hidden;
   if (nextVisible === isGraphVisible) return;
   isGraphVisible = nextVisible;
   if (isGraphVisible) {
-    try { graph.value.start(); } catch { /* ignore */ }
+    try { handle.start(); } catch { /* ignore */ }
     if (pendingPaint) { schedulePaint(); }
     if (pendingLabelPaint) { scheduleLabelPaint(); }
   } else {
-    try { graph.value.pause(); } catch { /* ignore */ }
+    try { handle.pause(); } catch { /* ignore */ }
   }
 }
 
-function stopVisibilityPoll(): void {
-  if (visibilityPoll !== null) {
-    clearInterval(visibilityPoll);
-    visibilityPoll = null;
-  }
-}
+function onDocumentVisibility(): void { applyGraphVisibility(); }
 
 function armZoomIdle(): void {
-  if (zoomIdleTimer !== null) clearTimeout(zoomIdleTimer);
-  zoomIdleTimer = setTimeout(() => {
-    zoomIdleTimer = null;
-    signal(ColorGraphLifecycleEvent.zoomEnded());
-  }, ZOOM_IDLE_MS);
+  controller.cancel('zoomIdle');
+  controller.schedule('zoomIdle', ZOOM_IDLE_MS, () => {
+    controller.signal(ColorGraphLifecycleEvent.zoomEnded());
+  });
 }
 
 // A final fit that lands on the current zoom emits no zoom-end, so the fit settles on a timer too.
@@ -185,97 +269,99 @@ function settleFit(): void {
   const handle = graph.value;
   if (handle === null) return;
   try { fitZoomLevel.value = handle.getZoomLevel(); } catch { /* ignore */ }
-  signal(ColorGraphLifecycleEvent.fitSettled());
-  signal(ColorGraphLifecycleEvent.zoomEnded());
+  controller.signal(ColorGraphLifecycleEvent.fitSettled());
+  controller.signal(ColorGraphLifecycleEvent.zoomEnded());
+  controller.releaseSnapshot();
   if (shouldStartSimulation) {
     try { handle.start(1); } catch { /* ignore */ }
   }
 }
 
 function cancelFitSequence(): void {
-  for (const timer of fitTimers.splice(0)) clearTimeout(timer);
+  controller.cancel('fit');
   captureFitZoomOnEnd = false;
   startSimulationAfterFit = false;
 }
 
-async function bootGraphRuntime(): Promise<void> {
-  if (graphRuntimeArmed || graphBooting || !(props.enabled ?? true) || typeof window === 'undefined') return;
-  cancelFitSequence();
+function syncLabelCanvasSize(): void {
+  const canvas = labelsRef.value;
+  const container = containerRef.value;
+  if (canvas === null || container === null) return;
+  colorGraphLabelPainter.resizeLabelCanvas(canvas, container.clientWidth, container.clientHeight);
+}
+
+function armRuntime(container: HTMLDivElement): void {
+  window.addEventListener('keydown', onKeydown);
+  document.addEventListener('visibilitychange', onDocumentVisibility);
+  if (typeof IntersectionObserver !== 'undefined') {
+    intersectionObserver = new IntersectionObserver((entries) => {
+      isInView = entries.some((entry) => entry.isIntersecting);
+      applyGraphVisibility();
+    });
+    intersectionObserver.observe(container);
+  }
+  if (typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(() => {
+      if (graph.value !== null) { syncLabelCanvasSize(); scheduleLabelPaint(); }
+    });
+    resizeObserver.observe(container);
+  }
+}
+
+function disarmRuntime(): void {
+  resizeObserver?.disconnect();
+  resizeObserver = null;
+  intersectionObserver?.disconnect();
+  intersectionObserver = null;
+  document.removeEventListener('visibilitychange', onDocumentVisibility);
+  window.removeEventListener('keydown', onKeydown);
+}
+
+function resetGraphState(): void {
+  graph.value = null;
+  isGraphVisible = true;
+  isInView = true;
+  pendingPaint = false;
+  pendingLabelPaint = false;
+  appliedLayoutKey = null;
+  fitZoomLevel.value = null;
+  lastLabelPaintAt = 0;
+}
+
+function mountGraph(container: HTMLDivElement): void {
+  try {
+    const handle = controller.mount();
+    graph.value = handle;
+    loadError.value = null;
+    armRuntime(container);
+    // Cosmos rejects point updates until its device initializes; the first paint follows that event.
+    handle.ready.then(() => {
+      if (graph.value !== handle) return;
+      controller.signal(ColorGraphLifecycleEvent.deviceReady());
+      schedulePaint();
+    }).catch(() => { /* cosmos logs device initialization failures itself */ });
+    syncLabelCanvasSize();
+    schedulePaint();
+    pollZoom();
+  } catch (err) {
+    loadError.value = err instanceof Error ? err.message : String(err);
+    resetGraphState();
+  }
+}
+
+async function activateGraph(): Promise<void> {
+  if (graphBooting || !isEnabled() || typeof window === 'undefined') return;
   graphBooting = true;
-  loading.value = true;
-  loadError.value = null;
   try {
     if (GraphCtor === null) {
+      loading.value = true;
       const mod = await import('@cosmos.gl/graph');
       GraphCtor = mod.Graph;
     }
-
-    const container = containerRef.value;
-    if (container === null || !(props.enabled ?? true)) {
-      loading.value = false;
-      return;
-    }
-
-    graphRuntimeArmed = true;
-    window.addEventListener('keydown', onKeydown);
     loading.value = false;
-
-    // This card sits inside a CylinderCarousel deck, which mounts EVERY face
-    // simultaneously (siblings are 3D-transformed off-screen, never
-    // display:none) — a bare nonzero-size check alone would fire immediately
-    // on page load regardless of whether this card is the one actually
-    // showing. IntersectionObserver would be the natural fix, but it never
-    // fires at all for elements inside this carousel's 3D-transformed
-    // (perspective/rotateY/translateZ) ancestor chain — confirmed empirically,
-    // not just theorized — so visibility is instead polled directly via
-    // getBoundingClientRect against the viewport, which reflects reality
-    // regardless of any 3D-transform/IntersectionObserver interaction quirk.
-    const tryInit = (): void => {
-      if (initFailed) {
-        stopVisibilityPoll();
-        return;
-      }
-      if (graph.value !== null) return;
-      if (initAttempts >= buildColorGraphViewModel.maximumInitAttempts) {
-        initFailed = true;
-        stopVisibilityPoll();
-        return;
-      }
-      const rect = container.getBoundingClientRect();
-      const inViewport = rect.width > 0 && rect.height > 0
-        && rect.bottom > 0 && rect.right > 0
-        && rect.top < window.innerHeight && rect.left < window.innerWidth;
-      if (!inViewport) return;
-      initCosmos(container);
-      // Stop polling once construction succeeds, or once it has failed enough
-      // times to give up — either way, further calls to tryInit would be
-      // wasted work (or, for the failure case, a fresh doomed WebGL2 context
-      // allocation) with no path to success.
-      if (visibilityPoll !== null
-        && (graph.value !== null
-          || initAttempts >= buildColorGraphViewModel.maximumInitAttempts)) {
-        stopVisibilityPoll();
-      }
-    };
-    visibilityPoll = window.setInterval(tryInit, 400);
-    tryInit();
-
-    const scheduleGraphVisibility = (): void => {
-      if (graphVisibilityPoll === null) {
-        graphVisibilityPoll = window.setInterval(syncGraphVisibility, GRAPH_VISIBILITY_POLL_MS);
-      }
-    };
-    onVisibilityChange = (): void => { syncGraphVisibility(); };
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    scheduleGraphVisibility();
-    onVisibilityChange();
-
-    if (typeof ResizeObserver !== 'undefined') {
-      resizeObserver?.disconnect();
-      resizeObserver = new ResizeObserver(() => {
-        if (graph.value !== null) { resizeLabelCanvas(); scheduleLabelPaint(); }
-      });
-      resizeObserver.observe(container);
+    const container = containerRef.value;
+    if (container !== null && isEnabled() && graph.value === null) {
+      mountGraph(container);
     }
   } catch (err) {
     loadError.value = err instanceof Error ? err.message : String(err);
@@ -285,136 +371,51 @@ async function bootGraphRuntime(): Promise<void> {
   }
 }
 
-function teardownGraphRuntime(): void {
-  if (!graphRuntimeArmed) {
-    return;
+function readView(): ColorGraphViewStateInterface | null {
+  const handle = graph.value;
+  let view: ColorGraphViewStateInterface | null = null;
+  const floor = fitZoomLevel.value;
+  if (handle !== null && floor !== null && controller.getState().isSettled()) {
+    try {
+      const origin = handle.spaceToScreenPosition([0, 0]);
+      view = {
+        'fitZoomLevel': floor,
+        'originScreenX': origin[0],
+        'originScreenY': origin[1],
+        'positions': handle.getPointPositions(),
+        'zoomLevel': handle.getZoomLevel()
+      };
+    } catch { /* ignore */ }
   }
-  resizeObserver?.disconnect();
-  resizeObserver = null;
-  stopVisibilityPoll();
-  if (graphVisibilityPoll !== null) {
-    window.clearInterval(graphVisibilityPoll);
-    graphVisibilityPoll = null;
-  }
-  if (onVisibilityChange !== null) {
-    document.removeEventListener('visibilitychange', onVisibilityChange);
-    onVisibilityChange = null;
-  }
-  window.removeEventListener('keydown', onKeydown);
-  cancelFitSequence();
-  if (zoomIdleTimer !== null) {
-    clearTimeout(zoomIdleTimer);
-    zoomIdleTimer = null;
-  }
-  if (labelRaf !== null) {
-    cancelAnimationFrame(labelRaf);
-    labelRaf = null;
-  }
-  if (paintRaf !== null) {
-    cancelAnimationFrame(paintRaf);
-    paintRaf = null;
-  }
-  graph.value?.destroy();
-  graph.value = null;
-  signal(ColorGraphLifecycleEvent.destroyed());
-  isGraphVisible = true;
-  initAttempts = 0;
-  initFailed = false;
-  pendingPaint = false;
-  pendingLabelPaint = false;
-  appliedStructureKey = null;
-  fitZoomLevel.value = null;
-  lastLabelPaintAt = 0;
-  graphRuntimeArmed = false;
+
+  return view;
 }
 
-function initCosmos(container: HTMLDivElement): void {
-  if (GraphCtor === null || graph.value !== null || initFailed) return;
-  initAttempts += 1;
-  try {
-    // Cosmos creates its luma device internally. luma enables WebGL context
-    // instrumentation outside production unless this setting is explicit.
-    // The graph never uses debugger instrumentation, so keep it disabled for
-    // every runtime mode before Cosmos constructs the device.
-    globalThis.luma.log.set('debug', false);
-    globalThis.luma.log.set('debug-webgl', false);
-    graph.value = new GraphCtor(container, {
-      // cosmos's own dark-gray default ignores the site's light/dark
-      // framing outright, so the WebGL canvas never matches the page around
-      // it and (worse, on some builds) renders fully opaque black — set it
-      // from the resolved --ui-bg token instead, re-applied below whenever
-      // framing changes.
-      'backgroundColor': colorGraphLabelPainter.backgroundColorFromTheme(),
-      'spaceSize': buildColorGraphViewModel.spaceSize,
-      // Tuned to the scale buildBuffers seeds (hub ring radius 900, leaf
-      // satellite radius 260) so the live simulation relaxes into an airy
-      // layout rather than collapsing into a tight clump: repulsion
-      // dominates the (deliberately weak) link spring so nodes push apart
-      // and only the ring/derivation edges hold the structure together.
-      'simulationLinkDistance': 260,
-      'simulationLinkSpring': 0.15,
-      'simulationRepulsion': 8,
-      'simulationRepulsionTheta': 1.4,
-      'simulationGravity': 0.02,
-      'simulationCollision': 1,
-      'simulationCollisionPadding': 10,
-      'simulationDecay': 12000,
-      'enableDrag': true,
-      'enableRightClickRepulsion': true,
-      'simulationRepulsionFromMouse': 3,
-      'onSimulationTick': () => { scheduleLabelPaint(); },
-      'onZoom': () => {
-        signal(ColorGraphLifecycleEvent.zoomed());
-        armZoomIdle();
-        scheduleLabelPaint();
-        pollZoom();
-        const g = graph.value;
-        const floor = fitZoomLevel.value;
-        if (g !== null && floor !== null) {
-          try { if (g.getZoomLevel() < floor) g.setZoomLevel(floor, 0, false); } catch { /* ignore */ }
-        }
-      },
-      'onZoomEnd': () => {
-        if (captureFitZoomOnEnd) {
-          settleFit();
-        } else {
-          signal(ColorGraphLifecycleEvent.zoomEnded());
-        }
-      }
-    });
-    const handle = graph.value;
-    signal(ColorGraphLifecycleEvent.constructed());
-    // Cosmos rejects point updates until its device initializes; the first paint follows that event.
-    handle.ready.then(() => {
-      if (graph.value !== handle) return;
-      signal(ColorGraphLifecycleEvent.deviceReady());
-      schedulePaint();
-    }).catch(() => { /* cosmos logs device initialization failures itself */ });
-    resizeLabelCanvas();
-    schedulePaint();
-    pollZoom();
-    appliedStructureKey = null;
-    void nextTick(() => {
-      isGraphVisible = true;
-      syncGraphVisibility();
-    });
-  } catch (err) {
-    if (initAttempts >= buildColorGraphViewModel.maximumInitAttempts) {
-      initFailed = true;
-    }
-    loadError.value = err instanceof Error ? err.message : String(err);
-    // A failed construction can still have partially allocated a WebGL2
-    // context/canvas (cosmos.gl may set up its own canvas before throwing on
-    // a later step, e.g. a shader compile failure) — dispose whatever handle
-    // exists and clear any DOM it left behind so a retry never piles a fresh
-    // context on top of an orphaned one.
-    try { graph.value?.destroy(); } catch { /* ignore */ }
-    graph.value = null;
-    signal(ColorGraphLifecycleEvent.destroyed());
-    container.replaceChildren();
-    if (initFailed) {
-      stopVisibilityPoll();
-    }
+function suspendGraph(): void {
+  savedView = readView();
+  disarmRuntime();
+  fullscreen.value = false;
+  controller.suspend();
+  resetGraphState();
+}
+
+function suspendGraphForIdle(): void {
+  savedView = readView();
+  disarmRuntime();
+  controller.suspendIdle();
+  resetGraphState();
+}
+
+// A graph the user is not touching disposes its WebGL loop; a fullscreen graph stays live.
+function onIdleElapsed(): void {
+  if (!fullscreen.value && controller.getState().isSettled()) {
+    suspendGraphForIdle();
+  }
+}
+
+function onActivity(): void {
+  if (isEnabled() && controller.noteActivity()) {
+    void activateGraph();
   }
 }
 
@@ -491,22 +492,22 @@ function armFitSequence(armInitialSimulation = false): void {
   if (handle === null) return;
   const finalDelayMs = buildColorGraphViewModel.fitDelaysMs.at(-1);
   if (finalDelayMs === undefined) return;
-  signal(ColorGraphLifecycleEvent.fitArmed());
+  controller.signal(ColorGraphLifecycleEvent.fitArmed());
   // The seeded hub/leaf layout keeps relaxing under the live simulation
   // (link spring, repulsion, gravity) for a bit after paint() hands it off —
   // an extra, later fit (1200ms) beyond the original 0/250/500/750ms sweep
   // catches that continued spread instead of framing an early, tighter
   // snapshot as if it were final.
   for (const delayMs of buildColorGraphViewModel.fitDelaysMs) {
-    fitTimers.push(setTimeout(() => {
+    controller.schedule('fit', delayMs, () => {
       if (graph.value !== handle) return;
       if (delayMs === finalDelayMs) {
         captureFitZoomOnEnd = true;
         startSimulationAfterFit ||= armInitialSimulation;
       }
       handle.fitView(200, buildColorGraphViewModel.fitPadding, false);
-      if (delayMs === finalDelayMs) fitTimers.push(setTimeout(settleFit, FIT_SETTLE_FALLBACK_MS));
-    }, delayMs));
+      if (delayMs === finalDelayMs) controller.schedule('fit', FIT_SETTLE_FALLBACK_MS, settleFit);
+    });
   }
 }
 function fit(): void { armFitSequence(); }
@@ -526,13 +527,13 @@ function onKeydown(e: KeyboardEvent): void {
 watch(fullscreen, () => {
   void nextTick(() => {
     cancelFitSequence();
-    resizeLabelCanvas();
+    syncLabelCanvasSize();
     const schedule = (delayMs: number): void => {
-      fitTimers.push(setTimeout(() => {
+      controller.schedule('fit', delayMs, () => {
         try {
           graph.value?.fitView(300, buildColorGraphViewModel.fitPadding);
         } catch { /* ignore */ }
-      }, delayMs));
+      });
     };
     schedule(0);
     schedule(180);
@@ -540,26 +541,29 @@ watch(fullscreen, () => {
   });
 });
 
+// The active carousel face owns the live graph; inactive faces keep a snapshot of the last frame.
 watch(
-  () => props.enabled ?? true,
-  (isEnabled) => {
-    if (isEnabled) {
-      void bootGraphRuntime();
+  isEnabled,
+  (enabled) => {
+    if (enabled) {
+      void activateGraph();
     } else {
-      teardownGraphRuntime();
+      suspendGraph();
     }
   },
   { flush: 'post' }
 );
 
 onMounted(() => {
-  if (props.enabled ?? true) {
-    void bootGraphRuntime();
+  if (isEnabled()) {
+    void activateGraph();
   }
 });
 
 onBeforeUnmount(() => {
-  teardownGraphRuntime();
+  disarmRuntime();
+  controller.dispose();
+  resetGraphState();
 });
 
 watch(mathList, () => {
@@ -590,11 +594,18 @@ function paint(): void {
   const buffers = buildColorGraphBuffers.build(mathList.value, categoryVisible.value);
   const { positions, colors, sizes, links, linkColors, meta } = buffers;
   const shouldReframe = buildColorGraphBuffers.requiresStructuralApply(
-    appliedStructureKey,
+    appliedLayoutKey,
     buffers
   );
+  const restoredView = shouldReframe && savedView?.positions.length === positions.length ? savedView : null;
+  savedView = null;
   labelMeta = meta;
+  if (restoredView !== null) {
+    restoreView(handle, buffers, restoredView);
+    return;
+  }
   if (shouldReframe) {
+    reframeCount.value += 1;
     handle.setPointPositions(positions);
     handle.trackPointPositionsByIndices(meta.map((_, index) => index));
     handle.setLinks(links);
@@ -606,11 +617,52 @@ function paint(): void {
   // a structural graph revision. Palette revisions preserve the live layout
   // and its current simulation progress while applying new colours.
   handle.render(shouldReframe ? 1 : undefined);
-  if (positions.length === 0) { scheduleLabelPaint(); return; }
+  if (positions.length === 0) { controller.releaseSnapshot(); scheduleLabelPaint(); return; }
   if (shouldReframe) {
     armFitSequence(true);
-    appliedStructureKey = buffers.structureKey;
+    appliedLayoutKey = buffers.layoutKey;
   }
+  scheduleLabelPaint();
+}
+
+// A restored graph keeps the point layout, zoom and pan it was disposed with and skips the fit sweep.
+// It reports settled only once the camera reads the saved zoom back on a later frame.
+function restoreView(handle: Graph, buffers: ReturnType<typeof buildColorGraphBuffers.build>, view: ColorGraphViewStateInterface): void {
+  handle.setPointPositions(Float32Array.from(view.positions), true);
+  handle.trackPointPositionsByIndices(buffers.meta.map((_, index) => index));
+  handle.setLinks(buffers.links);
+  handle.setPointColors(buffers.colors);
+  handle.setPointSizes(buffers.sizes);
+  handle.setLinkColors(buffers.linkColors);
+  handle.render(0, 0);
+  fitZoomLevel.value = view.fitZoomLevel;
+  appliedLayoutKey = buffers.layoutKey;
+  viewRestorer ??= ColorGraphViewRestorer.create(
+    {
+      'applyZoom': (zoom: number) => { graph.value?.setZoomLevel(zoom, 0, false); },
+      'readZoom': () => graph.value?.getZoomLevel() ?? 0
+    },
+    new AnimationFrameScheduler(window)
+  );
+  viewRestorer.start(view.zoomLevel, () => { completeRestore(handle, view); });
+}
+
+function completeRestore(handle: Graph, view: ColorGraphViewStateInterface): void {
+  if (graph.value !== handle) return;
+  const zoom = handle.getZoomLevel();
+  const origin = handle.spaceToScreenPosition([0, 0]);
+  const panned = buildColorGraphViewportModel.translatePoints(
+    view.positions,
+    (view.originScreenX - origin[0]) / zoom,
+    (view.originScreenY - origin[1]) / zoom
+  );
+  handle.setPointPositions(panned, true);
+  handle.render(0, 0);
+  controller.signal(ColorGraphLifecycleEvent.fitArmed());
+  controller.signal(ColorGraphLifecycleEvent.fitSettled());
+  controller.signal(ColorGraphLifecycleEvent.zoomEnded());
+  controller.releaseSnapshot();
+  pollZoom();
   scheduleLabelPaint();
 }
 
@@ -663,20 +715,6 @@ function scheduleLabelPaint(): void {
   });
 }
 
-function resizeLabelCanvas(): void {
-  const canvas = labelsRef.value;
-  const container = containerRef.value;
-  if (canvas === null || container === null) return;
-  // Re-measured on every paintLabels() call (cheap: getBoundingClientRect +
-  // a couple of numeric writes), not just reactively via ResizeObserver —
-  // this card lives inside a CylinderCarousel face that changes size via a
-  // 3D transform when it becomes active, which doesn't fire ResizeObserver
-  // at all (same ancestor-transform quirk documented for IntersectionObserver
-  // above). Without this, a resize captured while the face was still mid-
-  // transition sticks around forever since nothing else ever corrects it.
-  colorGraphLabelPainter.resizeLabelCanvas(canvas, container);
-}
-
 function paintLabels(): void {
   const handle = graph.value;
   const canvas = labelsRef.value;
@@ -689,8 +727,10 @@ function paintLabels(): void {
   <ColorGraphViewport
     v-model:container-ref="containerRef"
     v-model:labels-ref="labelsRef"
+    v-model:snapshot-ref="snapshotRef"
     :fullscreen="fullscreen"
     :lifecycle="lifecycleState.variant"
+    :reframes="reframeCount"
     :loading="loading"
     :load-error="loadError"
     :legend-machine="legendMachine"
@@ -698,5 +738,6 @@ function paintLabels(): void {
     :dpad-ready="graph !== null"
     :zoom-level="zoomLevel"
     :role-count="mathList.length"
+    @activity="onActivity"
   />
 </template>

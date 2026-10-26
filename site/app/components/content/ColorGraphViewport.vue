@@ -5,6 +5,7 @@ import { LegendMachine } from './viz/LegendMachine.ts';
 const props = defineProps<{
   fullscreen: boolean;
   lifecycle: string;
+  reframes: number;
   loading: boolean;
   loadError: string | null;
   zoomLevel: number;
@@ -14,8 +15,11 @@ const props = defineProps<{
   dpadReady: boolean;
 }>();
 
+const emit = defineEmits<{ activity: [] }>();
+
 const containerRef = defineModel<HTMLDivElement | null>('containerRef', { default: null });
 const labelsRef = defineModel<HTMLCanvasElement | null>('labelsRef', { default: null });
+const snapshotRef = defineModel<HTMLDivElement | null>('snapshotRef', { default: null });
 </script>
 
 <template>
@@ -38,6 +42,13 @@ const labelsRef = defineModel<HTMLCanvasElement | null>('labelsRef', { default: 
       class="cg-wrap"
       :class="{ 'cg-wrap--fullscreen': fullscreen }"
       :data-graph-state="lifecycle"
+      :data-graph-reframes="reframes"
+      @focusin="emit('activity')"
+      @keydown="emit('activity')"
+      @pointerdown="emit('activity')"
+      @pointerenter="emit('activity')"
+      @pointermove="emit('activity')"
+      @wheel.passive="emit('activity')"
     >
       <div class="cg-canvas">
         <div
@@ -61,6 +72,11 @@ const labelsRef = defineModel<HTMLCanvasElement | null>('labelsRef', { default: 
         <canvas
           ref="labelsRef"
           class="cg-labels"
+          aria-hidden="true"
+        />
+        <div
+          ref="snapshotRef"
+          class="cg-snapshot"
           aria-hidden="true"
         />
 
@@ -117,6 +133,15 @@ const labelsRef = defineModel<HTMLCanvasElement | null>('labelsRef', { default: 
   width: 100%;
   height: 100%;
   pointer-events: none;
+}
+.cg-snapshot {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.cg-snapshot :deep(canvas) {
+  width: 100%;
+  height: 100%;
 }
 .cg-overlay {
   position: absolute;

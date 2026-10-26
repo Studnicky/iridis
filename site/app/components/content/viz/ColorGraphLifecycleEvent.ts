@@ -34,6 +34,12 @@ export abstract class ColorGraphLifecycleEvent {
     return result;
   }
 
+  static suspended(): ColorGraphLifecycleEvent {
+    const result = new SuspendedColorGraphLifecycleEvent();
+
+    return result;
+  }
+
   static zoomed(): ColorGraphLifecycleEvent {
     const result = new ZoomedColorGraphLifecycleEvent();
 
@@ -53,7 +59,7 @@ class ConstructedColorGraphLifecycleEvent extends ColorGraphLifecycleEvent {
   readonly type: string = 'CONSTRUCTED';
 
   transition(state: ColorGraphLifecycleState): ColorGraphLifecycleState {
-    const result = state.isIdle() ? ColorGraphLifecycleState.constructing() : state;
+    const result = state.isIdle() || state.isSuspended() ? ColorGraphLifecycleState.constructing() : state;
 
     return result;
   }
@@ -94,6 +100,16 @@ class FitSettledColorGraphLifecycleEvent extends ColorGraphLifecycleEvent {
 
   transition(state: ColorGraphLifecycleState): ColorGraphLifecycleState {
     const result = state.isFitting() ? ColorGraphLifecycleState.settled() : state;
+
+    return result;
+  }
+}
+
+class SuspendedColorGraphLifecycleEvent extends ColorGraphLifecycleEvent {
+  readonly type: string = 'SUSPENDED';
+
+  transition(state: ColorGraphLifecycleState): ColorGraphLifecycleState {
+    const result = state.isDeviceReady() ? ColorGraphLifecycleState.suspended() : state;
 
     return result;
   }

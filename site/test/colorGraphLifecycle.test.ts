@@ -7,6 +7,7 @@ import { test } from 'node:test';
 import { ProductionNitroServer } from './fixtures/ProductionNitroServer.ts';
 
 class ColorGraphLifecycleBrowser {
+  static readonly cpuThrottleRate = 4;
   static readonly graphWaitMs = 60_000;
   static readonly wheelAttemptMs = 3_000;
   static readonly wheelAttempts = 12;
@@ -66,14 +67,18 @@ class ColorGraphLifecycleBrowser {
     let target = await ColorGraphLifecycleBrowser.wheelTarget(canvas);
 
     for (let attempt = 0; attempt < ColorGraphLifecycleBrowser.wheelAttempts; attempt += 1) {
+      await canvas.scrollIntoViewIfNeeded();
       target = await ColorGraphLifecycleBrowser.wheelTarget(canvas);
+      assert.ok(target[1] >= 0 && target[2] !== 'none', `The wheel target is outside the viewport: ${JSON.stringify(target)}.`);
       await page.mouse.move(target[0], target[1]);
       await page.mouse.wheel(0, ColorGraphLifecycleBrowser.wheelZoomInDelta);
       if (await ColorGraphLifecycleBrowser.zoomRaised(page, floor * ColorGraphLifecycleBrowser.wheelZoomRatio)) {
         return;
       }
     }
-    throw new Error(`The wheel never raised the zoom well above ${floor}; last target ${JSON.stringify(target)}.`);
+    const scrollY = await page.evaluate(() => {return window.scrollY;});
+
+    throw new Error(`The wheel never raised the zoom well above ${floor}; last target ${JSON.stringify(target)} at scrollY ${scrollY}.`);
   }
 
   // A refit while the carousel settles can reset the zoom, so the raised zoom is confirmed after the graph settles.
@@ -150,6 +155,26 @@ class ColorGraphLifecycleBrowser {
     return result;
   }
 
+  static async awaitSuspended(page: Page): Promise<void> {
+    await page.locator('#explore .cyl-face:not(.active) .cg-wrap[data-graph-state="suspended"]').waitFor({ 'timeout': ColorGraphLifecycleBrowser.graphWaitMs });
+  }
+
+  static async frames(page: Page, count: number): Promise<void> {
+    await page.evaluate(async (frameCount) => {
+      for (let index = 0; index < frameCount; index += 1) {
+        await new Promise<void>((resolve) => {
+          requestAnimationFrame(() => {
+            resolve();
+          });
+        });
+      }
+    }, count);
+  }
+
+  static async awaitIdleSuspension(page: Page): Promise<void> {
+    await page.locator('#explore .cyl-face.active .cg-wrap[data-graph-state="suspended"]').waitFor({ 'timeout': ColorGraphLifecycleBrowser.graphWaitMs });
+  }
+
   static async selectGraphCard(page: Page): Promise<void> {
     await page.locator('#explore').getByRole('button', {
       'exact': true,
@@ -191,6 +216,9 @@ await test('tearing down during a final fit cannot impose a zoom floor on a repl
   });
 
   await page.goto(running.origin, { 'waitUntil': 'networkidle' });
+  const session = await page.context().newCDPSession(page);
+
+  await session.send('Emulation.setCPUThrottlingRate', { 'rate': ColorGraphLifecycleBrowser.cpuThrottleRate });
 
   const explore = page.locator('#explore');
 
@@ -232,4 +260,144 @@ await test('tearing down during a final fit cannot impose a zoom floor on a repl
     'afterZoomOut': afterZoomOut,
     'beforeZoomOut': beforeZoomOut
   }));
+});
+
+await test('a graph on an inactive neighbour face is disposed behind a snapshot and mounts again when the face activates', { 'timeout': 180_000 }, async (context) => {
+  assert.ok(ProductionNitroServer.isBuilt(), 'The production Nitro entrypoint is required; run through the site test script.');
+  const running = await ProductionNitroServer.start();
+
+  context.after(async () => {
+    await ProductionNitroServer.stop(running.child);
+  });
+
+  const browser = await chromium.launch({ 'headless': true });
+
+  context.after(async () => {
+    await browser.close();
+  });
+  const page = await browser.newPage({
+    'reducedMotion': 'reduce',
+    'viewport': {
+      'height': 900,
+      'width': 1280
+    }
+  });
+
+  await page.goto(running.origin, { 'waitUntil': 'networkidle' });
+  await page.locator('#explore').scrollIntoViewIfNeeded();
+  await ColorGraphLifecycleBrowser.selectGraphCard(page);
+  await ColorGraphLifecycleBrowser.awaitState(page, 'settled');
+
+  await page.locator('#explore').getByRole('button', {
+    'exact': true,
+    'name': 'Spectrum'
+  })
+    .click();
+  await ColorGraphLifecycleBrowser.awaitSuspended(page);
+
+  const suspended = await page.locator('#explore .cyl-face:not(.active) .cg-wrap[data-graph-state="suspended"]').evaluate((node) => {
+    const result = {
+      'liveCanvases': node.querySelectorAll('.cg-cosmos canvas').length,
+      'snapshotCanvases': node.querySelectorAll('.cg-snapshot canvas').length
+    };
+
+    return result;
+  });
+
+  assert.deepEqual(suspended, { 'liveCanvases': 0, 'snapshotCanvases': 1 });
+
+  await ColorGraphLifecycleBrowser.selectGraphCard(page);
+  await ColorGraphLifecycleBrowser.awaitState(page, 'settled');
+
+  const resumed = await page.locator('#explore .cyl-face.active .cg-wrap').evaluate((node) => {
+    const result = {
+      'liveCanvases': node.querySelectorAll('.cg-cosmos canvas').length,
+      'snapshotCanvases': node.querySelectorAll('.cg-snapshot canvas').length
+    };
+
+    return result;
+  });
+
+  assert.deepEqual(resumed, { 'liveCanvases': 1, 'snapshotCanvases': 0 });
+});
+
+await test('an idle graph disposes its live instance and pointer input restores the same zoom', { 'timeout': 180_000 }, async (context) => {
+  assert.ok(ProductionNitroServer.isBuilt(), 'The production Nitro entrypoint is required; run through the site test script.');
+  const running = await ProductionNitroServer.start();
+
+  context.after(async () => {
+    await ProductionNitroServer.stop(running.child);
+  });
+
+  const browser = await chromium.launch({ 'headless': true });
+
+  context.after(async () => {
+    await browser.close();
+  });
+  const page = await browser.newPage({
+    'reducedMotion': 'reduce',
+    'viewport': {
+      'height': 900,
+      'width': 1280
+    }
+  });
+
+  await page.goto(running.origin, { 'waitUntil': 'networkidle' });
+  await page.locator('#explore').scrollIntoViewIfNeeded();
+  const session = await page.context().newCDPSession(page);
+
+  await session.send('Emulation.setCPUThrottlingRate', { 'rate': ColorGraphLifecycleBrowser.cpuThrottleRate });
+  await ColorGraphLifecycleBrowser.selectGraphCard(page);
+  await ColorGraphLifecycleBrowser.awaitState(page, 'settled');
+
+  const canvas = page.locator('#explore .cyl-face.active .cg-cosmos');
+  const fitZoom = await ColorGraphLifecycleBrowser.zoomText(page);
+
+  await ColorGraphLifecycleBrowser.wheelZoomInSettled(page, canvas, fitZoom);
+  const zoomBefore = await ColorGraphLifecycleBrowser.zoomText(page);
+
+  await page.locator('#explore .cyl-face.active .cg-wrap').evaluate((node) => {
+    const log: [number, string | null][] = [];
+
+    Reflect.set(window, '__graphStates', log);
+    new MutationObserver(() => {
+      log.push([Math.round(performance.now()), node.getAttribute('data-graph-state')]);
+    }).observe(node, { 'attributeFilter': ['data-graph-state'], 'attributes': true });
+  });
+  await page.mouse.move(0, 0);
+  await ColorGraphLifecycleBrowser.awaitIdleSuspension(page);
+  const liveCanvases = await page.locator('#explore .cyl-face.active .cg-cosmos canvas').count();
+
+  assert.equal(liveCanvases, 0);
+
+  const target = await ColorGraphLifecycleBrowser.wheelTarget(canvas);
+
+  await page.mouse.move(target[0], target[1]);
+  await ColorGraphLifecycleBrowser.awaitState(page, 'settled');
+  const atSettled = await ColorGraphLifecycleBrowser.zoomText(page);
+
+  await ColorGraphLifecycleBrowser.frames(page, 2);
+  const afterTwoFrames = await ColorGraphLifecycleBrowser.zoomText(page);
+
+  await ColorGraphLifecycleBrowser.frames(page, 30);
+  const afterThirtyFrames = await ColorGraphLifecycleBrowser.zoomText(page);
+  const states = await page.evaluate(() => {
+    const serialized = JSON.stringify(Reflect.get(window, '__graphStates'));
+
+    return serialized;
+  });
+  const reframes = await page.locator('#explore .cyl-face.active .cg-wrap').getAttribute('data-graph-reframes');
+  const series = JSON.stringify({
+    'afterThirtyFrames': afterThirtyFrames,
+    'afterTwoFrames': afterTwoFrames,
+    'atSettled': atSettled,
+    'fitZoom': fitZoom,
+    'reframes': reframes,
+    'states': states,
+    'zoomBefore': zoomBefore
+  });
+
+  assert.ok(Math.abs(atSettled - zoomBefore) / zoomBefore < 0.01, series);
+  assert.ok(Math.abs(afterTwoFrames - zoomBefore) / zoomBefore < 0.01, series);
+  assert.ok(Math.abs(afterThirtyFrames - zoomBefore) / zoomBefore < 0.01, series);
 });

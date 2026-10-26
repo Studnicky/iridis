@@ -14,10 +14,12 @@ const cliValue = (name, fallback) => {
   return fallback;
 };
 const isDebug = new Set(cliArgs).has('--headful') || new Set(cliArgs).has('--headed') || new Set(cliArgs).has('--interactive');
+const CPU_THROTTLE = Number(cliValue('--cpu-throttle', process.env.IRIDIS_VIZ_CPU_THROTTLE ?? '1'));
 const PROFILE_MS = Number(cliValue('--duration', process.env.IRIDIS_VIZ_PROFILE_MS ?? '14000'));
 const DEBUG_WAIT_MS = Number(cliValue('--wait-ms', process.env.IRIDIS_VIZ_WAIT_MS ?? '0'));
 
 const TARGET_SETTLE_MS = 900;
+const IDLE_SUSPENSION_TIMEOUT_MS = 120000;
 
 async function clickVisibleButton(scope, name) {
   const buttons = scope.getByRole('button', { 'exact': true, name });
@@ -73,6 +75,9 @@ async function activateReadyGraph(page) {
   await graph.waitFor({ 'state': 'visible', 'timeout': 60000 });
   await graph.locator('.cg-overlay').waitFor({ 'state': 'detached', 'timeout': 60000 });
   await graph.locator('.cg-cosmos canvas').waitFor({ 'state': 'visible', 'timeout': 60000 });
+  await explore.locator('.cg-wrap[data-graph-state="settled"]').waitFor({ 'state': 'attached', 'timeout': 60000 });
+  // Pointer input on the graph restarts its idle countdown, so a slow machine cannot suspend it before the sample.
+  await graph.locator('.cg-cosmos').hover();
 }
 
 async function deactivateGraph(page) {
@@ -83,6 +88,16 @@ async function deactivateGraph(page) {
   await page.evaluate(() => new Promise((resolveFrame) => {
     requestAnimationFrame(() => { requestAnimationFrame(resolveFrame); });
   }));
+}
+
+// Pointer input restarts the idle countdown and mounts a suspended graph again.
+async function wakeGraph(page) {
+  await page.locator('#explore .cg-wrap .cg-cosmos').first().hover();
+  await page.locator('#explore .cg-wrap[data-graph-state="settled"] .cg-cosmos canvas').waitFor({ 'state': 'visible', 'timeout': 60000 });
+}
+
+async function awaitIdleSuspension(page) {
+  await page.locator('#explore .cg-wrap[data-graph-state="suspended"]').waitFor({ 'state': 'attached', 'timeout': IDLE_SUSPENSION_TIMEOUT_MS });
 }
 
 async function waitForSettledTarget(page, selector) {
@@ -180,9 +195,10 @@ async function startTargetProfile(page, selector, sessionId) {
       const memorySamples = profile.mem;
       const result = {
         'avgMs': average,
+        'canvasElementCount': document.getElementsByTagName('canvas').length,
+        'domElementCount': document.getElementsByTagName('*').length,
         'frameCount': frames.length,
         'jsPeakMB': memorySamples.reduce((accumulator, item) => Math.max(accumulator, item.js), 0) / 1048576,
-        'long10MsOrMore': profile.longTasks.filter((item) => item.duration >= 10).length,
         'longCount': profile.longTasks.length,
         'longTotalMs': profile.longTasks.reduce((accumulator, item) => accumulator + item.duration, 0),
         'maxMs': sorted.at(-1) ?? 0,
@@ -214,8 +230,10 @@ async function stopTargetProfile(page, sessionId) {
   }, sessionId);
 }
 
-async function runTarget(page, { interaction, name, selector, durationMs = PROFILE_MS }) {
+async function runTarget(page, { wake, interaction, name, selector, durationMs = PROFILE_MS }) {
+  if (wake !== undefined) await wake();
   await waitForSettledTarget(page, selector);
+  if (wake !== undefined) await wake();
   const sessionId = `__iridisVisualizationProfile${globalThis.crypto.randomUUID()}`;
   const started = await startTargetProfile(page, selector, sessionId);
   if (!started.ok) return { name, selector, ...started };
@@ -337,32 +355,192 @@ export class VisualizationProfileStaticFile {
 }
 
 export class VisualizationProfileBudget {
-  static #minimumFrameCount = 5;
-  static #minimumFramesPerSecond = 2;
-  static #maximumAverageFrameMs = 600;
-  static #maximumFrameMs = 2000;
-  static #maximumP90FrameMs = 800;
+  static minimumFrameCount = 5;
 
-  static failures(report) {
+  /** One display refresh at 60 Hz; frame times land on multiples of it. */
+  static vsyncStepMs = 1000 / 60;
+
+  /** Scenes without live WebGL. */
+  static mermaid = Object.freeze({
+    'maximumAverageFrameMs': 30,
+    'maximumCanvasElements': 4,
+    'maximumDomElements': 7000,
+    'maximumFrameMs': 150,
+    'maximumLongTaskCount': 1,
+    'maximumLongTaskTotalMs': 75,
+    'maximumP90FrameMs': 40,
+  });
+
+  /** The live software-rendered WebGL graph; bounds regressions while the graph is drawing. */
+  static graphLive = Object.freeze({
+    'maximumAverageFrameMs': 60,
+    'maximumCanvasElements': 4,
+    'maximumDomElements': 7000,
+    'maximumFrameMs': 250,
+    'maximumLongTaskCount': 30,
+    'maximumLongTaskTotalMs': 2500,
+    'maximumP90FrameMs': 100,
+  });
+
+  /** The graph after idle suspension: the strict limits, with an average that allows for the carousel face the idle graph sits on. */
+  static graphIdle = Object.freeze({
+    'maximumAverageFrameMs': 36,
+    'maximumCanvasElements': 4,
+    'maximumDomElements': 7000,
+    'maximumFrameMs': 150,
+    'maximumLongTaskCount': 1,
+    'maximumLongTaskTotalMs': 75,
+    'maximumP90FrameMs': 60,
+  });
+
+  static classByTarget = new Map([
+    ['graph', 'graphLive'],
+    ['graphDpad', 'graphLive'],
+    ['graphIdle', 'graphIdle'],
+    ['mermaid', 'mermaid'],
+    ['mermaidDpad', 'mermaid'],
+  ]);
+
+  /** The scale that stretches the frame-time limits to the machine: the calibration page's median frame interval in vsync steps, never below one. */
+  static environmentScale(medianFrameMs) {
+    if (!Number.isFinite(medianFrameMs) || medianFrameMs <= 0) {
+      throw new RangeError('Visualization profile calibration is not a positive finite frame time: ' + medianFrameMs);
+    }
+    return Math.max(1, medianFrameMs / this.vsyncStepMs);
+  }
+
+  /**
+   * @param {string} targetName
+   * @param {number} [scale]
+   * @returns {Readonly<{ maximumAverageFrameMs: number, maximumCanvasElements: number, maximumDomElements: number, maximumFrameMs: number, maximumLongTaskCount: number, maximumLongTaskTotalMs: number, maximumP90FrameMs: number }>}
+   */
+  static limitsFor(targetName, scale = 1) {
+    const className = this.classByTarget.get(targetName);
+    if (className === undefined) {
+      throw new RangeError('Unknown visualization profile target: ' + targetName);
+    }
+    return this.scaledLimits(this[className], scale);
+  }
+
+  /** Average, p90, max frame, long-task count and long-task total scale with the machine; DOM and canvases do not. */
+  static scaledLimits(limits, scale) {
+    if (!Number.isFinite(scale)) {
+      throw new RangeError('Visualization profile scale is not finite: ' + scale);
+    }
+    const effective = Math.max(1, scale);
+    if (effective === 1) {
+      return limits;
+    }
+    return Object.freeze({
+      ...limits,
+      'maximumAverageFrameMs': limits.maximumAverageFrameMs * effective,
+      'maximumFrameMs': limits.maximumFrameMs * effective,
+      'maximumLongTaskCount': Math.ceil(limits.maximumLongTaskCount * effective),
+      'maximumLongTaskTotalMs': limits.maximumLongTaskTotalMs * effective,
+      'maximumP90FrameMs': limits.maximumP90FrameMs * effective,
+    });
+  }
+
+  static failures(report, scale = 1) {
     const failures = [];
+    const effective = Math.max(1, scale);
     for (const item of report) {
       if (!item.ok) continue;
-      const framesPerSecond = item.avgMs > 0 ? 1000 / item.avgMs : 0;
+      const base = this.limitsFor(item.name);
+      const limits = this.limitsFor(item.name, scale);
       const checks = [
-        ['frameCount', item.frameCount, this.#minimumFrameCount, 'at least'],
-        ['fps', framesPerSecond, this.#minimumFramesPerSecond, 'at least'],
-        ['avgMs', item.avgMs, this.#maximumAverageFrameMs, 'at most'],
-        ['maxMs', item.maxMs, this.#maximumFrameMs, 'at most'],
-        ['p90Ms', item.p90Ms, this.#maximumP90FrameMs, 'at most'],
+        ['frameCount', item.frameCount, this.minimumFrameCount, 'at least', this.minimumFrameCount],
+        ['avgMs', item.avgMs, limits.maximumAverageFrameMs, 'at most', base.maximumAverageFrameMs],
+        ['p90Ms', item.p90Ms, limits.maximumP90FrameMs, 'at most', base.maximumP90FrameMs],
+        ['maxMs', item.maxMs, limits.maximumFrameMs, 'at most', base.maximumFrameMs],
+        ['longCount', item.longCount, limits.maximumLongTaskCount, 'at most', base.maximumLongTaskCount],
+        ['longTotalMs', item.longTotalMs, limits.maximumLongTaskTotalMs, 'at most', base.maximumLongTaskTotalMs],
+        ['domElementCount', item.domElementCount, limits.maximumDomElements, 'at most', base.maximumDomElements],
+        ['canvasElementCount', item.canvasElementCount, limits.maximumCanvasElements, 'at most', base.maximumCanvasElements],
       ];
-      for (const [metric, value, limit, direction] of checks) {
+      for (const [metric, value, limit, direction, unscaled] of checks) {
         const passes = Number.isFinite(value) && (direction === 'at least' ? value >= limit : value <= limit);
         if (!passes) {
-          failures.push('target=' + item.name + ' ' + metric + '=' + value + ' must be ' + direction + ' ' + limit);
+          const detail = limit === unscaled ? '' : ' (limit ' + unscaled + ' x scale ' + effective.toFixed(2) + ')';
+          failures.push('target=' + item.name + ' ' + metric + '=' + value + ' must be ' + direction + ' ' + limit + detail);
         }
       }
     }
     return failures;
+  }
+}
+
+export class VisualizationProfileCalibration {
+  /** Absolutely positioned elements restyled every calibration frame; sized so one frame costs about one vsync on a developer machine. */
+  static elementCount = 6000;
+
+  /** SVG paths whose geometry changes every calibration frame, sharing that frame budget. */
+  static pathCount = 600;
+
+  /** Median frame interval of a fixed rendering-bound page (restyled DOM elements plus changing SVG paths) in the same browser and viewport. */
+  static async sample(browser, durationMs, throttleRate = 1) {
+    const page = await browser.newPage({ 'viewport': { 'height': 1100, 'width': 1680 } });
+    try {
+      await VisualizationProfileThrottle.apply(page, throttleRate);
+      await page.setContent('<!doctype html><html><body style="margin:0"><div id="field" style="position:relative;width:1680px;height:1100px;overflow:hidden"></div><svg id="vector" width="1680" height="400" style="position:absolute;top:0;left:0"></svg></body></html>');
+      return await page.evaluate(({ elements, paths, sampleMs }) => new Promise((resolveSample) => {
+        const field = document.getElementById('field');
+        const vector = document.getElementById('vector');
+        const nodes = [];
+        const shapes = [];
+        for (let index = 0; index < elements; index += 1) {
+          const node = document.createElement('div');
+          node.style.cssText = 'position:absolute;width:48px;height:48px;border-radius:8px;left:' + ((index * 37) % 1620) + 'px;top:' + ((index * 53) % 1050) + 'px;background:hsl(' + ((index * 7) % 360) + ' 70% 55%)';
+          field.appendChild(node);
+          nodes.push(node);
+        }
+        for (let index = 0; index < paths; index += 1) {
+          const shape = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          shape.setAttribute('fill', 'hsl(' + ((index * 11) % 360) + ' 70% 55%)');
+          vector.appendChild(shape);
+          shapes.push(shape);
+        }
+        const intervals = [];
+        let previous = performance.now();
+        const start = previous;
+        let frame = 0;
+        const tick = (timestamp) => {
+          frame += 1;
+          for (let index = 0; index < nodes.length; index += 1) {
+            nodes[index].style.transform = 'translate(' + ((frame + index) % 9) + 'px,' + ((frame * 3 + index) % 7) + 'px) rotate(' + ((frame + index) % 5) + 'deg)';
+            nodes[index].style.opacity = String(0.5 + ((frame + index) % 10) / 20);
+          }
+          for (let index = 0; index < shapes.length; index += 1) {
+            const x = (index * 29) % 1600;
+            const y = (index * 13) % 360;
+            const wobble = (frame + index) % 12;
+            shapes[index].setAttribute('d', 'M' + x + ' ' + y + ' l' + (30 + wobble) + ' ' + wobble + ' l-' + wobble + ' ' + (30 + wobble) + ' z');
+          }
+          intervals.push(timestamp - previous);
+          previous = timestamp;
+          if (timestamp - start < sampleMs) {
+            requestAnimationFrame(tick);
+          } else {
+            const ordered = intervals.slice(1).sort((left, right) => left - right);
+            const middle = Math.floor(ordered.length / 2);
+            resolveSample(ordered.length % 2 === 0 ? (ordered[middle - 1] + ordered[middle]) / 2 : ordered[middle]);
+          }
+        };
+        requestAnimationFrame(tick);
+      }), { 'elements': VisualizationProfileCalibration.elementCount, 'paths': VisualizationProfileCalibration.pathCount, 'sampleMs': durationMs });
+    } finally {
+      await page.close();
+    }
+  }
+}
+
+export class VisualizationProfileThrottle {
+  /** Applies a CPU throttling rate through the browser debugging protocol; rate 1 leaves the page unthrottled. */
+  static async apply(page, rate) {
+    if (rate > 1) {
+      const session = await page.context().newCDPSession(page);
+      await session.send('Emulation.setCPUThrottlingRate', { rate });
+    }
   }
 }
 
@@ -408,60 +586,99 @@ export class VisualizationProfileOperation {
     });
 
     const report = [];
-    try {
-      await new Promise((resolveServer) => {
-        server.listen(0, '127.0.0.1', resolveServer);
-      });
-      const address = server.address();
-      if (address === null || typeof address === 'string') {
-        throw new TypeError('Profile server did not bind an IP socket');
-      }
+    const steps = {
+      'calibrate': () => VisualizationProfileCalibration.sample(browser, PROFILE_MS, CPU_THROTTLE),
+      'report': (report, floorAverageFrameMs, scale) => {
+        console.log(`calibration medianFrameMs=${floorAverageFrameMs.toFixed(2)} vsyncMs=${VisualizationProfileBudget.vsyncStepMs.toFixed(2)} environmentScale=${scale.toFixed(2)}`);
+        VisualizationProfileOperation.print(report);
+      },
+      'scenes': async () => {
+        const report = [];
+        try {
+          await new Promise((resolveServer) => {
+            server.listen(0, '127.0.0.1', resolveServer);
+          });
+          const address = server.address();
+          if (address === null || typeof address === 'string') {
+            throw new TypeError('Profile server did not bind an IP socket');
+          }
 
-      const page = await browser.newPage({ 'viewport': { 'height': 1100, 'width': 1680 } });
-      await page.goto(`http://127.0.0.1:${address.port}${basePath}`, { 'timeout': 60000, 'waitUntil': 'domcontentloaded' });
-      await establishCommittedPalette(page);
-      await activateReadyGraph(page);
+          const page = await browser.newPage({ 'viewport': { 'height': 1100, 'width': 1680 } });
+          await VisualizationProfileThrottle.apply(page, CPU_THROTTLE);
+          await page.goto(`http://127.0.0.1:${address.port}${basePath}`, { 'timeout': 60000, 'waitUntil': 'domcontentloaded' });
+          await establishCommittedPalette(page);
+          await activateReadyGraph(page);
 
-      const graphSurface = '.cg-cosmos canvas';
-      const graphDpad = '.cg-wrap .dagonizer-dpad-wrap';
-      report.push(await runTarget(page, {
-        'interaction': () => driveSurface(page, graphSurface),
-        'name': 'graph',
-        'selector': graphSurface,
-      }));
-      report.push(await runTarget(page, {
-        'interaction': () => pressDpadButtons(page.locator(graphDpad)),
-        'name': 'graphDpad',
-        'selector': graphDpad + ' .dagonizer-dpad-btn[aria-label="Zoom in"]',
-      }));
+          const graphSurface = '.cg-cosmos canvas';
+          const graphDpad = '.cg-wrap .dagonizer-dpad-wrap';
+          report.push(await runTarget(page, {
+            'wake': () => wakeGraph(page),
+            'interaction': () => driveSurface(page, graphSurface),
+            'name': 'graph',
+            'selector': graphSurface,
+          }));
+          report.push(await runTarget(page, {
+            'interaction': () => pressDpadButtons(page.locator(graphDpad)),
+            'name': 'graphDpad',
+            'selector': graphDpad + ' .dagonizer-dpad-btn[aria-label="Zoom in"]',
+          }));
 
-      await deactivateGraph(page);
+          await awaitIdleSuspension(page);
+          report.push(await runTarget(page, {
+            'interaction': () => Promise.resolve(),
+            'name': 'graphIdle',
+            'selector': '.cg-snapshot canvas',
+          }));
 
-      const mermaidSurface = '.dag-mermaid-frame svg';
-      const mermaidDpad = '.dag-mermaid-frame .dag-mermaid-dpad-wrap';
-      report.push(await runTarget(page, {
-        'interaction': () => driveSurface(page, mermaidSurface),
-        'name': 'mermaid',
-        'selector': mermaidSurface,
-      }));
-      report.push(await runTarget(page, {
-        'interaction': () => pressDpadButtons(page.locator(mermaidDpad)),
-        'name': 'mermaidDpad',
-        'selector': mermaidDpad + ' .dagonizer-dpad-btn[aria-label="Zoom in"]',
-      }));
+          await deactivateGraph(page);
 
-      if (isDebug && DEBUG_WAIT_MS > 0) {
-        await page.waitForTimeout(DEBUG_WAIT_MS);
-      }
-      await page.close();
-    } finally {
-      await browser.close();
-      if (server.listening) {
-        await new Promise((resolveServer) => { server.close(resolveServer); });
-      }
-    }
+          const mermaidSurface = '.dag-mermaid-frame svg';
+          const mermaidDpad = '.dag-mermaid-frame .dag-mermaid-dpad-wrap';
+          report.push(await runTarget(page, {
+            'interaction': () => driveSurface(page, mermaidSurface),
+            'name': 'mermaid',
+            'selector': mermaidSurface,
+          }));
+          report.push(await runTarget(page, {
+            'interaction': () => pressDpadButtons(page.locator(mermaidDpad)),
+            'name': 'mermaidDpad',
+            'selector': mermaidDpad + ' .dagonizer-dpad-btn[aria-label="Zoom in"]',
+          }));
 
+          if (isDebug && DEBUG_WAIT_MS > 0) {
+            await page.waitForTimeout(DEBUG_WAIT_MS);
+          }
+          await page.close();
+        } finally {
+          await browser.close();
+          if (server.listening) {
+            await new Promise((resolveServer) => { server.close(resolveServer); });
+          }
+        }
+        return report;
+      },
+    };
+    await VisualizationProfileOperation.execute(steps);
+  }
+
+  /** Runs calibration, then the scenes, then judges the report against the scaled budget. Phases are injectable. */
+  static async execute(steps) {
+    const floorAverageFrameMs = await steps.calibrate();
+    const scale = VisualizationProfileBudget.environmentScale(floorAverageFrameMs);
+    const report = await steps.scenes(scale);
+    steps.report(report, floorAverageFrameMs, scale);
     const missingTargets = report.filter((item) => !item.ok);
+    if (missingTargets.length > 0) {
+      throw new Error(`Visualization profile targets missing: ${missingTargets.map((item) => item.name).join(', ')}`);
+    }
+    const budgetFailures = VisualizationProfileBudget.failures(report, scale);
+    if (budgetFailures.length > 0) {
+      throw new Error(`Visualization profile budget exceeded:\n${budgetFailures.join('\n')}`);
+    }
+    return { floorAverageFrameMs, report, scale };
+  }
+
+  static print(report) {
     for (const item of report) {
       if (!item.ok) {
         console.log(`target=${item.name} ok=false reason=${item.reason}`);
@@ -470,15 +687,8 @@ export class VisualizationProfileOperation {
 
       const fps = item.avgMs ? (1000 / item.avgMs) : 0;
       console.log(
-        `target=${item.name} frameCount=${item.frameCount} avgMs=${item.avgMs.toFixed(2)} fps=${fps.toFixed(1)} max=${item.maxMs.toFixed(2)} p90=${item.p90Ms.toFixed(2)} p95=${item.p95Ms.toFixed(2)} p99=${item.p99Ms.toFixed(2)} long=${item.longCount}/${item.long10MsOrMore} mem=${item.memStartMB.toFixed(1)}=>${item.memEndMB.toFixed(1)} peak=${item.memPeakMB.toFixed(1)} jsPeak=${item.jsPeakMB.toFixed(1)} overlay=${item.overlayText ?? 'n/a'}`,
+        `target=${item.name} frameCount=${item.frameCount} avgMs=${item.avgMs.toFixed(2)} fps=${fps.toFixed(1)} max=${item.maxMs.toFixed(2)} p90=${item.p90Ms.toFixed(2)} p95=${item.p95Ms.toFixed(2)} p99=${item.p99Ms.toFixed(2)} long=${item.longCount}/${item.longTotalMs.toFixed(0)}ms dom=${item.domElementCount} canvases=${item.canvasElementCount} mem=${item.memStartMB.toFixed(1)}=>${item.memEndMB.toFixed(1)} peak=${item.memPeakMB.toFixed(1)} jsPeak=${item.jsPeakMB.toFixed(1)} overlay=${item.overlayText ?? 'n/a'}`,
       );
-    }
-    if (missingTargets.length > 0) {
-      throw new Error(`Visualization profile targets missing: ${missingTargets.map((item) => item.name).join(', ')}`);
-    }
-    const budgetFailures = VisualizationProfileBudget.failures(report);
-    if (budgetFailures.length > 0) {
-      throw new Error(`Visualization profile budget exceeded:\n${budgetFailures.join('\n')}`);
     }
   }
 }

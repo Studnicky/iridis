@@ -32,6 +32,12 @@ export abstract class ColorGraphLifecycleState {
     return result;
   }
 
+  static suspended(): ColorGraphLifecycleState {
+    const result = new SuspendedColorGraphLifecycleState();
+
+    return result;
+  }
+
   static zooming(): ColorGraphLifecycleState {
     const result = new ZoomingColorGraphLifecycleState();
 
@@ -43,6 +49,7 @@ export abstract class ColorGraphLifecycleState {
   abstract isFitting(): boolean;
   abstract isIdle(): boolean;
   abstract isSettled(): boolean;
+  abstract isSuspended(): boolean;
   abstract isZooming(): boolean;
 }
 
@@ -64,6 +71,10 @@ abstract class BaseColorGraphLifecycleState extends ColorGraphLifecycleState {
   }
 
   isSettled(): boolean {
+    return false;
+  }
+
+  isSuspended(): boolean {
     return false;
   }
 
@@ -112,6 +123,18 @@ class SettledColorGraphLifecycleState extends BaseColorGraphLifecycleState {
   readonly variant: string = 'settled';
 
   override isSettled(): boolean {
+    return true;
+  }
+}
+
+class SuspendedColorGraphLifecycleState extends BaseColorGraphLifecycleState {
+  readonly variant: string = 'suspended';
+
+  override isDeviceReady(): boolean {
+    return false;
+  }
+
+  override isSuspended(): boolean {
     return true;
   }
 }

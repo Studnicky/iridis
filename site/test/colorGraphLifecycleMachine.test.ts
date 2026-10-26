@@ -77,3 +77,41 @@ await test('destroying a graph mid-fit returns to idle and a replacement starts 
 
   assert.deepEqual(visited, ['idle', 'constructing', 'ready', 'fitting', 'idle', 'idle', 'constructing']);
 });
+
+await test('suspending a settled graph keeps a suspended state until a new graph is constructed', () => {
+  const visited = LifecycleRun.variants([
+    ColorGraphLifecycleEvent.constructed(),
+    ColorGraphLifecycleEvent.deviceReady(),
+    ColorGraphLifecycleEvent.fitArmed(),
+    ColorGraphLifecycleEvent.fitSettled(),
+    ColorGraphLifecycleEvent.suspended(),
+    ColorGraphLifecycleEvent.zoomed(),
+    ColorGraphLifecycleEvent.deviceReady(),
+    ColorGraphLifecycleEvent.constructed(),
+    ColorGraphLifecycleEvent.deviceReady()
+  ]);
+
+  assert.deepEqual(visited, [
+    'idle', 'constructing', 'ready', 'fitting', 'settled', 'suspended', 'suspended', 'suspended', 'constructing', 'ready'
+  ]);
+});
+
+await test('suspending a graph that is still constructing leaves the state unchanged', () => {
+  const visited = LifecycleRun.variants([
+    ColorGraphLifecycleEvent.constructed(),
+    ColorGraphLifecycleEvent.suspended()
+  ]);
+
+  assert.deepEqual(visited, ['idle', 'constructing', 'constructing']);
+});
+
+await test('destroying a suspended graph returns to idle', () => {
+  const visited = LifecycleRun.variants([
+    ColorGraphLifecycleEvent.constructed(),
+    ColorGraphLifecycleEvent.deviceReady(),
+    ColorGraphLifecycleEvent.suspended(),
+    ColorGraphLifecycleEvent.destroyed()
+  ]);
+
+  assert.deepEqual(visited, ['idle', 'constructing', 'ready', 'suspended', 'idle']);
+});

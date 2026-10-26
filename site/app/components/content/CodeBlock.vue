@@ -23,15 +23,25 @@ import { trustedMarkupRenderer } from './trustedMarkupRenderer.ts';
  */
 const props = defineProps<{ code: string; lang: typeof SUPPORTED_LANGS[number]; vscodeTheme: object; caption?: string; previewLines?: number }>();
 
+/** Line count drives both the "N lines" disclosure label and whether the preview clamp applies at all — a short file with a `previewLines` prop still renders fully open. */
+const previewState = computed(() => buildCodeBlockViewModel.previewState(
+  props.code,
+  props.previewLines
+));
+const disclosed = ref(false);
+const expanded = computed(() => disclosed.value || previewState.value.disclosureLabel === '');
+// A collapsed block tokenizes and mounts only its preview lines; expanding renders the whole file.
+const visibleCode = computed(() => buildCodeBlockViewModel.clampedCode(props.code, expanded.value ? undefined : props.previewLines));
+
 // Top-level await so SSR/prerender waits for the highlighted HTML before
 // serializing the page — a fire-and-forget watch() never resolves in time
 // for a static-generate snapshot, leaving code blocks empty for crawlers
 // and no-JS clients even though hydration would eventually fill them in.
-const html = ref<string>(await highlightCode(props.code, props.lang, props.vscodeTheme));
+const html = ref<string>(await highlightCode(visibleCode.value, props.lang, props.vscodeTheme));
 
 watch(
   () => ({
-    'code': props.code,
+    'code': visibleCode.value,
     'lang': props.lang,
     'theme': props.vscodeTheme
   }),
@@ -67,12 +77,6 @@ async function copy(): Promise<void> {
   copiedTimer = setTimeout(() => { copied.value = false; }, buildCodeBlockViewModel.copyResetDelayMs);
 }
 
-/** Line count drives both the "N lines" disclosure label and whether the preview clamp applies at all — a short file with a `previewLines` prop still renders fully open. */
-const previewState = computed(() => buildCodeBlockViewModel.previewState(
-  props.code,
-  props.previewLines
-));
-const expanded = ref(previewState.value.initialHeightClass === previewState.value.expandedHeightClass);
 </script>
 
 <template>
@@ -107,7 +111,7 @@ const expanded = ref(previewState.value.initialHeightClass === previewState.valu
       type="button"
       class="code-block-expander"
       :aria-expanded="expanded"
-      @click="expanded = !expanded"
+      @click="disclosed = !disclosed"
     >
       <span>{{ expanded ? 'Show less' : previewState.disclosureLabel }}</span>
       <UIcon

@@ -20,8 +20,11 @@ interface ColorStreamRowLayoutInterface {
 
 export const drawColorStream = class ColorStreamDrawing {
   private static readonly comparisonSampleCount = 48;
+
   private static readonly liveHeight = 48;
+
   private static readonly comparisonHeight = 24;
+
   private static readonly rowGap = 16;
 
   public static canvasHeightForRoleCount(roleCount: number): number {
@@ -30,6 +33,7 @@ export const drawColorStream = class ColorStreamDrawing {
     }
     const rowHeight = ColorStreamDrawing.liveHeight + ColorStreamDrawing.comparisonHeight + ColorStreamDrawing.rowGap;
     const result = roleCount * rowHeight - ColorStreamDrawing.rowGap;
+
     return result;
   }
 
@@ -40,6 +44,7 @@ export const drawColorStream = class ColorStreamDrawing {
     views: readonly RoleViewType[]
   ): void {
     const context = canvas.getContext('2d');
+
     if (context === null) {
       return;
     }
@@ -47,9 +52,14 @@ export const drawColorStream = class ColorStreamDrawing {
     const width = Math.max(canvas.clientWidth, 1);
     const height = ColorStreamDrawing.canvasHeightForRoleCount(roles.length);
     const ratio = Math.min(canvas.ownerDocument.defaultView?.devicePixelRatio ?? 1, 2);
-    canvas.style.height = ['', height, 'px'].join('');
+    const cssHeight = `${String(height)}px`;
+
+    if (canvas.style.height !== cssHeight) {
+      canvas.style.height = cssHeight;
+    }
     const bitmapWidth = Math.round(width * ratio);
     const bitmapHeight = Math.round(height * ratio);
+
     if (canvas.width !== bitmapWidth || canvas.height !== bitmapHeight) {
       canvas.width = bitmapWidth;
       canvas.height = bitmapHeight;
@@ -58,8 +68,10 @@ export const drawColorStream = class ColorStreamDrawing {
     context.clearRect(0, 0, width, height);
 
     const viewsByName = new Map<string, RoleViewType>();
+
     for (let index = 0; index < views.length; index += 1) {
       const view = views[index];
+
       if (view !== undefined) {
         viewsByName.set(view.name, view);
       }
@@ -67,19 +79,23 @@ export const drawColorStream = class ColorStreamDrawing {
 
     for (let index = 0; index < roles.length; index += 1) {
       const role = roles[index];
+
       if (role === undefined) {
         continue;
       }
       const layout = ColorStreamDrawing.layoutRow(index);
       const samples = samplesByAlias.get(role.alias) ?? [];
+
       ColorStreamDrawing.drawStrip(context, samples, 0, layout.top, width, layout.liveHeight);
 
       const view = viewsByName.get(role.roleName);
+
       if (view === undefined) {
         continue;
       }
       const bands = ColorStreamDrawing.comparisonBandsFor(view);
       const halfWidth = (width - 8) / 2;
+
       ColorStreamDrawing.drawComparisonBand(context, bands.naive, 0, layout.comparisonTop, halfWidth, layout.comparisonHeight);
       ColorStreamDrawing.drawComparisonBand(context, bands.engine, halfWidth + 8, layout.comparisonTop, halfWidth, layout.comparisonHeight);
     }
@@ -87,10 +103,12 @@ export const drawColorStream = class ColorStreamDrawing {
 
   public static resolveCanvasElement(element: unknown): HTMLCanvasElement | null {
     const result = element instanceof HTMLCanvasElement ? element : null;
+
     return result;
   }
 
-  private static comparisonBandsFor(view: RoleViewType): { readonly 'engine': readonly string[]; readonly 'naive': readonly string[] } {
+  private static comparisonBandsFor(view: RoleViewType): { readonly 'engine': readonly string[];
+    readonly 'naive': readonly string[]; } {
     const toHue = (view.h + 180) % 360;
     const result = colorStreamComparison.buildComparisonBands(
       view.l,
@@ -101,6 +119,7 @@ export const drawColorStream = class ColorStreamDrawing {
       toHue,
       ColorStreamDrawing.comparisonSampleCount
     );
+
     return result;
   }
 
@@ -113,8 +132,10 @@ export const drawColorStream = class ColorStreamDrawing {
     height: number
   ): void {
     const segmentWidth = width / colors.length;
+
     for (let index = 0; index < colors.length; index += 1) {
       const color = colors[index];
+
       if (color === undefined) {
         continue;
       }
@@ -137,8 +158,10 @@ export const drawColorStream = class ColorStreamDrawing {
 
     let minimumChroma = Number.POSITIVE_INFINITY;
     let maximumChroma = Number.NEGATIVE_INFINITY;
+
     for (let index = 0; index < samples.length; index += 1) {
       const sample = samples[index];
+
       if (sample !== undefined) {
         minimumChroma = Math.min(minimumChroma, sample.chroma);
         maximumChroma = Math.max(maximumChroma, sample.chroma);
@@ -146,6 +169,7 @@ export const drawColorStream = class ColorStreamDrawing {
     }
 
     const firstSample = samples[0];
+
     if (firstSample === undefined) {
       return;
     }
@@ -158,11 +182,13 @@ export const drawColorStream = class ColorStreamDrawing {
     context.clip();
     for (let index = 1; index < samples.length; index += 1) {
       const sample = samples[index];
+
       if (sample === undefined) {
         continue;
       }
       const nextX = xOffset + sampleIndexToX(index, samples.length, width);
       const nextY = yOffset + scaleChromaToY(sample.chroma, minimumChroma, maximumChroma, height);
+
       context.strokeStyle = sample.hex;
       context.lineWidth = 2;
       context.beginPath();
@@ -183,6 +209,7 @@ export const drawColorStream = class ColorStreamDrawing {
       'liveHeight': ColorStreamDrawing.liveHeight,
       'top': top
     };
+
     return result;
   }
 };

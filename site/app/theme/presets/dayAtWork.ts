@@ -11,14 +11,20 @@ import { renderDot } from '../particles/renderDot.ts';
  */
 export const dayAtWork: ThemeDefinitionInterface = {
   'ambient': {
-    'blobCount':       0,
-    'gooFilter':       'none',
-    'gridDisplay':     'block',
-    'particleCounts':  [0, 0, 0, 0, 0],
+    'blobCount': 0,
+    'gooBlurPx': 0,
+    'gridDisplay': 'block',
+    'particleCounts': [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
     'particleRenderer': renderDot,
     'speedMultiplier': 1.8
   },
   'dataLayout': DataLayoutStrategy.table,
-  'key':   'day-at-work',
+  'key': 'day-at-work',
   'label': 'Day-at-Work'
 };
