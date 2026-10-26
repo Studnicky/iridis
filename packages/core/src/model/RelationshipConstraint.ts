@@ -9,6 +9,7 @@ import { RelationshipToleranceEntity } from '../entities/RelationshipToleranceEn
 import { RoleRelationshipEntity } from '../entities/RoleRelationshipEntity.ts';
 import { RoleRelationshipGraphEntity } from '../entities/RoleRelationshipGraphEntity.ts';
 import { RoleRelationshipGroupEntity } from '../entities/RoleRelationshipGroupEntity.ts';
+import { hueResolutionChroma } from '../math/HueResolutionChroma.ts';
 import { Metadata } from '../types/metadata.ts';
 import { RelationshipConstraintDomain } from './RelationshipConstraintDomain.ts';
 import { RelationshipHueDegrees } from './RelationshipHueDegrees.ts';
@@ -365,13 +366,13 @@ export class RelationshipConstraint {
         alpha === baseline.alpha &&
         lightness === baseline.oklch.l &&
         chroma === baseline.oklch.c &&
-        hue === baseline.oklch.h;
+        RelationshipConstraint.hueMatches(chroma, baseline.oklch.c, hue, baseline.oklch.h, undefined);
       return result;
     }
     const result =
       RelationshipConstraint.within(alpha, baseline.alpha, tolerance.alpha) &&
       RelationshipConstraint.within(chroma, baseline.oklch.c, tolerance.chroma) &&
-      RelationshipConstraint.withinHue(hue, baseline.oklch.h, tolerance.hue) &&
+      RelationshipConstraint.hueMatches(chroma, baseline.oklch.c, hue, baseline.oklch.h, tolerance.hue) &&
       RelationshipConstraint.within(lightness, baseline.oklch.l, tolerance.lightness);
     return result;
   }
@@ -385,6 +386,20 @@ export class RelationshipConstraint {
     const result = tolerance === undefined
       ? difference === 0
       : difference <= tolerance;
+    return result;
+  }
+
+  private static hueMatches(
+    candidateChroma: number,
+    baselineChroma: number,
+    candidateHue: number,
+    baselineHue: number,
+    tolerance: number | undefined
+  ): boolean {
+    if (candidateChroma < hueResolutionChroma || baselineChroma < hueResolutionChroma) {
+      return true;
+    }
+    const result = RelationshipConstraint.withinHue(candidateHue, baselineHue, tolerance);
     return result;
   }
 

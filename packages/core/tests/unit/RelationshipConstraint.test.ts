@@ -16,6 +16,7 @@ import { RoleSchemaEntity } from '../../src/entities/RoleSchemaEntity.ts';
 import { TaskManifestEntity } from '../../src/entities/TaskManifestEntity.ts';
 import { ColorCoordinate } from '../../src/math/ColorCoordinate.ts';
 import { colorRecordFactory } from '../../src/math/ColorRecordFactory.ts';
+import { hueResolutionChroma } from '../../src/math/index.ts';
 import { RelationshipConstraint } from '../../src/model/RelationshipConstraint.ts';
 import { coreTasks } from '../../src/tasks/index.ts';
 import { Metadata } from '../../src/types/metadata.ts';
@@ -431,6 +432,53 @@ void test('RelationshipConstraint admits the on-brand near-white terminal inside
   const metadata = RelationshipConstraintFixture.metadata(baseline);
 
   assert.ok(terminal.oklch.c < 1e-7);
+  assert.equal(RelationshipConstraint.allows(input, metadata, 'text', terminal), true);
+});
+
+void test('RelationshipConstraint ignores hue for fixed and tolerant near-achromatic coordinates', () => {
+  const baseline = colorRecordFactory.fromOklch(0.65, hueResolutionChroma / 2, 0);
+  const metadata = RelationshipConstraintFixture.metadata(baseline);
+  const fixed = RelationshipConstraintFixture.input();
+  const tolerant = RelationshipConstraintFixture.input({ 'tolerance': { 'hue': 0 } });
+  const candidate = ColorCoordinate.fromOklch(0.65, hueResolutionChroma / 2, 180);
+
+  assert.equal(RelationshipConstraint.allowsCoordinates(fixed, metadata, 'text', 1, candidate), true);
+  assert.equal(RelationshipConstraint.allowsCoordinates(tolerant, metadata, 'text', 1, candidate), true);
+});
+
+void test('RelationshipConstraint enforces hue above the emitted hue-resolution chroma', () => {
+  const baseline = colorRecordFactory.fromOklch(0.65, hueResolutionChroma * 2, 0);
+  const metadata = RelationshipConstraintFixture.metadata(baseline);
+  const fixed = RelationshipConstraintFixture.input();
+  const tolerant = RelationshipConstraintFixture.input({ 'tolerance': { 'hue': 5 } });
+  const candidate = ColorCoordinate.fromOklch(0.65, hueResolutionChroma * 2, 6);
+
+  assert.equal(RelationshipConstraint.allowsCoordinates(fixed, metadata, 'text', 1, candidate), false);
+  assert.equal(RelationshipConstraint.allowsCoordinates(tolerant, metadata, 'text', 1, candidate), false);
+});
+
+void test('RelationshipConstraint admits the VS Code onAccent terminal from an achromatic relationship baseline', () => {
+  const baseline = colorRecordFactory.fromOklch(1, 0, 0);
+  const terminal = colorRecordFactory.fromHex('#050300');
+  const input = RelationshipConstraintFixture.input({
+    'tolerance': { 'alpha': 1, 'chroma': 0.5, 'hue': 5, 'lightness': 1 }
+  });
+  const metadata = RelationshipConstraintFixture.metadata(baseline);
+
+  assert.ok(baseline.oklch.c < hueResolutionChroma);
+  assert.ok(terminal.oklch.c > hueResolutionChroma);
+  assert.equal(RelationshipConstraint.allows(input, metadata, 'text', terminal), true);
+});
+
+void test('RelationshipConstraint admits the on-brand terminal from an achromatic relationship baseline', () => {
+  const baseline = colorRecordFactory.fromOklch(1, 0, 0);
+  const terminal = colorRecordFactory.fromHex('#fafafa');
+  const input = RelationshipConstraintFixture.input({
+    'tolerance': { 'alpha': 1, 'chroma': 0.5, 'hue': 5, 'lightness': 1 }
+  });
+  const metadata = RelationshipConstraintFixture.metadata(baseline);
+
+  assert.ok(terminal.oklch.c < hueResolutionChroma);
   assert.equal(RelationshipConstraint.allows(input, metadata, 'text', terminal), true);
 });
 
