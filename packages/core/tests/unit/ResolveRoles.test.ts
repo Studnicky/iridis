@@ -787,3 +787,37 @@ void test('resolve roles retains a graph target baseline before relationship der
     'root': { 'adjustments': [], 'origin': 'stated' }
   });
 });
+
+void test('resolve roles preserves a required target when its graph source cannot resolve', () => {
+  const engine = TestEngineFixture.freshEngine(['resolve:roles', 'derive:roleRelations']);
+  const schema = TestEngineFixture.admitRoleSchema({
+    'name': 'unresolvable-graph-source',
+    'relationshipGraph': {
+      'groups': [{
+        'anchor': 'source',
+        'defaultMode': 'default',
+        'id': 'family',
+        'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'base' }], 'id': 'default' }],
+        'name': 'Family',
+        'relationships': [{
+          'id': 'derived',
+          'operation': 'alias',
+          'priority': 1,
+          'relaxability': 'fixed',
+          'source': 'source',
+          'target': 'target'
+        }]
+      }]
+    },
+    'roles': [
+      { 'name': 'source' },
+      { 'lightnessRange': [0.4, 0.6], 'name': 'target', 'required': true }
+    ]
+  });
+  const state = engine.run(TestEngineFixture.input([], schema));
+  const target = state.roles.target;
+  assert.ok(target !== undefined, 'the required target remains resolved when its relationship source is absent');
+  assert.strictEqual(state.metadata['core:roleProvenance']?.target?.origin, 'synthesized');
+  assert.strictEqual(state.metadata['core:relationshipResolution']?.target?.disposition, 'unresolved');
+  assert.strictEqual(state.metadata['core:relationshipResolution']?.target?.blockedReason, 'missing-source');
+});
