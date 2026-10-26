@@ -638,7 +638,7 @@ class CvdSimulation {
       if (!selection.couldImprove(candidate.candidate)) {
         return true;
       }
-      if (!selection.canConsider(candidate.candidate.emitted)) {
+      if (!selection.canExplore(candidate.candidate.emitted)) {
         continue;
       }
       const score = budget.score(candidate.candidate, constraints);
@@ -734,7 +734,7 @@ class CvdSimulation {
       return fgRecord;
     }
 
-    let best = selection.result();
+    let best = selection.explorationResult();
     if (best === undefined) {
       return fgRecord;
     }
@@ -753,8 +753,12 @@ class CvdSimulation {
       return fgRecord;
     }
 
-    group.storeCorrection(budget, constraints, best);
-    const result = CvdSimulation.materializeCorrection(best, fgRecord);
+    const terminal = selection.result();
+    if (terminal === undefined) {
+      return fgRecord;
+    }
+    group.storeCorrection(budget, constraints, terminal);
+    const result = CvdSimulation.materializeCorrection(terminal, fgRecord);
     return result;
   }
 
@@ -853,7 +857,7 @@ class CvdSimulation {
       ) {
         return undefined;
       }
-      best = selection.result();
+      best = selection.explorationResult();
     }
     return best;
   }
@@ -920,7 +924,7 @@ class CvdSimulation {
         h,
         emittedColors
       );
-      if (!selection.canConsider(candidate.emitted)) {
+      if (!selection.canExplore(candidate.emitted)) {
         continue;
       }
       const score = budget.score(candidate, constraints);
@@ -1318,6 +1322,7 @@ class CvdSearchBudget {
 
 class CvdCandidateSelection {
   private bestAny: CvdCorrectionCandidate | undefined;
+  private bestExploration: CvdCorrectionCandidate | undefined;
   private bestNonExtreme: CvdCorrectionCandidate | undefined;
   private readonly originalFailureCount: number;
   private readonly originalC: number;
@@ -1333,6 +1338,7 @@ class CvdCandidateSelection {
     group: CvdMoverGroup
   ) {
     this.bestAny = undefined;
+    this.bestExploration = undefined;
     this.bestNonExtreme = undefined;
     this.originalFailureCount = originalFailureCount;
     this.originalC = original.oklch.c;
@@ -1354,6 +1360,9 @@ class CvdCandidateSelection {
     candidate: CvdCorrectionCandidate,
     record: ColorRecordEntity.Type
   ): void {
+    if (this.isExplorationCandidate(candidate) && this.prefer(candidate, this.bestExploration)) {
+      this.bestExploration = candidate;
+    }
     if (!this.isEligible(candidate, record)) {
       return;
     }
@@ -1393,6 +1402,11 @@ class CvdCandidateSelection {
     return result;
   }
 
+  explorationResult(): CvdCorrectionCandidate | undefined {
+    const result = this.bestExploration;
+    return result;
+  }
+
   result(): CvdCorrectionCandidate | undefined {
     const result =
       !CvdCandidateSelection.isExtreme(this.originalRgb) &&
@@ -1403,14 +1417,7 @@ class CvdCandidateSelection {
   }
 
   canConsider(record: ColorRecordEntity.Type): boolean {
-    const withinRange =
-      (this.roleRange.chromaRange === undefined ||
-        (record.oklch.c >= this.roleRange.chromaRange[0] &&
-          record.oklch.c <= this.roleRange.chromaRange[1])) &&
-      (this.roleRange.lightnessRange === undefined ||
-        (record.oklch.l >= this.roleRange.lightnessRange[0] &&
-          record.oklch.l <= this.roleRange.lightnessRange[1]));
-    if (!withinRange) {
+    if (!this.canExplore(record)) {
       return false;
     }
     const allowed = this.group.allows(record);
@@ -1420,12 +1427,27 @@ class CvdCandidateSelection {
     return allowed;
   }
 
+  canExplore(record: ColorRecordEntity.Type): boolean {
+    const result =
+      (this.roleRange.chromaRange === undefined ||
+        (record.oklch.c >= this.roleRange.chromaRange[0] &&
+          record.oklch.c <= this.roleRange.chromaRange[1])) &&
+      (this.roleRange.lightnessRange === undefined ||
+        (record.oklch.l >= this.roleRange.lightnessRange[0] &&
+          record.oklch.l <= this.roleRange.lightnessRange[1]));
+    return result;
+  }
+
   private isEligible(
     candidate: CvdCorrectionCandidate,
     record: ColorRecordEntity.Type
   ): boolean {
+    const result = this.isExplorationCandidate(candidate) && this.canConsider(record);
+    return result;
+  }
+
+  private isExplorationCandidate(candidate: CvdCorrectionCandidate): boolean {
     const result =
-      this.canConsider(record) &&
       candidate.trichromatBaselineDeficitCount === 0 &&
       candidate.novelFailureCount === 0 &&
       candidate.failureCount < this.originalFailureCount;

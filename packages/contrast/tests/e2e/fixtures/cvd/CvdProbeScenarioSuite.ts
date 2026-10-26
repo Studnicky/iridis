@@ -60,7 +60,7 @@ export class CvdProbeScenarioSuite {
       await test('CVD refinement moves a derived background when the foreground is stated', CvdProbeScenarioSuite.statedForeground);
       await test('CVD refinement does not move a derived endpoint outside its role range', CvdProbeScenarioSuite.rangeBoundedMover);
       await test('CVD refinement rejects fixed relationship candidates without changing CVD blocker attribution', CvdProbeScenarioSuite.fixedRelationship);
-      await test('CVD refinement records a tolerant relationship deviation after an accepted correction', CvdProbeScenarioSuite.tolerantRelationship);
+      await test('CVD refinement finds a terminal correction inside a tolerant relationship domain', CvdProbeScenarioSuite.tolerantRelationship);
       await test('CVD refinement moves a derived foreground when the background is stated', CvdProbeScenarioSuite.statedBackground);
       await test('CVD refinement blocks a pair when both semantic endpoints are stated', CvdProbeScenarioSuite.statedBoth);
       await test('CVD terminal compliance reports a CVD-only stated-both block', CvdProbeScenarioSuite.terminalStatedBoth);
@@ -736,9 +736,9 @@ export class CvdProbeScenarioSuite {
   private static tolerantRelationship(): void {
     const state = CvdProbeScenarioSuite.relationshipState({
       'alpha': 1,
-      'chroma': 0.5,
-      'hue': 360,
-      'lightness': 1
+      'chroma': 0.1,
+      'hue': 5,
+      'lightness': 0.36
     });
     const original = CvdProbeScenarioSuite.statedPairRoles().background;
     const cvd = ContrastMetadataAssertionPort.cvd(state);
@@ -762,6 +762,12 @@ export class CvdProbeScenarioSuite {
         (deviation?.hue ?? 0) > 0 ||
         (deviation?.lightness ?? 0) > 0,
       '[cvd-relationship-tolerant] accepted correction records its relationship deviation'
+    );
+    assert.ok(
+      (deviation?.chroma ?? Number.POSITIVE_INFINITY) <= 0.1 &&
+        (deviation?.hue ?? Number.POSITIVE_INFINITY) <= 5 &&
+        (deviation?.lightness ?? Number.POSITIVE_INFINITY) <= 0.36,
+      '[cvd-relationship-tolerant] only terminal corrections inside the relationship domain are committed'
     );
   }
 
