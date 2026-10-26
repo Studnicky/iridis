@@ -61,6 +61,7 @@ export class CvdProbeScenarioSuite {
       await test('CVD refinement does not move a derived endpoint outside its role range', CvdProbeScenarioSuite.rangeBoundedMover);
       await test('CVD refinement rejects fixed relationship candidates without changing CVD blocker attribution', CvdProbeScenarioSuite.fixedRelationship);
       await test('CVD refinement finds a terminal correction inside a tolerant relationship domain', CvdProbeScenarioSuite.tolerantRelationship);
+      await test('CVD refinement retains an unconstrained result when the relationship domain admits it', CvdProbeScenarioSuite.unconstrainedAdmissibleRelationship);
       await test('CVD refinement retains a valid peer correction when an unchanged relationship target serializes through hex', CvdProbeScenarioSuite.unchangedRelationshipTarget);
       await test('CVD refinement moves a derived foreground when the background is stated', CvdProbeScenarioSuite.statedBackground);
       await test('CVD refinement blocks a pair when both semantic endpoints are stated', CvdProbeScenarioSuite.statedBoth);
@@ -772,6 +773,27 @@ export class CvdProbeScenarioSuite {
     );
   }
 
+  private static unconstrainedAdmissibleRelationship(): void {
+    const original = CvdProbeScenarioSuite.statedPairRoles();
+    const pair = CvdProbeScenarioSuite.pair('text', 'background');
+    const unconstrained = ContrastTestPort.runCorrectedCvd(
+      original,
+      [pair],
+      new RecordingLogger(),
+      ['text']
+    );
+    const constrained = CvdProbeScenarioSuite.relationshipState({
+      'alpha': 1,
+      'chroma': 0.5,
+      'hue': 180,
+      'lightness': 1
+    });
+    assert.strictEqual(
+      constrained.roles.background?.hex,
+      unconstrained.roles.background?.hex,
+      '[cvd-relationship-admissible] a relationship domain that admits the unconstrained terminal keeps it unchanged'
+    );
+  }
   private static unchangedRelationshipTarget(): void {
     const brand = colorRecordFactory.fromOklch(0.4, 0.14, 0);
     const onBrand = colorRecordFactory.fromOklch(0.985, 0.01, 0);
@@ -1078,13 +1100,17 @@ export class CvdProbeScenarioSuite {
     ], new RecordingLogger());
     const foreground = state.roles.A;
     const terminalBackground = state.roles.B;
-    assert.ok(foreground !== undefined && terminalBackground !== undefined, '[cvd-dependency-rollback] terminal roles present');
-    assert.ok(contrastWcag21.apply(foreground, terminalBackground) + 1e-12 >= contrastWcag21.apply(originalRoles.A, originalRoles.B), '[cvd-dependency-rollback] baseline preserved');
+    const backgroundC = state.roles.C;
+    assert.ok(foreground !== undefined && terminalBackground !== undefined && backgroundC !== undefined, '[cvd-dependency-rollback] terminal roles present');
+    assert.strictEqual(foreground.hex, originalRoles.A.hex, '[cvd-dependency-rollback] unchanged dependent foreground remains original');
+    assert.ok(contrastWcag21.apply(terminalBackground, backgroundC) + 1e-12 >= contrastWcag21.apply(originalRoles.B, originalRoles.C), '[cvd-dependency-rollback] surviving correction preserves its own terminal baseline');
     assert.strictEqual(foreground.hex, '#03160d', '[cvd-dependency-rollback] restored A');
-    assert.strictEqual(terminalBackground.hex, '#bbb2fe', '[cvd-dependency-rollback] restored B');
+    assert.notStrictEqual(terminalBackground.hex, originalRoles.B.hex, '[cvd-dependency-rollback] valid B correction survives A restoration');
     assert.notStrictEqual(state.roles.D?.hex, originalRoles.D.hex, '[cvd-dependency-rollback] independent correction preserved');
     const cvd = ContrastMetadataAssertionPort.cvd(state);
-    assert.ok(cvd !== undefined && cvd.warnings.length > 0, '[cvd-dependency-rollback] unresolved result remains truthful');
+    assert.ok(cvd !== undefined, '[cvd-dependency-rollback] metadata remains present');
+    assert.strictEqual(cvd.warnings.length, 0, '[cvd-dependency-rollback] surviving terminal corrections clear their own CVD evidence');
+    assert.deepStrictEqual(cvd.corrections.map((correction) => { return correction.foreground; }), ['B', 'D'], '[cvd-dependency-rollback] invalid A restoration does not discard valid peer corrections');
   }
 
   private static emittedHex(): void {

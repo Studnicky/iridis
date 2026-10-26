@@ -109,6 +109,16 @@ class CvdMoverGroup {
     return result;
   }
 
+  isOriginal(record: ColorRecordEntity.Type): boolean {
+    const epsilon = 1e-12;
+    const result =
+      Math.abs(record.alpha - this.original.alpha) <= epsilon &&
+      Math.abs(record.rgb.r - this.original.rgb.r) <= epsilon &&
+      Math.abs(record.rgb.g - this.original.rgb.g) <= epsilon &&
+      Math.abs(record.rgb.b - this.original.rgb.b) <= epsilon;
+    return result;
+  }
+
   cachedCorrection(
     budget: CvdSearchBudget,
     constraints: readonly CvdPairConstraint[]
@@ -1636,12 +1646,8 @@ class CvdCorrectionCoordinator {
         );
       }
     }
-    const result = CvdCorrectionCoordinator.audit(
-      groups,
-      resolvedRoles,
-      originalRoles
-    );
-    return result;
+    CvdCorrectionCoordinator.audit(groups, resolvedRoles);
+    return resolvedRoles;
   }
 
   private static resolveComponent(
@@ -1661,7 +1667,7 @@ class CvdCorrectionCoordinator {
       );
       resolvedRoles.set(
         group.mover,
-        group.allows(corrected) ? corrected : group.original
+        CvdCorrectionCoordinator.terminalRecord(group, corrected)
       );
       return;
     }
@@ -1675,16 +1681,15 @@ class CvdCorrectionCoordinator {
 
   private static audit(
     groups: ReadonlyMap<string, CvdMoverGroup>,
-    resolvedRoles: Map<string, ColorRecordEntity.Type>,
-    originalRoles: ReadonlyMap<string, ColorRecordEntity.Type>
-  ): Map<string, ColorRecordEntity.Type> {
+    resolvedRoles: Map<string, ColorRecordEntity.Type>
+  ): void {
     for (let pass = 0; pass <= groups.size; pass += 1) {
       const invalid = CvdCorrectionCoordinator.invalidGroups(
         groups,
         resolvedRoles
       );
       if (invalid.length === 0) {
-        return resolvedRoles;
+        return;
       }
       if (
         !CvdCorrectionCoordinator.restoreInvalidGroups(
@@ -1693,11 +1698,9 @@ class CvdCorrectionCoordinator {
           resolvedRoles
         )
       ) {
-        break;
+        return;
       }
     }
-    const result = new Map(originalRoles);
-    return result;
   }
 
   private static invalidGroups(
@@ -1755,7 +1758,7 @@ class CvdCorrectionCoordinator {
     resolvedRoles: Map<string, ColorRecordEntity.Type>
   ): number {
     const foreground = resolvedRoles.get(group.mover);
-    if (foreground !== undefined && foreground !== group.original) {
+    if (foreground !== undefined && !group.isOriginal(foreground)) {
       resolvedRoles.set(group.mover, group.original);
       return 1;
     }
@@ -1782,13 +1785,10 @@ class CvdCorrectionCoordinator {
     foreground: ColorRecordEntity.Type,
     resolvedRoles: ReadonlyMap<string, ColorRecordEntity.Type>
   ): boolean {
-    const constraints = group.resolve(resolvedRoles);
-    if (foreground === group.original) {
-      const result =
-        CvdSimulation.preservesBaselines(foreground, constraints) &&
-        CvdSimulation.preservesFailureSets(foreground, constraints);
-      return result;
+    if (group.isOriginal(foreground)) {
+      return true;
     }
+    const constraints = group.resolve(resolvedRoles);
     const result =
       CvdSimulation.preservesBaselines(foreground, constraints) &&
       CvdSimulation.preservesFailureSets(foreground, constraints) &&
@@ -1852,10 +1852,21 @@ class CvdCorrectionCoordinator {
       }
       resolvedRoles.set(
         group.mover,
-        group.allows(corrected) ? corrected : group.original
+        CvdCorrectionCoordinator.terminalRecord(group, corrected)
       );
     }
     const result = unchangedCount === component.length;
+    return result;
+  }
+
+  private static terminalRecord(
+    group: CvdMoverGroup,
+    corrected: ColorRecordEntity.Type
+  ): ColorRecordEntity.Type {
+    if (group.isOriginal(corrected)) {
+      return group.original;
+    }
+    const result = group.allows(corrected) ? corrected : group.original;
     return result;
   }
 
