@@ -144,14 +144,9 @@ await test('profile samples the owned visual targets after graph teardown and dr
 
 class ProfileFixture {
   static readonly classes = [
-    [
-      'mermaid',
-      VisualizationProfileBudget.mermaid
-    ],
-    [
-      'graph',
-      VisualizationProfileBudget.graph
-    ]
+    ['mermaid', VisualizationProfileBudget.mermaid],
+    ['graph', VisualizationProfileBudget.graphLive],
+    ['graphIdle', VisualizationProfileBudget.graphIdle]
   ] as const;
 
   static within(name: string, limits: VisualizationProfileLimitsInterface): Record<string, unknown> {
@@ -225,12 +220,13 @@ class ProfileFixture {
   }
 }
 
-await test('profile budget accepts every target class exactly at its limits', () => {
+await test('profile budget accepts every target exactly at its class limits', () => {
   const report = [
     ProfileFixture.within('mermaid', VisualizationProfileBudget.mermaid),
     ProfileFixture.within('mermaidDpad', VisualizationProfileBudget.mermaid),
-    ProfileFixture.within('graph', VisualizationProfileBudget.graph),
-    ProfileFixture.within('graphDpad', VisualizationProfileBudget.graph)
+    ProfileFixture.within('graph', VisualizationProfileBudget.graphLive),
+    ProfileFixture.within('graphDpad', VisualizationProfileBudget.graphLive),
+    ProfileFixture.within('graphIdle', VisualizationProfileBudget.graphIdle)
   ];
 
   assert.deepEqual(VisualizationProfileBudget.failures(report), []);
@@ -243,27 +239,32 @@ await test('profile budget rejects each metric one step beyond its limit for eac
 });
 
 await test('a target is judged against its own class', () => {
-  const graphLoad = { ...ProfileFixture.within('graph', VisualizationProfileBudget.graph) };
-  const mermaidLoad = {
-    ...graphLoad,
-    'name': 'mermaid'
-  };
+  const liveLoad = ProfileFixture.within('graph', VisualizationProfileBudget.graphLive);
+  const idleLoad = { ...liveLoad, 'name': 'graphIdle' };
+  const mermaidLoad = { ...liveLoad, 'name': 'mermaid' };
 
-  assert.deepEqual(VisualizationProfileBudget.failures([graphLoad]), []);
+  assert.deepEqual(VisualizationProfileBudget.failures([liveLoad]), []);
+  assert.equal(VisualizationProfileBudget.failures([idleLoad]).length > 0, true);
   assert.equal(VisualizationProfileBudget.failures([mermaidLoad]).length > 0, true);
-  assert.equal(VisualizationProfileBudget.limitsFor('graphDpad'), VisualizationProfileBudget.graph);
+  assert.equal(VisualizationProfileBudget.limitsFor('graphDpad'), VisualizationProfileBudget.graphLive);
+  assert.equal(VisualizationProfileBudget.limitsFor('graphIdle'), VisualizationProfileBudget.graphIdle);
   assert.equal(VisualizationProfileBudget.limitsFor('mermaidDpad'), VisualizationProfileBudget.mermaid);
 });
 
-await test('the graph class is never stricter than the mermaid class and keeps the structure limits', () => {
+await test('the idle graph class is at least as strict as the mermaid class and the live class is looser', () => {
   const strict = VisualizationProfileBudget.mermaid;
-  const live = VisualizationProfileBudget.graph;
+  const idle = VisualizationProfileBudget.graphIdle;
+  const live = VisualizationProfileBudget.graphLive;
 
+  assert.ok(idle.maximumAverageFrameMs <= strict.maximumAverageFrameMs);
+  assert.ok(idle.maximumP90FrameMs <= strict.maximumP90FrameMs);
+  assert.ok(idle.maximumFrameMs <= strict.maximumFrameMs);
+  assert.ok(idle.maximumLongTaskCount <= strict.maximumLongTaskCount);
+  assert.ok(idle.maximumLongTaskTotalMs <= strict.maximumLongTaskTotalMs);
   assert.equal(live.maximumDomElements, strict.maximumDomElements);
   assert.equal(live.maximumCanvasElements, strict.maximumCanvasElements);
-  assert.equal(live.maximumFrameMs, strict.maximumFrameMs);
   assert.ok(live.maximumAverageFrameMs >= strict.maximumAverageFrameMs);
-  assert.ok(live.maximumP90FrameMs >= strict.maximumP90FrameMs);
+  assert.ok(live.maximumLongTaskCount >= strict.maximumLongTaskCount);
 });
 
 await test('an unknown target class is an error', () => {
@@ -276,11 +277,11 @@ await test('an unknown target class is an error', () => {
 
 await test('profile budget rejects a target whose metric is not a finite number', () => {
   const report = [{
-    ...ProfileFixture.within('graph', VisualizationProfileBudget.graph),
+    ...ProfileFixture.within('graph', VisualizationProfileBudget.graphLive),
     'avgMs': Number.NaN
   }];
 
-  assert.deepEqual(VisualizationProfileBudget.failures(report), [`target=graph avgMs=NaN must be at most ${String(VisualizationProfileBudget.graph.maximumAverageFrameMs)}`]);
+  assert.deepEqual(VisualizationProfileBudget.failures(report), [`target=graph avgMs=NaN must be at most ${String(VisualizationProfileBudget.graphLive.maximumAverageFrameMs)}`]);
 });
 
 await test('profile budget skips targets that did not run', () => {
@@ -337,4 +338,14 @@ await test('profile CLI entrypoint is recognised through a symlinked path', (con
     '/usr/local/bin/node',
     join(linkRoot, 'missing.mjs')
   ], moduleUrl), false);
+});
+
+await test('profile samples the idle graph only after the suspended state', () => {
+  const profileSource = readFileSync(resolve(import.meta.dirname, '../visualization-profile.mjs'), 'utf8');
+  const suspended = profileSource.indexOf('await awaitIdleSuspension(page);');
+  const idleTarget = profileSource.indexOf("'name': 'graphIdle'");
+
+  assert.equal(profileSource.includes('data-graph-state="suspended"'), true);
+  assert.equal(suspended > 0, true);
+  assert.equal(suspended < idleTarget, true);
 });
