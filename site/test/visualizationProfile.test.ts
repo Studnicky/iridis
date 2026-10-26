@@ -355,3 +355,134 @@ await test('profile samples the idle graph only after the suspended state', () =
   assert.equal(suspended > 0, true);
   assert.equal(suspended < idleTarget, true);
 });
+
+class ScaleScenario {
+  public static readonly scale = 3;
+
+  public static within(name: string, limits: VisualizationProfileLimitsInterface): Record<string, unknown> {
+    const result = {
+      'avgMs': limits.maximumAverageFrameMs * ScaleScenario.scale,
+      'canvasElementCount': limits.maximumCanvasElements,
+      'domElementCount': limits.maximumDomElements,
+      'frameCount': VisualizationProfileBudget.minimumFrameCount,
+      'longCount': limits.maximumLongTaskCount,
+      'longTotalMs': limits.maximumLongTaskTotalMs * ScaleScenario.scale,
+      'maxMs': limits.maximumFrameMs * ScaleScenario.scale,
+      'name': name,
+      'ok': true,
+      'p90Ms': limits.maximumP90FrameMs * ScaleScenario.scale
+    };
+
+    return result;
+  }
+}
+
+await test('a scale of one reproduces the unscaled limits exactly', () => {
+  assert.equal(VisualizationProfileBudget.limitsFor('mermaid', 1), VisualizationProfileBudget.mermaid);
+  assert.equal(VisualizationProfileBudget.limitsFor('graph'), VisualizationProfileBudget.graphLive);
+});
+
+await test('a scaled budget accepts frame metrics exactly at the scaled limit and rejects one step beyond', () => {
+  const limits = VisualizationProfileBudget.mermaid;
+  const accepted = ScaleScenario.within('mermaid', limits);
+  const beyond = [
+    { 'avgMs': limits.maximumAverageFrameMs * ScaleScenario.scale + 1 },
+    { 'p90Ms': limits.maximumP90FrameMs * ScaleScenario.scale + 1 },
+    { 'maxMs': limits.maximumFrameMs * ScaleScenario.scale + 1 },
+    { 'longTotalMs': limits.maximumLongTaskTotalMs * ScaleScenario.scale + 1 }
+  ];
+
+  assert.deepEqual(VisualizationProfileBudget.failures([accepted], ScaleScenario.scale), []);
+  beyond.forEach((override) => {
+    const failures = VisualizationProfileBudget.failures([{ ...accepted, ...override }], ScaleScenario.scale);
+
+    assert.equal(failures.length, 1);
+    assert.equal(failures[0]?.includes(`x scale ${ScaleScenario.scale.toFixed(2)}`), true);
+  });
+  assert.equal(VisualizationProfileBudget.failures([accepted]).length > 0, true);
+});
+
+await test('counts, DOM and canvases ignore the scale', () => {
+  const limits = VisualizationProfileBudget.graphLive;
+  const scaled: VisualizationProfileLimitsInterface = VisualizationProfileBudget.limitsFor('graph', ScaleScenario.scale);
+
+  assert.equal(scaled.maximumLongTaskCount, limits.maximumLongTaskCount);
+  assert.equal(scaled.maximumDomElements, limits.maximumDomElements);
+  assert.equal(scaled.maximumCanvasElements, limits.maximumCanvasElements);
+  assert.equal(scaled.maximumAverageFrameMs, limits.maximumAverageFrameMs * ScaleScenario.scale);
+});
+
+await test('a scale below one is clamped to one and a scale that is not finite is an error', () => {
+  assert.equal(VisualizationProfileBudget.limitsFor('mermaid', 0.2), VisualizationProfileBudget.mermaid);
+  assert.throws(() => { VisualizationProfileBudget.limitsFor('mermaid', Number.NaN); }, { 'name': 'RangeError' });
+});
+
+await test('the environment scale is the frame floor in vsync steps, never below one, and rejects a bad calibration', () => {
+  const step = VisualizationProfileBudget.vsyncStepMs;
+
+  assert.equal(VisualizationProfileBudget.environmentScale(step), 1);
+  assert.equal(VisualizationProfileBudget.environmentScale(step / 2), 1);
+  assert.equal(VisualizationProfileBudget.environmentScale(step * ScaleScenario.scale), ScaleScenario.scale);
+  assert.throws(() => { VisualizationProfileBudget.environmentScale(Number.NaN); }, { 'name': 'RangeError' });
+  assert.throws(() => { VisualizationProfileBudget.environmentScale(Number.POSITIVE_INFINITY); }, { 'name': 'RangeError' });
+  assert.throws(() => { VisualizationProfileBudget.environmentScale(0); }, { 'name': 'RangeError' });
+});
+
+class StubSteps {
+  public readonly calls: string[] = [];
+
+  readonly #floorAverageFrameMs: number;
+
+  readonly #report: Record<string, unknown>[];
+
+  public constructor(floorAverageFrameMs: number, report: Record<string, unknown>[]) {
+    this.#floorAverageFrameMs = floorAverageFrameMs;
+    this.#report = report;
+  }
+
+  public calibrate(): Promise<number> {
+    this.calls.push('calibrate');
+    const result = Promise.resolve(this.#floorAverageFrameMs);
+
+    return result;
+  }
+
+  public report(): void {
+    this.calls.push('report');
+  }
+
+  public scenes(scale: number): Promise<Record<string, unknown>[]> {
+    this.calls.push(`scenes@${scale.toFixed(2)}`);
+    const result = Promise.resolve(this.#report);
+
+    return result;
+  }
+}
+
+await test('calibration runs before the scenes and the scenes are judged against the calibrated scale', async () => {
+  const limits = VisualizationProfileBudget.mermaid;
+  const steps = new StubSteps(
+    VisualizationProfileBudget.vsyncStepMs * ScaleScenario.scale,
+    [ScaleScenario.within('mermaid', limits)]
+  );
+
+  const outcome = await VisualizationProfileOperation.execute(steps);
+
+  assert.deepEqual(steps.calls, ['calibrate', `scenes@${ScaleScenario.scale.toFixed(2)}`, 'report']);
+  assert.equal(outcome.scale, ScaleScenario.scale);
+});
+
+await test('a scene beyond the scaled limit fails the profile', async () => {
+  const limits = VisualizationProfileBudget.mermaid;
+  const slow = { ...ScaleScenario.within('mermaid', limits), 'avgMs': limits.maximumAverageFrameMs * ScaleScenario.scale + 1 };
+  const steps = new StubSteps(VisualizationProfileBudget.vsyncStepMs * ScaleScenario.scale, [slow]);
+
+  await assert.rejects(VisualizationProfileOperation.execute(steps), { 'name': 'Error' });
+});
+
+await test('a non-finite calibration stops the profile before the scenes', async () => {
+  const steps = new StubSteps(Number.NaN, []);
+
+  await assert.rejects(VisualizationProfileOperation.execute(steps), { 'name': 'RangeError' });
+  assert.deepEqual(steps.calls, ['calibrate']);
+});

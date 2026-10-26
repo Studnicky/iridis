@@ -390,37 +390,99 @@ export class VisualizationProfileBudget {
     ['mermaidDpad', 'mermaid'],
   ]);
 
-  static limitsFor(targetName) {
+  /** The scale that stretches the frame-time limits to the machine: its blank-page frame time in vsync steps, never below one. */
+  static environmentScale(floorAverageFrameMs) {
+    if (!Number.isFinite(floorAverageFrameMs) || floorAverageFrameMs <= 0) {
+      throw new RangeError('Visualization profile calibration is not a positive finite frame time: ' + floorAverageFrameMs);
+    }
+    return Math.max(1, floorAverageFrameMs / this.vsyncStepMs);
+  }
+
+  /**
+   * @param {string} targetName
+   * @param {number} [scale]
+   * @returns {Readonly<{ maximumAverageFrameMs: number, maximumCanvasElements: number, maximumDomElements: number, maximumFrameMs: number, maximumLongTaskCount: number, maximumLongTaskTotalMs: number, maximumP90FrameMs: number }>}
+   */
+  static limitsFor(targetName, scale = 1) {
     const className = this.classByTarget.get(targetName);
     if (className === undefined) {
       throw new RangeError('Unknown visualization profile target: ' + targetName);
     }
-    return this[className];
+    return this.scaledLimits(this[className], scale);
   }
 
-  static failures(report) {
+  /** Average, p90, max frame and long-task total scale with the machine; counts, DOM and canvases do not. */
+  static scaledLimits(limits, scale) {
+    if (!Number.isFinite(scale)) {
+      throw new RangeError('Visualization profile scale is not finite: ' + scale);
+    }
+    const effective = Math.max(1, scale);
+    if (effective === 1) {
+      return limits;
+    }
+    return Object.freeze({
+      ...limits,
+      'maximumAverageFrameMs': limits.maximumAverageFrameMs * effective,
+      'maximumFrameMs': limits.maximumFrameMs * effective,
+      'maximumLongTaskTotalMs': limits.maximumLongTaskTotalMs * effective,
+      'maximumP90FrameMs': limits.maximumP90FrameMs * effective,
+    });
+  }
+
+  static failures(report, scale = 1) {
     const failures = [];
+    const effective = Math.max(1, scale);
     for (const item of report) {
       if (!item.ok) continue;
-      const limits = this.limitsFor(item.name);
+      const base = this.limitsFor(item.name);
+      const limits = this.limitsFor(item.name, scale);
       const checks = [
-        ['frameCount', item.frameCount, this.minimumFrameCount, 'at least'],
-        ['avgMs', item.avgMs, limits.maximumAverageFrameMs, 'at most'],
-        ['p90Ms', item.p90Ms, limits.maximumP90FrameMs, 'at most'],
-        ['maxMs', item.maxMs, limits.maximumFrameMs, 'at most'],
-        ['longCount', item.longCount, limits.maximumLongTaskCount, 'at most'],
-        ['longTotalMs', item.longTotalMs, limits.maximumLongTaskTotalMs, 'at most'],
-        ['domElementCount', item.domElementCount, limits.maximumDomElements, 'at most'],
-        ['canvasElementCount', item.canvasElementCount, limits.maximumCanvasElements, 'at most'],
+        ['frameCount', item.frameCount, this.minimumFrameCount, 'at least', this.minimumFrameCount],
+        ['avgMs', item.avgMs, limits.maximumAverageFrameMs, 'at most', base.maximumAverageFrameMs],
+        ['p90Ms', item.p90Ms, limits.maximumP90FrameMs, 'at most', base.maximumP90FrameMs],
+        ['maxMs', item.maxMs, limits.maximumFrameMs, 'at most', base.maximumFrameMs],
+        ['longCount', item.longCount, limits.maximumLongTaskCount, 'at most', base.maximumLongTaskCount],
+        ['longTotalMs', item.longTotalMs, limits.maximumLongTaskTotalMs, 'at most', base.maximumLongTaskTotalMs],
+        ['domElementCount', item.domElementCount, limits.maximumDomElements, 'at most', base.maximumDomElements],
+        ['canvasElementCount', item.canvasElementCount, limits.maximumCanvasElements, 'at most', base.maximumCanvasElements],
       ];
-      for (const [metric, value, limit, direction] of checks) {
+      for (const [metric, value, limit, direction, unscaled] of checks) {
         const passes = Number.isFinite(value) && (direction === 'at least' ? value >= limit : value <= limit);
         if (!passes) {
-          failures.push('target=' + item.name + ' ' + metric + '=' + value + ' must be ' + direction + ' ' + limit);
+          const detail = limit === unscaled ? '' : ' (limit ' + unscaled + ' x scale ' + effective.toFixed(2) + ')';
+          failures.push('target=' + item.name + ' ' + metric + '=' + value + ' must be ' + direction + ' ' + limit + detail);
         }
       }
     }
     return failures;
+  }
+}
+
+export class VisualizationProfileCalibration {
+  /** Average frame time of a blank page in the same browser and viewport. */
+  static async sample(browser, durationMs) {
+    const page = await browser.newPage({ 'viewport': { 'height': 1100, 'width': 1680 } });
+    try {
+      await page.setContent('<!doctype html><html><body></body></html>');
+      return await page.evaluate((sampleMs) => new Promise((resolveSample) => {
+        const frames = [];
+        let previous = performance.now();
+        const start = previous;
+        const tick = (timestamp) => {
+          frames.push(timestamp - previous);
+          previous = timestamp;
+          if (timestamp - start < sampleMs) {
+            requestAnimationFrame(tick);
+          } else {
+            const measured = frames.slice(1);
+            resolveSample(measured.reduce((total, value) => total + value, 0) / Math.max(1, measured.length));
+          }
+        };
+        requestAnimationFrame(tick);
+      }), durationMs);
+    } finally {
+      await page.close();
+    }
   }
 }
 
@@ -466,67 +528,97 @@ export class VisualizationProfileOperation {
     });
 
     const report = [];
-    try {
-      await new Promise((resolveServer) => {
-        server.listen(0, '127.0.0.1', resolveServer);
-      });
-      const address = server.address();
-      if (address === null || typeof address === 'string') {
-        throw new TypeError('Profile server did not bind an IP socket');
-      }
+    const steps = {
+      'calibrate': () => VisualizationProfileCalibration.sample(browser, PROFILE_MS),
+      'report': (report, floorAverageFrameMs, scale) => {
+        console.log(`calibration floorAvgMs=${floorAverageFrameMs.toFixed(2)} environmentScale=${scale.toFixed(2)}`);
+        VisualizationProfileOperation.print(report);
+      },
+      'scenes': async () => {
+        const report = [];
+        try {
+          await new Promise((resolveServer) => {
+            server.listen(0, '127.0.0.1', resolveServer);
+          });
+          const address = server.address();
+          if (address === null || typeof address === 'string') {
+            throw new TypeError('Profile server did not bind an IP socket');
+          }
 
-      const page = await browser.newPage({ 'viewport': { 'height': 1100, 'width': 1680 } });
-      await page.goto(`http://127.0.0.1:${address.port}${basePath}`, { 'timeout': 60000, 'waitUntil': 'domcontentloaded' });
-      await establishCommittedPalette(page);
-      await activateReadyGraph(page);
+          const page = await browser.newPage({ 'viewport': { 'height': 1100, 'width': 1680 } });
+          await page.goto(`http://127.0.0.1:${address.port}${basePath}`, { 'timeout': 60000, 'waitUntil': 'domcontentloaded' });
+          await establishCommittedPalette(page);
+          await activateReadyGraph(page);
 
-      const graphSurface = '.cg-cosmos canvas';
-      const graphDpad = '.cg-wrap .dagonizer-dpad-wrap';
-      report.push(await runTarget(page, {
-        'interaction': () => driveSurface(page, graphSurface),
-        'name': 'graph',
-        'selector': graphSurface,
-      }));
-      report.push(await runTarget(page, {
-        'interaction': () => pressDpadButtons(page.locator(graphDpad)),
-        'name': 'graphDpad',
-        'selector': graphDpad + ' .dagonizer-dpad-btn[aria-label="Zoom in"]',
-      }));
+          const graphSurface = '.cg-cosmos canvas';
+          const graphDpad = '.cg-wrap .dagonizer-dpad-wrap';
+          report.push(await runTarget(page, {
+            'interaction': () => driveSurface(page, graphSurface),
+            'name': 'graph',
+            'selector': graphSurface,
+          }));
+          report.push(await runTarget(page, {
+            'interaction': () => pressDpadButtons(page.locator(graphDpad)),
+            'name': 'graphDpad',
+            'selector': graphDpad + ' .dagonizer-dpad-btn[aria-label="Zoom in"]',
+          }));
 
-      await awaitIdleSuspension(page);
-      report.push(await runTarget(page, {
-        'interaction': () => Promise.resolve(),
-        'name': 'graphIdle',
-        'selector': '.cg-snapshot canvas',
-      }));
+          await awaitIdleSuspension(page);
+          report.push(await runTarget(page, {
+            'interaction': () => Promise.resolve(),
+            'name': 'graphIdle',
+            'selector': '.cg-snapshot canvas',
+          }));
 
-      await deactivateGraph(page);
+          await deactivateGraph(page);
 
-      const mermaidSurface = '.dag-mermaid-frame svg';
-      const mermaidDpad = '.dag-mermaid-frame .dag-mermaid-dpad-wrap';
-      report.push(await runTarget(page, {
-        'interaction': () => driveSurface(page, mermaidSurface),
-        'name': 'mermaid',
-        'selector': mermaidSurface,
-      }));
-      report.push(await runTarget(page, {
-        'interaction': () => pressDpadButtons(page.locator(mermaidDpad)),
-        'name': 'mermaidDpad',
-        'selector': mermaidDpad + ' .dagonizer-dpad-btn[aria-label="Zoom in"]',
-      }));
+          const mermaidSurface = '.dag-mermaid-frame svg';
+          const mermaidDpad = '.dag-mermaid-frame .dag-mermaid-dpad-wrap';
+          report.push(await runTarget(page, {
+            'interaction': () => driveSurface(page, mermaidSurface),
+            'name': 'mermaid',
+            'selector': mermaidSurface,
+          }));
+          report.push(await runTarget(page, {
+            'interaction': () => pressDpadButtons(page.locator(mermaidDpad)),
+            'name': 'mermaidDpad',
+            'selector': mermaidDpad + ' .dagonizer-dpad-btn[aria-label="Zoom in"]',
+          }));
 
-      if (isDebug && DEBUG_WAIT_MS > 0) {
-        await page.waitForTimeout(DEBUG_WAIT_MS);
-      }
-      await page.close();
-    } finally {
-      await browser.close();
-      if (server.listening) {
-        await new Promise((resolveServer) => { server.close(resolveServer); });
-      }
-    }
+          if (isDebug && DEBUG_WAIT_MS > 0) {
+            await page.waitForTimeout(DEBUG_WAIT_MS);
+          }
+          await page.close();
+        } finally {
+          await browser.close();
+          if (server.listening) {
+            await new Promise((resolveServer) => { server.close(resolveServer); });
+          }
+        }
+        return report;
+      },
+    };
+    await VisualizationProfileOperation.execute(steps);
+  }
 
+  /** Runs calibration, then the scenes, then judges the report against the scaled budget. Phases are injectable. */
+  static async execute(steps) {
+    const floorAverageFrameMs = await steps.calibrate();
+    const scale = VisualizationProfileBudget.environmentScale(floorAverageFrameMs);
+    const report = await steps.scenes(scale);
+    steps.report(report, floorAverageFrameMs, scale);
     const missingTargets = report.filter((item) => !item.ok);
+    if (missingTargets.length > 0) {
+      throw new Error(`Visualization profile targets missing: ${missingTargets.map((item) => item.name).join(', ')}`);
+    }
+    const budgetFailures = VisualizationProfileBudget.failures(report, scale);
+    if (budgetFailures.length > 0) {
+      throw new Error(`Visualization profile budget exceeded:\n${budgetFailures.join('\n')}`);
+    }
+    return { floorAverageFrameMs, report, scale };
+  }
+
+  static print(report) {
     for (const item of report) {
       if (!item.ok) {
         console.log(`target=${item.name} ok=false reason=${item.reason}`);
@@ -537,13 +629,6 @@ export class VisualizationProfileOperation {
       console.log(
         `target=${item.name} frameCount=${item.frameCount} avgMs=${item.avgMs.toFixed(2)} fps=${fps.toFixed(1)} max=${item.maxMs.toFixed(2)} p90=${item.p90Ms.toFixed(2)} p95=${item.p95Ms.toFixed(2)} p99=${item.p99Ms.toFixed(2)} long=${item.longCount}/${item.longTotalMs.toFixed(0)}ms dom=${item.domElementCount} canvases=${item.canvasElementCount} mem=${item.memStartMB.toFixed(1)}=>${item.memEndMB.toFixed(1)} peak=${item.memPeakMB.toFixed(1)} jsPeak=${item.jsPeakMB.toFixed(1)} overlay=${item.overlayText ?? 'n/a'}`,
       );
-    }
-    if (missingTargets.length > 0) {
-      throw new Error(`Visualization profile targets missing: ${missingTargets.map((item) => item.name).join(', ')}`);
-    }
-    const budgetFailures = VisualizationProfileBudget.failures(report);
-    if (budgetFailures.length > 0) {
-      throw new Error(`Visualization profile budget exceeded:\n${budgetFailures.join('\n')}`);
     }
   }
 }
