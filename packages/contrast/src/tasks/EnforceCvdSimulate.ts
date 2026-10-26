@@ -113,28 +113,17 @@ class CvdMoverGroup {
     budget: CvdSearchBudget,
     constraints: readonly CvdPairConstraint[]
   ): CvdCorrectionCandidate | undefined {
-    if (this.limitsMovement()) {
-      return undefined;
-    }
     const result = budget.cachedCorrection(
       this.original,
       constraints,
-      this.roleRange
+      this.roleRange,
+      this.relationshipSignature()
     );
     return result;
   }
 
   recordCandidateRejection(): void {
     this.relationshipCandidateRejections += 1;
-  }
-
-  private limitsMovement(): boolean {
-    const result = RelationshipConstraint.limitsMovement(
-      this.state.input,
-      this.state.metadata,
-      this.mover
-    );
-    return result;
   }
 
   recordDeviation(record: ColorRecordEntity.Type): void {
@@ -151,14 +140,33 @@ class CvdMoverGroup {
     constraints: readonly CvdPairConstraint[],
     correction: CvdCorrectionCandidate
   ): void {
-    if (!this.limitsMovement()) {
-      budget.storeCorrection(
-        this.original,
-        constraints,
-        this.roleRange,
-        correction
-      );
-    }
+    budget.storeCorrection(
+      this.original,
+      constraints,
+      this.roleRange,
+      this.relationshipSignature(),
+      correction
+    );
+  }
+
+  private relationshipSignature(): string {
+    const domain = RelationshipConstraint.domain(
+      this.state.input,
+      this.state.metadata,
+      this.mover
+    );
+    const tolerance = domain?.tolerance;
+    const result = domain?.baseline === undefined
+      ? ''
+      : [
+        domain.relationId,
+        domain.baseline.hex,
+        tolerance?.alpha ?? '',
+        tolerance?.chroma ?? '',
+        tolerance?.hue ?? '',
+        tolerance?.lightness ?? ''
+      ].join('\u0000');
+    return result;
   }
 
   add(
@@ -1202,10 +1210,11 @@ class CvdSearchBudget {
   cachedCorrection(
     original: ColorRecordEntity.Type,
     constraints: readonly CvdPairConstraint[],
-    roleRange: ContrastPolicy.RoleRangeInterface
+    roleRange: ContrastPolicy.RoleRangeInterface,
+    relationshipSignature: string
   ): CvdCorrectionCandidate | undefined {
     const result = this.correctionCache.get(
-      this.groupKey(original, constraints, roleRange)
+      this.groupKey(original, constraints, roleRange, relationshipSignature)
     );
     return result;
   }
@@ -1214,9 +1223,13 @@ class CvdSearchBudget {
     original: ColorRecordEntity.Type,
     constraints: readonly CvdPairConstraint[],
     roleRange: ContrastPolicy.RoleRangeInterface,
+    relationshipSignature: string,
     correction: CvdCorrectionCandidate
   ): void {
-    this.correctionCache.set(this.groupKey(original, constraints, roleRange), correction);
+    this.correctionCache.set(
+      this.groupKey(original, constraints, roleRange, relationshipSignature),
+      correction
+    );
   }
 
   static create(options?: {
@@ -1271,11 +1284,13 @@ class CvdSearchBudget {
   private groupKey(
     original: ColorRecordEntity.Type,
     constraints: readonly CvdPairConstraint[],
-    roleRange: ContrastPolicy.RoleRangeInterface
+    roleRange: ContrastPolicy.RoleRangeInterface,
+    relationshipSignature: string
   ): string {
     const result = [
       original.hex,
       this.constraintSignature(constraints),
+      relationshipSignature,
       roleRange.chromaRange?.join(',') ?? '',
       roleRange.lightnessRange?.join(',') ?? ''
     ].join('\u0000');
