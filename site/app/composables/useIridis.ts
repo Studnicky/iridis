@@ -2,8 +2,8 @@
  * Shared iridis engine state. Two mutually-exclusive modes — a color picker and
  * an image extractor — each with its own palette; switching modes swaps which
  * palette themes the page. Every color (roles and tonal scales) is produced
- * by engine.run(): scales come from derive:variant tonal steps, semantic hues
- * from hueOffset on the schema roles. The projector only reads those hexes.
+ * by engine.run(): scales come from derive:variant tonal steps and roles follow
+ * the authored relationship graph. The projector only reads those hexes.
  */
 
 import type { ComplianceReportEntity, ContrastFeasibilityReportEntity, CvdMatrixEntity, CvdResultSetEntity } from '@studnicky/iridis-contrast';
@@ -387,16 +387,7 @@ class IridisContextFactory {
       return result;
     });
 
-    /**
- * Role names a seed can actually be pinned to for the active schema+framing —
- * restricted to IRIDIS_CONSTANTS.USED_ROLE_NAMES so the list matches roles the demo page really
- * renders somewhere distinct (a Nuxt UI alias, a --ui-* CSS var, a syntax-*
- * token color), not just whatever the schema happens to declare. Both
- * independently-resolved roles (background/text/brand/muted/error) AND
- * schema-derived ones (success/warning/info/accent-alt/syntax-*) work now —
- * pin:derivedRoles (in the pipeline between resolve:roles and expand:family)
- * overrides ExpandFamily's hue-rotation for whichever role a seed is pinned to.
- */
+    /** Selects demo-rendered role names that accept exact seed pins through the canonical relationship resolver. */
     const pinnableRoles = VueModule.computed<string[]>(() => {
       const schema = (() => {
         const pair = roleSchemaByName[schemaName.value];

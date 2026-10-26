@@ -1,23 +1,6 @@
 <script setup lang="ts">
-/**
- * The resolved palette as a graph: one node per role, in that role's own
- * engine-resolved color — never a decorative category color — with edges
- * for `derivedFrom` (ExpandFamily hue-rotation lineage) relations, plus a
- * hub-to-hub ring so every node is reachable (no isolated clusters). Each
- * derived role's label names the hue algorithm (monochromatic/analogous/
- * triadic/.../freeform) that relation is actually configured with — set per
- * relation on the Derivation Relations card (Refine stage), not a decorative
- * label; it's `derive:roleRelations`'s own resolved config for that edge.
- * This is `engine.run()`'s own role graph, live and force-simulated (link
- * spring, repulsion, gravity, collision), matching the iridis-N schema
- * currently active, the same D-pad/legend pattern Dagonizer's graph-
- * visualizer uses (leadography's own graph stage follows the same
- * convention, ported from the same lineage).
- *
- * Lazy-loaded: `@cosmos.gl/graph` ships a WebGL2 shader pipeline; dynamic-
- * import on mount keeps it out of the main bundle for visitors who never
- * scroll this far.
- */
+/** Renders the engine-resolved role graph using authored relationship edges. */
+import { EffectInterpreter } from '@studnicky/fsm/browser';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/browser';
 import { nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 
