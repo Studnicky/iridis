@@ -25,11 +25,11 @@ class DocumentationPipelineHarness {
     assert.deepEqual(syntaxErrors, [], `${relativePath} contains invalid TypeScript`);
   }
 
-  static pipelineFenceResolvesBeforeExpansion(source: string, relativePath: string): boolean {
+  static pipelineFenceResolvesRelationships(source: string, relativePath: string): boolean {
     const resolveIndex = source.indexOf('resolve:roles');
-    const expandIndex = source.indexOf('expand:family');
-    if (resolveIndex < 0 || expandIndex < 0) {return false;}
-    assert.equal(resolveIndex < expandIndex, true, `${relativePath} expands derived roles before resolving their sources`);
+    const deriveIndex = source.indexOf('derive:roleRelations');
+    if (resolveIndex < 0 || deriveIndex < 0) {return false;}
+    assert.equal(resolveIndex < deriveIndex, true, `${relativePath} resolves relationships before their sources`);
     return true;
   }
 
@@ -47,25 +47,25 @@ class DocumentationPipelineHarness {
       } else {
         assert.doesNotThrow(() => {JSON.parse(source);}, `${relativePath} contains invalid JSON`);
       }
-      if (DocumentationPipelineHarness.pipelineFenceResolvesBeforeExpansion(source, relativePath)) {pipelineFenceCount += 1;}
+      if (DocumentationPipelineHarness.pipelineFenceResolvesRelationships(source, relativePath) === true) {pipelineFenceCount += 1;}
     }
     assert.equal(pipelineFenceCount > 0, true, `${relativePath} has no canonical pipeline fence`);
   }
 }
 
-await test('public pipeline code fences resolve source roles before family expansion', async () => {
+await test('public pipeline code fences resolve source roles before relationships', async () => {
   const documents = DocumentationPipelineFixture.DOCUMENTS;
   for (let index = 0; index < documents.length; index += 1) {
     await DocumentationPipelineHarness.assertDocumentationPipeline(documents[index]!);
   }
 });
 
-await test('canonical resolve and expand prefix produces the derived onAccent role', () => {
+await test('canonical resolve and relationship prefix produces the derived onAccent role', () => {
   const engine = new Engine();
   for (let index = 0; index < coreTasks.length; index += 1) {
     engine.tasks.register(coreTasks[index]!);
   }
-  engine.pipeline(['intake:any', 'resolve:roles', 'expand:family']);
+  engine.pipeline(['intake:any', 'resolve:roles', 'derive:roleRelations']);
 
   const state = engine.run(InputEntity.create({
     'colors': ['#8B5CF6'],

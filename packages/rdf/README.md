@@ -58,7 +58,7 @@ export function generateReasoningGraph(roleSchema: RoleSchemaEntity.Type) {
   engine.pipeline([
     'intake:any',
     'resolve:roles',
-    'expand:family',
+    'derive:roleRelations',
     'enforce:compliance',
     'reason:annotate',
     'reason:serialize',
