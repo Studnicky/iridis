@@ -42,3 +42,14 @@ await test('request entity rejects an unknown schema name', () => {
     PaletteResolveRequestEntity.intake({ ...PaletteResolveFixture.request(), 'schemaName': 'iridis-5' });
   });
 });
+
+await test('palette resolution rejects an incoherent relationship graph at its engine boundary', () => {
+  const request = PaletteResolveRequestEntity.intake({
+    ...PaletteResolveFixture.request(),
+    'relationshipGraph': { 'groups': [{}] }
+  });
+
+  assert.throws(() => {
+    PaletteResolve.input(request);
+  });
+});

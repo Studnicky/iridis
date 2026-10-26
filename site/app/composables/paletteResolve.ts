@@ -1,7 +1,7 @@
 import type { PaletteStateInterface, RoleProvenanceEntity } from '@studnicky/iridis';
 import type { ContrastFeasibilityReportEntity } from '@studnicky/iridis-contrast';
 
-import { colorRecordFactory, ContrastOptionsEntity, InputEntity, Metadata, RoleSchemaEntity } from '@studnicky/iridis';
+import { colorRecordFactory, ContrastOptionsEntity, InputEntity, Metadata, RoleRelationshipGraphEntity, RoleSchemaEntity } from '@studnicky/iridis';
 import { ComplianceReportEntity, ContrastFeasibility, CvdResultSetEntity } from '@studnicky/iridis-contrast';
 
 import type { PaletteResolveRequestEntity } from './entities/PaletteResolveRequestEntity.ts';
@@ -80,9 +80,12 @@ export class PaletteResolve {
   public static input(request: PaletteResolveRequestEntity.Type): InputEntity.Type {
     const pair = roleSchemaByName[request.schemaName];
     const selected = request.framing === 'dark' ? pair.dark : pair.light;
+    const relationshipGraph = request.relationshipGraph === undefined
+      ? undefined
+      : RoleRelationshipGraphEntity.intake(request.relationshipGraph);
     const roles = RoleSchemaEntity.intake({
       ...selected,
-      ...(request.relationshipGraph === undefined ? {} : { 'relationshipGraph': request.relationshipGraph })
+      ...(relationshipGraph === undefined ? {} : { 'relationshipGraph': relationshipGraph })
     });
     const seeds = request.seeds.map((seed) => {
       const result = { 'hex': seed.hex, 'role': seed.role };
