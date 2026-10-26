@@ -69,7 +69,11 @@ class VscodeRoleSchemaGraph {
       const result = [relationship.target];
       return result;
     }
-    const result = [relationship.source, relationship.target];
+    const source = relationship.source;
+    if (source === undefined) {
+      throw new TypeError('Only hue-target relationships may omit a source role.');
+    }
+    const result = [source, relationship.target];
     return result;
   }
 }
