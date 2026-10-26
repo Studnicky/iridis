@@ -267,7 +267,6 @@ function settleFit(): void {
   controller.signal(ColorGraphLifecycleEvent.fitSettled());
   controller.signal(ColorGraphLifecycleEvent.zoomEnded());
   controller.releaseSnapshot();
-  controller.armIdle();
   if (shouldStartSimulation) {
     try { handle.start(1); } catch { /* ignore */ }
   }
@@ -406,8 +405,6 @@ function suspendGraphForIdle(): void {
 function onIdleElapsed(): void {
   if (!fullscreen.value && controller.getState().isSettled()) {
     suspendGraphForIdle();
-  } else {
-    controller.armIdle();
   }
 }
 
@@ -645,7 +642,6 @@ function restoreView(handle: Graph, buffers: ReturnType<typeof buildColorGraphBu
   controller.signal(ColorGraphLifecycleEvent.fitSettled());
   controller.signal(ColorGraphLifecycleEvent.zoomEnded());
   controller.releaseSnapshot();
-  controller.armIdle();
   pollZoom();
   scheduleLabelPaint();
 }

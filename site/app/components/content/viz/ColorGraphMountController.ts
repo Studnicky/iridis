@@ -22,11 +22,16 @@ export class ColorGraphMountController<Handle extends object, Snapshot extends o
 
   #idleSuspended = false;
 
+  #wasSettled = false;
+
   private constructor(host: ColorGraphMountHostInterface<Handle, Snapshot>, idleSuspendMs: number) {
     this.#host = host;
     this.#idleSuspendMs = idleSuspendMs;
     this.#interpreter = EffectInterpreter.create(ColorGraphLifecycleMachine.create());
     this.#interpreter.start();
+    this.#interpreter.subscribe((state) => {
+      this.#followSettled(state);
+    });
   }
 
   static create<Handle extends object, Snapshot extends object>(
@@ -40,14 +45,6 @@ export class ColorGraphMountController<Handle extends object, Snapshot extends o
 
   get handle(): Handle | null {
     return this.#handle;
-  }
-
-  /** Starts the idle countdown; the host decides whether the graph may suspend when it elapses. */
-  armIdle(): void {
-    this.cancel('idle');
-    this.schedule('idle', this.#idleSuspendMs, () => {
-      this.#host.idleElapsed();
-    });
   }
 
   cancel(group: string): void {
@@ -101,8 +98,8 @@ export class ColorGraphMountController<Handle extends object, Snapshot extends o
 
     if (wakes) {
       this.#idleSuspended = false;
-    } else if (this.#handle !== null) {
-      this.armIdle();
+    } else if (this.#handle !== null && this.getState().isSettled()) {
+      this.#armIdle();
     }
 
     return wakes;
@@ -164,6 +161,25 @@ export class ColorGraphMountController<Handle extends object, Snapshot extends o
 
     this.suspend();
     this.#idleSuspended = wasMounted;
+  }
+
+  #armIdle(): void {
+    this.cancel('idle');
+    this.schedule('idle', this.#idleSuspendMs, () => {
+      this.#host.idleElapsed();
+    });
+  }
+
+  /** The idle countdown runs only while the graph is settled; entering settled starts it and leaving settled cancels it. */
+  #followSettled(state: ColorGraphLifecycleState): void {
+    const settled = state.isSettled();
+
+    if (settled && !this.#wasSettled && this.#handle !== null) {
+      this.#armIdle();
+    } else if (!settled) {
+      this.cancel('idle');
+    }
+    this.#wasSettled = settled;
   }
 
   #cancelAll(): void {
