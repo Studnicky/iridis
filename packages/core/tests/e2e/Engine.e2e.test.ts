@@ -345,3 +345,20 @@ void test('Engine.e2e :: cell-8 :: tasks observe runtime framing', () => {
   }));
   assert.strictEqual(observedFraming, 'light');
 });
+
+void test('Engine.e2e :: memoized role schemas reject mutation without contaminating later runs', () => {
+  const engine = EngineE2eFixture.createEngine();
+  engine.pipeline(['intake:hex', 'resolve:roles']);
+  const input = InputEntity.create({
+    'colors': ['#5b21b6'],
+    'roles': EngineE2eFixture.createSimpleRoles()
+  });
+  const first = engine.run(input);
+  const role = first.input.roles?.roles[0];
+  assert.notStrictEqual(role, undefined);
+  assert.throws(() => {
+    Object.defineProperty(role, 'name', { 'value': 'changed' });
+  });
+  const second = engine.run(input);
+  assert.strictEqual(second.input.roles?.roles[0]?.name, 'primary');
+});

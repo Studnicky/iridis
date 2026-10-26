@@ -9,6 +9,7 @@ import type {
 import {
   ColorCoordinate,
   colorRecordFactory,
+  CompositeKey,
   HueIntervalBounds,
   InputEntity,
   Metadata,
@@ -1446,7 +1447,7 @@ export class ContrastFeasibility {
       if (requirement === undefined) {
         continue;
       }
-      if (pairKeys !== undefined && !pairKeys.has(ContrastFeasibility.pairKey(requirement.foreground, requirement.background))) {
+      if (pairKeys !== undefined && !pairKeys.has(CompositeKey.of(requirement.foreground, requirement.background))) {
         continue;
       }
       const foreground = domains.get(requirement.foreground);
@@ -1462,10 +1463,6 @@ export class ContrastFeasibility {
     return result;
   }
 
-  private static pairKey(foreground: string, background: string): string {
-    const result = foreground + String.fromCharCode(0) + background;
-    return result;
-  }
 
   private static requiresCompositeMeasurement(
     foreground: RoleDomainInterface,

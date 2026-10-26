@@ -1456,13 +1456,7 @@ class CvdCandidateSelection {
   }
 
   canExplore(record: ColorRecordEntity.Type): boolean {
-    const result =
-      (this.roleRange.chromaRange === undefined ||
-        (record.oklch.c >= this.roleRange.chromaRange[0] &&
-          record.oklch.c <= this.roleRange.chromaRange[1])) &&
-      (this.roleRange.lightnessRange === undefined ||
-        (record.oklch.l >= this.roleRange.lightnessRange[0] &&
-          record.oklch.l <= this.roleRange.lightnessRange[1]));
+    const result = ContrastPolicy.allowsRange(this.roleRange, record.oklch);
     return result;
   }
 

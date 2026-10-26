@@ -5,6 +5,7 @@ import type {
 } from '@studnicky/iridis';
 
 import {
+  CompositeKey,
   contrastApca,
   ContrastReportEntryEntity,
   contrastWcag21,
@@ -106,7 +107,7 @@ class ComplianceSerialization {
     for (let index = 0; index < pairs.length; index += 1) {
       const pair = pairs[index];
       if (pair !== undefined && !pair.passed) {
-        problemKeys.add(ComplianceSerialization.key(pair.foreground, pair.background));
+        problemKeys.add(CompositeKey.of(pair.foreground, pair.background));
       }
     }
     const feasibility = ContrastFeasibility.proveRun(state, problemKeys);
@@ -114,13 +115,13 @@ class ComplianceSerialization {
     for (let index = 0; index < feasibility.pairs.length; index += 1) {
       const pair = feasibility.pairs[index];
       if (pair?.proof !== undefined) {
-        proofs.set(ComplianceSerialization.key(pair.foreground, pair.background), pair.proof);
+        proofs.set(CompositeKey.of(pair.foreground, pair.background), pair.proof);
       }
     }
     const result = pairs.map((pair): CompliancePairEntity.Type => {
       const proof = pair.passed
         ? undefined
-        : proofs.get(ComplianceSerialization.key(pair.foreground, pair.background));
+        : proofs.get(CompositeKey.of(pair.foreground, pair.background));
       if (proof === undefined) {
         return pair;
       }
@@ -142,7 +143,7 @@ class ComplianceSerialization {
       if (blocked?.reason !== 'stated-both') {
         continue;
       }
-      const key = ComplianceSerialization.key(blocked.foreground, blocked.background);
+      const key = CompositeKey.of(blocked.foreground, blocked.background);
       const constraints = result.get(key) ?? new Set<CompliancePairEntity.Type['constraints'][number]>();
       constraints.add('pin');
       result.set(key, constraints);
@@ -219,7 +220,7 @@ class ComplianceSerialization {
     for (const constraint of cvdConstraints) {
       constraints.add(constraint);
     }
-    const blockerConstraints = blockers.get(ComplianceSerialization.key(pair.foreground, pair.background));
+    const blockerConstraints = blockers.get(CompositeKey.of(pair.foreground, pair.background));
     if (blockerConstraints !== undefined) {
       for (const constraint of blockerConstraints) {
         constraints.add(constraint);
@@ -278,10 +279,6 @@ class ComplianceSerialization {
     return result;
   }
 
-  private static key(foreground: string, background: string): string {
-    const result = foreground + String.fromCharCode(0) + background;
-    return result;
-  }
 }
 
 /** Serializes the terminal compliance result without changing the resolved role colors. */

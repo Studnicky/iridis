@@ -9,6 +9,7 @@ import {
   ColorRecordEntity,
   contrastWcag21,
   Metadata,
+  RelationshipSources,
   RelationshipToleranceEntity,
   RoleRelationshipEntity,
   RoleRelationshipGraphEntity,
@@ -256,7 +257,7 @@ class ReasonAnnotate implements TaskInterface {
     store.addQuad(DataFactory.quad(relationshipNode, DataFactory.namedNode(iridisVocab.relationshipOperation), DataFactory.literal(relationship.operation, DataFactory.namedNode(XSD_IRI.STRING))));
     store.addQuad(DataFactory.quad(relationshipNode, DataFactory.namedNode(iridisVocab.relationshipPriority), DataFactory.literal(String(relationship.priority), DataFactory.namedNode(XSD_IRI.INTEGER))));
     store.addQuad(DataFactory.quad(relationshipNode, DataFactory.namedNode(iridisVocab.relationshipRelaxability), DataFactory.literal(relationship.relaxability, DataFactory.namedNode(XSD_IRI.STRING))));
-    const sources = ReasonAnnotate.relationshipSources(relationship);
+    const sources = RelationshipSources.names(relationship);
     for (let sourceIndex = 0; sourceIndex < sources.length; sourceIndex += 1) {
       const source = sources[sourceIndex];
       if (source !== undefined) {
@@ -312,20 +313,6 @@ class ReasonAnnotate implements TaskInterface {
     if (relationship.operation === 'alpha-overlay') {
       store.addQuad(DataFactory.quad(relationshipNode, DataFactory.namedNode(iridisVocab.overlayAlpha), ReasonAnnotate.authoredNumber(relationship.alpha)));
     }
-  }
-
-  private static relationshipSources(relationship: RoleRelationshipEntity.Type): readonly string[] {
-    if (relationship.operation === 'alpha-overlay') {
-      return [relationship.base, relationship.overlay];
-    }
-    if (relationship.operation === 'oklch-interpolate') {
-      return [relationship.source, relationship.toward];
-    }
-    if (relationship.operation === 'hue-target') {
-      const result = relationship.source === undefined ? [] : [relationship.source];
-      return result;
-    }
-    return [relationship.source];
   }
 
   private static emitTolerance(

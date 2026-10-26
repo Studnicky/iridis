@@ -6,6 +6,8 @@ import { RoleRelationshipEntity } from '../entities/RoleRelationshipEntity.ts';
 import { RoleRelationshipGraphEntity } from '../entities/RoleRelationshipGraphEntity.ts';
 import { RoleRelationshipGroupEntity } from '../entities/RoleRelationshipGroupEntity.ts';
 import { ValidationErrorEntity } from '../entities/ValidationErrorEntity.ts';
+import { CompositeKey } from './CompositeKey.ts';
+import { WeakIdentityMemo } from './WeakIdentityMemo.ts';
 
 class GraphIntegrityContext {
   readonly errors: ValidationErrorEntity.Type[] = [];
@@ -22,7 +24,7 @@ class GraphIntegrityContext {
 
 /** Validates graph references that JSON Schema cannot express. */
 export class RoleRelationshipGraphIntegrity {
-  static readonly #results = new WeakMap<object, Map<string, readonly ValidationErrorEntity.Type[]>>();
+  static readonly #results = new WeakIdentityMemo<object, Map<string, readonly ValidationErrorEntity.Type[]>>();
   static validate(schema: NonNullable<InputEntity.Type['roles']>): ValidationErrorEntity.Type[] {
     const graph = schema.relationshipGraph === undefined
       ? undefined
@@ -30,14 +32,18 @@ export class RoleRelationshipGraphIntegrity {
     if (graph === undefined) {
       return [];
     }
-    const rolesKey = schema.roles
+    const roleNames = schema.roles
       .map((role) => { return role.name; })
       .toSorted((left, right) => {
         const result = left.localeCompare(right);
         return result;
-      })
-      .join('\u0000');
-    const cached = this.#results.get(graph)?.get(rolesKey);
+      });
+    const rolesKey = CompositeKey.of(...roleNames);
+    const entries = this.#results.get(graph, () => {
+      const result = new Map<string, readonly ValidationErrorEntity.Type[]>();
+      return result;
+    });
+    const cached = entries.get(rolesKey);
     if (cached !== undefined) {
       return [...cached];
     }
@@ -50,9 +56,7 @@ export class RoleRelationshipGraphIntegrity {
         this.#validateGroup(context, admittedGroup, groupIndex);
       }
     }
-    const entries = this.#results.get(graph) ?? new Map<string, readonly ValidationErrorEntity.Type[]>();
     entries.set(rolesKey, context.errors);
-    this.#results.set(graph, entries);
     return [...context.errors];
   }
 

@@ -2,8 +2,10 @@ import type { CanonicalShapeType, NominalSchemaType } from '@studnicky/json-tolo
 import type { JSONSchema7Type } from 'json-schema';
 
 import { EntityCompiler } from '@studnicky/entity/node';
+import { JsonObject } from '@studnicky/types/node';
 
 import { RoleSchemaSchema } from '../model/RoleSchemaSchema.ts';
+import { WeakIdentityMemo } from '../model/WeakIdentityMemo.ts';
 import { RoleRelationshipGraphEntity } from './RoleRelationshipGraphEntity.ts';
 
 /** Schema-authored palette-role vocabulary and its contrast requirements. */
@@ -15,25 +17,51 @@ export namespace RoleSchemaEntity {
   };
 
   class SchemaIntake {
-    static readonly #cache = new WeakMap<object, Type>();
+    static readonly #cache = new WeakIdentityMemo<object, Type>();
     static readonly #intake = EntityCompiler.compileIntake<Type>(Schema);
 
     static intake(value: JSONSchema7Type | object): Type {
       if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-        const result = SchemaIntake.#intake(value);
+        const result = SchemaIntake.freeze(SchemaIntake.#intake(value));
         return result;
       }
-      const cached = SchemaIntake.#cache.get(value);
-      if (cached !== undefined) {
-        return cached;
-      }
-      const admitted = SchemaIntake.#intake(value);
-      const graphSource = admitted.relationshipGraph;
-      const result = graphSource === undefined
-        ? admitted
-        : { ...admitted, 'relationshipGraph': RoleRelationshipGraphEntity.intake(graphSource) };
-      SchemaIntake.#cache.set(value, result);
+      const result = SchemaIntake.#cache.get(value, () => {
+        const admitted = SchemaIntake.#intake(value);
+        const graphSource = admitted.relationshipGraph;
+        const normalized = graphSource === undefined
+          ? admitted
+          : { ...admitted, 'relationshipGraph': RoleRelationshipGraphEntity.intake(graphSource) };
+        const frozen = SchemaIntake.freeze(normalized);
+        return frozen;
+      });
       return result;
+    }
+
+    private static freeze(value: Type): Type {
+      SchemaIntake.freezeValue(value, new WeakSet<object>());
+      return value;
+    }
+
+    private static freezeValue(value: object, seen: WeakSet<object>): void {
+      if (seen.has(value)) {
+        return;
+      }
+      seen.add(value);
+      const keys = Reflect.ownKeys(value);
+      for (let index = 0; index < keys.length; index += 1) {
+        const key = keys[index];
+        if (key === undefined) {
+          continue;
+        }
+        const descriptor = Object.getOwnPropertyDescriptor(value, key);
+        if (
+          descriptor !== undefined &&
+          (JsonObject.is(descriptor.value) || Array.isArray(descriptor.value))
+        ) {
+          SchemaIntake.freezeValue(descriptor.value, seen);
+        }
+      }
+      Object.freeze(value);
     }
   }
 

@@ -11,9 +11,11 @@ import { RoleRelationshipGraphEntity } from '../entities/RoleRelationshipGraphEn
 import { RoleRelationshipGroupEntity } from '../entities/RoleRelationshipGroupEntity.ts';
 import { hueResolutionChroma } from '../math/HueResolutionChroma.ts';
 import { Metadata } from '../types/metadata.ts';
+import { CompositeKey } from './CompositeKey.ts';
 import { RelationshipConstraintDomain } from './RelationshipConstraintDomain.ts';
 import { RelationshipHueDegrees } from './RelationshipHueDegrees.ts';
 import { RelationshipSources } from './RelationshipSources.ts';
+import { WeakIdentityMemo } from './WeakIdentityMemo.ts';
 
 class RelationshipResolutionSource {
   static create(
@@ -70,8 +72,6 @@ class RelationshipConstraintContext {
 
 class RelationshipConstraintGraphContext {
   readonly graph: RoleRelationshipGraphEntity.Type;
-  readonly relationIds = new Map<string, string | undefined>();
-  readonly resolutions = new WeakMap<object, RelationshipConstraintContext>();
   readonly selectionsByIdentifier = new Map<string, RelationshipSelection>();
   readonly selectionsByTarget = new Map<string, RelationshipSelection>();
   latest: RelationshipConstraintContext | undefined;
@@ -92,21 +92,12 @@ class RelationshipConstraintGraphContext {
         const relationship = RoleRelationshipEntity.intake(rawRelationship);
         const selection = new RelationshipSelection(group, relationship);
         this.selectionsByIdentifier.set(
-          RelationshipConstraintGraphContext.key(group.id, relationship.id),
+          CompositeKey.of(group.id, relationship.id),
           selection
         );
         this.selectionsByTarget.set(relationship.target, selection);
       }
     }
-  }
-
-  relationId(roleName: string): string | undefined {
-    let result = this.relationIds.get(roleName);
-    if (result === undefined && !this.relationIds.has(roleName)) {
-      result = this.selectionsByTarget.get(roleName)?.relationship.id;
-      this.relationIds.set(roleName, result);
-    }
-    return result;
   }
 
   selection(
@@ -116,20 +107,16 @@ class RelationshipConstraintGraphContext {
     const result = resolution === undefined
       ? this.selectionsByTarget.get(roleName)
       : this.selectionsByIdentifier.get(
-        RelationshipConstraintGraphContext.key(resolution.groupId, resolution.relationshipId)
+        CompositeKey.of(resolution.groupId, resolution.relationshipId)
       );
-    return result;
-  }
-
-  private static key(groupId: string, relationshipId: string): string {
-    const result = groupId + String.fromCharCode(0) + relationshipId;
     return result;
   }
 }
 
 /** Reads authored graph relationships and their optional exact runtime constraint baselines. */
 export class RelationshipConstraint {
-  static readonly #contexts = new WeakMap<object, RelationshipConstraintGraphContext>();
+  static readonly #contexts = new WeakIdentityMemo<object, RelationshipConstraintGraphContext>();
+  static readonly #resolutionContexts = WeakIdentityMemo.pair<object, object, RelationshipConstraintContext>();
 
   static allows(
     input: InputEntity.Type,
@@ -240,23 +227,22 @@ export class RelationshipConstraint {
     ) {
       return new RelationshipConstraintContext(graphContext, metadata);
     }
-    let result = graphContext.resolutions.get(resolutionSource);
-    if (result === undefined) {
-      result = new RelationshipConstraintContext(graphContext, metadata);
+    const result = RelationshipConstraint.#resolutionContexts.get(graphSource, resolutionSource, () => {
+      const next = new RelationshipConstraintContext(graphContext, metadata);
       const previous = graphContext.latest;
       if (previous !== undefined) {
         for (const [roleName, domain] of previous.domains) {
           if (RelationshipConstraint.sameResolutionEntry(roleName, {
-            'nextSource': result.resolutionSource,
+            'nextSource': next.resolutionSource,
             'previousSource': previous.resolutionSource
           })) {
-            result.domains.set(roleName, domain);
+            next.domains.set(roleName, domain);
           }
         }
       }
-      graphContext.resolutions.set(resolutionSource, result);
-      graphContext.latest = result;
-    }
+      graphContext.latest = next;
+      return next;
+    });
     return result;
   }
 
@@ -288,7 +274,7 @@ export class RelationshipConstraint {
       if (roleName === undefined) {
         continue;
       }
-      const relationId = context.relationId(roleName);
+      const relationId = context.selectionsByTarget.get(roleName)?.relationship.id;
       if (relationId !== undefined) {
         relationIds.add(relationId);
       }
@@ -342,13 +328,11 @@ export class RelationshipConstraint {
   private static graphContext(
     graphSource: object
   ): RelationshipConstraintGraphContext {
-    let result = RelationshipConstraint.#contexts.get(graphSource);
-    if (result === undefined) {
-      result = new RelationshipConstraintGraphContext(
-        RoleRelationshipGraphEntity.intake(graphSource)
-      );
-      RelationshipConstraint.#contexts.set(graphSource, result);
-    }
+    const result = RelationshipConstraint.#contexts.get(graphSource, () => {
+      const graph = RoleRelationshipGraphEntity.intake(graphSource);
+      const context = new RelationshipConstraintGraphContext(graph);
+      return context;
+    });
     return result;
   }
 

@@ -21,6 +21,7 @@ import { contrastApca } from '../../math/ContrastApca.ts';
 import { contrastWcag21 } from '../../math/ContrastWcag21.ts';
 import { ensureContrast } from '../../math/EnsureContrast.ts';
 import { RelationshipConstraint } from '../../model/RelationshipConstraint.ts';
+import { WeakIdentityMemo } from '../../model/WeakIdentityMemo.ts';
 import { Metadata } from '../../types/metadata.ts';
 import { contrastCoordinateCounters } from './ContrastCoordinateCounters.ts';
 import { ContrastPolicy } from './ContrastPolicy.ts';
@@ -204,7 +205,7 @@ class ContrastProvenance {
 }
 
 class ContrastRangeCache {
-  static readonly #values = new WeakMap<
+  static readonly #values = new WeakIdentityMemo<
     PaletteStateInterface['input'],
     ReadonlyMap<string, ContrastPolicy.RoleRangeInterface>
   >();
@@ -215,11 +216,7 @@ class ContrastRangeCache {
     coordinate: Readonly<{ 'c': number; 'l': number }>
   ): boolean {
     const range = ContrastRangeCache.range(input, roleName);
-    const result =
-      (range.chromaRange === undefined ||
-        (coordinate.c >= range.chromaRange[0] && coordinate.c <= range.chromaRange[1])) &&
-      (range.lightnessRange === undefined ||
-        (coordinate.l >= range.lightnessRange[0] && coordinate.l <= range.lightnessRange[1]));
+    const result = ContrastPolicy.allowsRange(range, coordinate);
     return result;
   }
 
@@ -235,28 +232,25 @@ class ContrastRangeCache {
   private static values(
     input: PaletteStateInterface['input']
   ): ReadonlyMap<string, ContrastPolicy.RoleRangeInterface> {
-    const cached = ContrastRangeCache.#values.get(input);
-    if (cached !== undefined) {
-      return cached;
-    }
-    const values = new Map<string, ContrastPolicy.RoleRangeInterface>();
-    const definitions = input.roles?.roles ?? [];
-    for (let index = 0; index < definitions.length; index += 1) {
-      const definition = definitions[index];
-      if (definition === undefined) {
-        continue;
+    const result = ContrastRangeCache.#values.get(input, () => {
+      const values = new Map<string, ContrastPolicy.RoleRangeInterface>();
+      const definitions = input.roles?.roles ?? [];
+      for (let index = 0; index < definitions.length; index += 1) {
+        const definition = definitions[index];
+        if (definition !== undefined) {
+          values.set(definition.name, {
+            ...(definition.chromaRange === undefined
+              ? {}
+              : { 'chromaRange': definition.chromaRange }),
+            ...(definition.lightnessRange === undefined
+              ? {}
+              : { 'lightnessRange': definition.lightnessRange })
+          });
+        }
       }
-      values.set(definition.name, {
-        ...(definition.chromaRange === undefined
-          ? {}
-          : { 'chromaRange': definition.chromaRange }),
-        ...(definition.lightnessRange === undefined
-          ? {}
-          : { 'lightnessRange': definition.lightnessRange })
-      });
-    }
-    ContrastRangeCache.#values.set(input, values);
-    return values;
+      return values;
+    });
+    return result;
   }
 }
 

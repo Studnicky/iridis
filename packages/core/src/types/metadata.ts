@@ -4,10 +4,11 @@ import { ContrastReportEntity } from '../entities/ContrastReportEntity.ts';
 import { EngineMetadataEntity } from '../entities/EngineMetadataEntity.ts';
 import { RelationshipResolutionEntity } from '../entities/RelationshipResolutionEntity.ts';
 import { RoleProvenanceEntity } from '../entities/RoleProvenanceEntity.ts';
+import { WeakIdentityMemo } from '../model/WeakIdentityMemo.ts';
 
 /** Validates known metadata slots at intake and serializes dynamic runtime Maps at the metadata boundary. */
 export class Metadata {
-  static readonly #relationshipResolutionEntries = new WeakMap<object, RelationshipResolutionEntity.Type>();
+  static readonly #relationshipResolutionEntries = new WeakIdentityMemo<object, RelationshipResolutionEntity.Type>();
   static #recordFromEntries<ValueType>(
     entries: Iterable<readonly [string, ValueType]>
   ): Record<string, ValueType> {
@@ -122,12 +123,10 @@ export class Metadata {
       const result = RelationshipResolutionEntity.intake(entry);
       return result;
     }
-    const cached = Metadata.#relationshipResolutionEntries.get(entry);
-    if (cached !== undefined) {
-      return cached;
-    }
-    const result = RelationshipResolutionEntity.intake(entry);
-    Metadata.#relationshipResolutionEntries.set(entry, result);
+    const result = Metadata.#relationshipResolutionEntries.get(entry, () => {
+      const admitted = RelationshipResolutionEntity.intake(entry);
+      return admitted;
+    });
     return result;
   }
 
