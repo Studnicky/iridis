@@ -2,10 +2,7 @@ import { coreTasks } from '@studnicky/iridis';
 import { contrastPlugin } from '@studnicky/iridis-contrast';
 
 import { COLOR_PIPELINE } from '~/composables/colorPipeline.ts';
-import { deriveRoleRelations } from '~/theme/DeriveRoleRelations.ts';
-import { deriveSemanticHues } from '~/theme/DeriveSemanticHues.ts';
 import { intakeHexHint } from '~/theme/IntakeHexHint.ts';
-import { pinDerivedRoles } from '~/theme/PinDerivedRoles.ts';
 
 class PipelineStage {
   public readonly description: string;
@@ -58,7 +55,7 @@ export const buildPipelinePhaseGroups = class PipelinePhaseGroupsBuilder {
   ];
 
   private static readonly tasksByName = new Map(
-    [...coreTasks, intakeHexHint, deriveSemanticHues, pinDerivedRoles, deriveRoleRelations, ...contrastPlugin.tasks()].map((task) => {
+    [...coreTasks, intakeHexHint, ...contrastPlugin.tasks()].map((task) => {
       return [task.name, task];
     })
   );

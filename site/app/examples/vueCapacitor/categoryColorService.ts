@@ -59,7 +59,7 @@ class CategoryColorService {
     this.engine.pipeline([
       'intake:any',
       'resolve:roles',
-      'expand:family',
+      'derive:roleRelations',
       'enforce:compliance',
       'derive:variant',
       'report:compliance',

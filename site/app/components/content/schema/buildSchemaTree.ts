@@ -50,6 +50,22 @@ class SchemaTreeTier {
 }
 
 export const buildSchemaTree = class SchemaTreeBuilder {
+  private static relationshipSources(schema: RoleSchemaEntity.Type): ReadonlyMap<string, string> {
+    const sources = new Map<string, string>();
+    const groups = schema.relationshipGraph?.groups ?? [];
+    for (let groupIndex = 0; groupIndex < groups.length; groupIndex += 1) {
+      const relationships = groups[groupIndex]?.relationships ?? [];
+      for (let relationshipIndex = 0; relationshipIndex < relationships.length; relationshipIndex += 1) {
+        const relationship = relationships[relationshipIndex];
+        if (relationship === undefined || relationship.operation === 'alpha-overlay' || relationship.operation === 'hue-target') {
+          continue;
+        }
+        sources.set(relationship.target, relationship.source);
+      }
+    }
+    return sources;
+  }
+
   private static createTier(
     schema: RoleSchemaEntity.Type,
     label: string,
@@ -61,6 +77,7 @@ export const buildSchemaTree = class SchemaTreeBuilder {
     }
   ): SchemaTreeTier {
     const leafRows = new Map<string, SchemaTreeLeaf>();
+    const relationshipSources = SchemaTreeBuilder.relationshipSources(schema);
     const sortableRows: RoleSortableRowEntity.Type[] = [];
     for (let roleIndex = 0; roleIndex < schema.roles.length; roleIndex += 1) {
       const role = schema.roles[roleIndex];
@@ -78,7 +95,9 @@ export const buildSchemaTree = class SchemaTreeBuilder {
         'name': role.name,
         'ratio': row?.ratio ?? 1
       });
-      const leaf = new SchemaTreeLeaf(sortableRow, label, { 'derivedFrom': role.derivedFrom });
+      const leaf = new SchemaTreeLeaf(sortableRow, label, {
+        'derivedFrom': relationshipSources.get(role.name)
+      });
       leafRows.set(role.name, leaf);
       sortableRows.push(sortableRow);
     }

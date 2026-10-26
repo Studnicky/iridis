@@ -50,24 +50,6 @@ export const buildRoleMathDerivedDetailsModel = class RoleMathDerivedDetailsMode
           `${definition.chromaRange[0].toFixed(3)}–${definition.chromaRange[1].toFixed(3)}`
         ));
       }
-      if (definition.lightnessOffset !== undefined) {
-        metrics.push(new RoleMathDerivedMetric(
-          'Lightness Offset',
-          definition.lightnessOffset.toFixed(3)
-        ));
-      }
-      if (definition.chromaScale !== undefined) {
-        metrics.push(new RoleMathDerivedMetric(
-          'Chroma Scale',
-          definition.chromaScale.toFixed(3)
-        ));
-      }
-      if (definition.hue !== undefined) {
-        metrics.push(new RoleMathDerivedMetric('Hue Angle', `${definition.hue}°`));
-      }
-      if (definition.hueClamp !== undefined) {
-        metrics.push(new RoleMathDerivedMetric('Hue Clamp', `${definition.hueClamp}°`));
-      }
     }
 
     return new RoleMathDerivedDetailsModel(
