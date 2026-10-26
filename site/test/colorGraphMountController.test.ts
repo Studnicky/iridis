@@ -304,7 +304,6 @@ class IdleScenario {
     };
     controller.mount();
     await MountedGraph.settled(controller);
-    controller.armIdle();
 
     return controller;
   }
@@ -388,6 +387,8 @@ await test('rapid input and idle cycles leave one live graph and no timers after
     assert.equal(host.liveCount(), 0);
     assert.equal(controller.noteActivity(), true);
     controller.mount();
+    assert.equal(controller.pendingTimerCount(), 0);
+    await MountedGraph.settled(controller);
     controller.noteActivity();
     controller.noteActivity();
     assert.equal(host.liveCount(), 1);
@@ -399,4 +400,84 @@ await test('rapid input and idle cycles leave one live graph and no timers after
   assert.equal(host.liveCount(), 0);
   assert.equal(controller.pendingTimerCount(), 0);
   assert.equal(host.constructed, cycles + 1);
+});
+
+await test('the idle interval does not run while the graph is constructing or fitting', async (context) => {
+  context.mock.timers.enable({ 'apis': ['setTimeout'] });
+  const host = new FakeHost();
+  const controller = ColorGraphMountController.create(host, FakeHost.idleSuspendMs);
+
+  host.idleHandler = () => {
+    controller.suspendIdle();
+  };
+  controller.mount();
+  controller.noteActivity();
+  context.mock.timers.tick(FakeHost.idleSuspendMs * 2);
+
+  assert.equal(host.liveCount(), 1);
+
+  await MountedGraph.ready(controller);
+  controller.signal(ColorGraphLifecycleEvent.fitArmed());
+  await MountedGraph.drain();
+  controller.noteActivity();
+  context.mock.timers.tick(FakeHost.idleSuspendMs * 2);
+
+  assert.equal(controller.getState().variant, 'fitting');
+  assert.equal(host.liveCount(), 1);
+  assert.equal(controller.pendingTimerCount(), 0);
+});
+
+await test('the idle interval is measured from entering settled', async (context) => {
+  context.mock.timers.enable({ 'apis': ['setTimeout'] });
+  const host = new FakeHost();
+  const controller = ColorGraphMountController.create(host, FakeHost.idleSuspendMs);
+
+  host.idleHandler = () => {
+    controller.suspendIdle();
+  };
+  controller.mount();
+  await MountedGraph.ready(controller);
+  controller.signal(ColorGraphLifecycleEvent.fitArmed());
+  await MountedGraph.drain();
+  context.mock.timers.tick(FakeHost.idleSuspendMs * 5);
+  controller.signal(ColorGraphLifecycleEvent.fitSettled());
+  await MountedGraph.drain();
+  context.mock.timers.tick(FakeHost.idleSuspendMs - 1);
+
+  assert.equal(host.liveCount(), 1);
+
+  context.mock.timers.tick(1);
+  await MountedGraph.drain();
+
+  assert.equal(host.liveCount(), 0);
+  assert.equal(controller.getState().variant, 'suspended');
+});
+
+await test('leaving settled cancels the countdown and settling again restarts it', async (context) => {
+  context.mock.timers.enable({ 'apis': ['setTimeout'] });
+  const host = new FakeHost();
+  const controller = await IdleScenario.settledController(host);
+
+  assert.equal(controller.pendingTimerCount(), 1);
+  context.mock.timers.tick(FakeHost.idleSuspendMs - 1);
+  controller.signal(ColorGraphLifecycleEvent.zoomed());
+  await MountedGraph.drain();
+
+  assert.equal(controller.getState().variant, 'zooming');
+  assert.equal(controller.pendingTimerCount(), 0);
+
+  context.mock.timers.tick(FakeHost.idleSuspendMs * 2);
+
+  assert.equal(host.liveCount(), 1);
+
+  controller.signal(ColorGraphLifecycleEvent.zoomEnded());
+  await MountedGraph.drain();
+  context.mock.timers.tick(FakeHost.idleSuspendMs - 1);
+
+  assert.equal(host.liveCount(), 1);
+
+  context.mock.timers.tick(1);
+  await MountedGraph.drain();
+
+  assert.equal(host.liveCount(), 0);
 });

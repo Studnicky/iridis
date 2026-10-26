@@ -18,6 +18,7 @@ const PROFILE_MS = Number(cliValue('--duration', process.env.IRIDIS_VIZ_PROFILE_
 const DEBUG_WAIT_MS = Number(cliValue('--wait-ms', process.env.IRIDIS_VIZ_WAIT_MS ?? '0'));
 
 const TARGET_SETTLE_MS = 900;
+const IDLE_SUSPENSION_TIMEOUT_MS = 120000;
 
 async function clickVisibleButton(scope, name) {
   const buttons = scope.getByRole('button', { 'exact': true, name });
@@ -84,6 +85,10 @@ async function deactivateGraph(page) {
   await page.evaluate(() => new Promise((resolveFrame) => {
     requestAnimationFrame(() => { requestAnimationFrame(resolveFrame); });
   }));
+}
+
+async function awaitIdleSuspension(page) {
+  await page.locator('#explore .cg-wrap[data-graph-state="suspended"]').waitFor({ 'state': 'attached', 'timeout': IDLE_SUSPENSION_TIMEOUT_MS });
 }
 
 async function waitForSettledTarget(page, selector) {
@@ -341,6 +346,9 @@ export class VisualizationProfileStaticFile {
 export class VisualizationProfileBudget {
   static minimumFrameCount = 5;
 
+  /** One display refresh at 60 Hz; frame times land on multiples of it. */
+  static vsyncStepMs = 1000 / 60;
+
   /** Scenes without live WebGL. */
   static mermaid = Object.freeze({
     'maximumAverageFrameMs': 30,
@@ -352,20 +360,32 @@ export class VisualizationProfileBudget {
     'maximumP90FrameMs': 40,
   });
 
-  /** The live WebGL graph, in 16.7 ms frame steps; device construction on restore adds discrete long tasks. */
-  static graph = Object.freeze({
-    'maximumAverageFrameMs': 45,
+  /** The live software-rendered WebGL graph; bounds regressions while the graph is drawing. */
+  static graphLive = Object.freeze({
+    'maximumAverageFrameMs': 60,
+    'maximumCanvasElements': 4,
+    'maximumDomElements': 7000,
+    'maximumFrameMs': 250,
+    'maximumLongTaskCount': 30,
+    'maximumLongTaskTotalMs': 2500,
+    'maximumP90FrameMs': 100,
+  });
+
+  /** The graph after idle suspension: the strict limits, with an average that allows for the carousel face the idle graph sits on. */
+  static graphIdle = Object.freeze({
+    'maximumAverageFrameMs': 36,
     'maximumCanvasElements': 4,
     'maximumDomElements': 7000,
     'maximumFrameMs': 150,
-    'maximumLongTaskCount': 6,
-    'maximumLongTaskTotalMs': 400,
-    'maximumP90FrameMs': 60,
+    'maximumLongTaskCount': 1,
+    'maximumLongTaskTotalMs': 75,
+    'maximumP90FrameMs': 40,
   });
 
   static classByTarget = new Map([
-    ['graph', 'graph'],
-    ['graphDpad', 'graph'],
+    ['graph', 'graphLive'],
+    ['graphDpad', 'graphLive'],
+    ['graphIdle', 'graphIdle'],
     ['mermaid', 'mermaid'],
     ['mermaidDpad', 'mermaid'],
   ]);
@@ -471,6 +491,13 @@ export class VisualizationProfileOperation {
         'interaction': () => pressDpadButtons(page.locator(graphDpad)),
         'name': 'graphDpad',
         'selector': graphDpad + ' .dagonizer-dpad-btn[aria-label="Zoom in"]',
+      }));
+
+      await awaitIdleSuspension(page);
+      report.push(await runTarget(page, {
+        'interaction': () => Promise.resolve(),
+        'name': 'graphIdle',
+        'selector': '.cg-snapshot canvas',
       }));
 
       await deactivateGraph(page);
