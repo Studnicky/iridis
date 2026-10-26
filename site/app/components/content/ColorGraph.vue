@@ -88,6 +88,7 @@ const loadError = ref<string | null>(null);
 const zoomLevel = ref(1);
 const fitZoomLevel = ref<number | null>(null);
 const fullscreen = ref(false);
+const reframeCount = ref(0);
 
 const graph = shallowRef<Graph | null>(null);
 
@@ -108,7 +109,7 @@ let pendingPaint = false;
 let pendingLabelPaint = false;
 let isGraphVisible = true;
 let isInView = true;
-let appliedStructureKey: string | null = null;
+let appliedLayoutKey: string | null = null;
 let savedView: ColorGraphViewStateInterface | null = null;
 
 function isEnabled(): boolean {
@@ -330,7 +331,7 @@ function resetGraphState(): void {
   isInView = true;
   pendingPaint = false;
   pendingLabelPaint = false;
-  appliedStructureKey = null;
+  appliedLayoutKey = null;
   fitZoomLevel.value = null;
   lastLabelPaintAt = 0;
 }
@@ -601,7 +602,7 @@ function paint(): void {
   const buffers = buildColorGraphBuffers.build(mathList.value, categoryVisible.value);
   const { positions, colors, sizes, links, linkColors, meta } = buffers;
   const shouldReframe = buildColorGraphBuffers.requiresStructuralApply(
-    appliedStructureKey,
+    appliedLayoutKey,
     buffers
   );
   const restoredView = shouldReframe && savedView?.positions.length === positions.length ? savedView : null;
@@ -612,6 +613,7 @@ function paint(): void {
     return;
   }
   if (shouldReframe) {
+    reframeCount.value += 1;
     handle.setPointPositions(positions);
     handle.trackPointPositionsByIndices(meta.map((_, index) => index));
     handle.setLinks(links);
@@ -626,7 +628,7 @@ function paint(): void {
   if (positions.length === 0) { controller.releaseSnapshot(); scheduleLabelPaint(); return; }
   if (shouldReframe) {
     armFitSequence(true);
-    appliedStructureKey = buffers.structureKey;
+    appliedLayoutKey = buffers.layoutKey;
   }
   scheduleLabelPaint();
 }
@@ -642,7 +644,7 @@ function restoreView(handle: Graph, buffers: ReturnType<typeof buildColorGraphBu
   handle.setLinkColors(buffers.linkColors);
   handle.render(0, 0);
   fitZoomLevel.value = view.fitZoomLevel;
-  appliedStructureKey = buffers.structureKey;
+  appliedLayoutKey = buffers.layoutKey;
   viewRestorer.start(view.zoomLevel, () => { completeRestore(handle, view); });
 }
 
@@ -729,6 +731,7 @@ function paintLabels(): void {
     v-model:snapshot-ref="snapshotRef"
     :fullscreen="fullscreen"
     :lifecycle="lifecycleState.variant"
+    :reframes="reframeCount"
     :loading="loading"
     :load-error="loadError"
     :legend-machine="legendMachine"

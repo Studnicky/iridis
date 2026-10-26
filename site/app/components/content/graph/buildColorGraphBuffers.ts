@@ -31,6 +31,7 @@ class ColorGraphPointMeta {
 
 class ColorGraphBuffers {
   public readonly colors: Float32Array;
+  public readonly layoutKey: string;
   public readonly linkColors: Float32Array;
   public readonly links: Float32Array;
   public readonly meta: ColorGraphPointMeta[];
@@ -40,6 +41,7 @@ class ColorGraphBuffers {
 
   public constructor(
     colors: Float32Array,
+    layoutKey: string,
     linkColors: Float32Array,
     links: Float32Array,
     meta: ColorGraphPointMeta[],
@@ -48,6 +50,7 @@ class ColorGraphBuffers {
     structureKey: string
   ) {
     this.colors = colors;
+    this.layoutKey = layoutKey;
     this.linkColors = linkColors;
     this.links = links;
     this.meta = meta;
@@ -171,6 +174,7 @@ export const buildColorGraphBuffers = class ColorGraphBuffersBuilder {
     ColorGraphBuffersBuilder.populateColors(geometry, roles, visible, colors, linkColors);
     const buffers = new ColorGraphBuffers(
       new Float32Array(colors),
+      ColorGraphBuffersBuilder.layoutSignatureForRoles(roles),
       new Float32Array(linkColors),
       geometry.links,
       ColorGraphBuffersBuilder.metaForRoles(roles),
@@ -399,6 +403,18 @@ export const buildColorGraphBuffers = class ColorGraphBuffersBuilder {
     return geometryCache;
   }
 
+  /** Names and lineage decide where nodes sit; a role changing category alone keeps the layout. */
+  private static layoutSignatureForRoles(roles: readonly RoleMathEntry[]): string {
+    const roleSignatures: string[] = [];
+    for (let index = 0; index < roles.length; index++) {
+      const role = roles[index];
+      if (role === undefined) {continue;}
+      roleSignatures.push(`${role.name}:${role.parentRole ?? ''}`);
+    }
+    const signature = roleSignatures.join('|');
+    return signature;
+  }
+
   private static structureSignatureForRoles(roles: readonly RoleMathEntry[]): string {
     const roleCount = roles.length;
     if (roleCount === 0) {
@@ -499,7 +515,7 @@ export const buildColorGraphBuffers = class ColorGraphBuffersBuilder {
     appliedStructureKey: string | null,
     buffers: ColorGraphBuffers
   ): boolean {
-    const requiresApply = buffers.structureKey !== appliedStructureKey;
+    const requiresApply = buffers.layoutKey !== appliedStructureKey;
     return requiresApply;
   }
 

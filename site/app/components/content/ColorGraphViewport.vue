@@ -5,6 +5,7 @@ import { LegendMachine } from './viz/LegendMachine.ts';
 const props = defineProps<{
   fullscreen: boolean;
   lifecycle: string;
+  reframes: number;
   loading: boolean;
   loadError: string | null;
   zoomLevel: number;
@@ -41,6 +42,7 @@ const snapshotRef = defineModel<HTMLDivElement | null>('snapshotRef', { default:
       class="cg-wrap"
       :class="{ 'cg-wrap--fullscreen': fullscreen }"
       :data-graph-state="lifecycle"
+      :data-graph-reframes="reframes"
       @focusin="emit('activity')"
       @keydown="emit('activity')"
       @pointerdown="emit('activity')"

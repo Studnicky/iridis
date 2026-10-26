@@ -7,6 +7,7 @@ import { test } from 'node:test';
 import { ProductionNitroServer } from './fixtures/ProductionNitroServer.ts';
 
 class ColorGraphLifecycleBrowser {
+  static readonly cpuThrottleRate = 4;
   static readonly graphWaitMs = 60_000;
   static readonly wheelAttemptMs = 3_000;
   static readonly wheelAttempts = 12;
@@ -336,6 +337,9 @@ await test('an idle graph disposes its live instance and pointer input restores 
 
   await page.goto(running.origin, { 'waitUntil': 'networkidle' });
   await page.locator('#explore').scrollIntoViewIfNeeded();
+  const session = await page.context().newCDPSession(page);
+
+  await session.send('Emulation.setCPUThrottlingRate', { 'rate': ColorGraphLifecycleBrowser.cpuThrottleRate });
   await ColorGraphLifecycleBrowser.selectGraphCard(page);
   await ColorGraphLifecycleBrowser.awaitState(page, 'settled');
 
@@ -375,11 +379,13 @@ await test('an idle graph disposes its live instance and pointer input restores 
 
     return serialized;
   });
+  const reframes = await page.locator('#explore .cyl-face.active .cg-wrap').getAttribute('data-graph-reframes');
   const series = JSON.stringify({
     'afterThirtyFrames': afterThirtyFrames,
     'afterTwoFrames': afterTwoFrames,
     'atSettled': atSettled,
     'fitZoom': fitZoom,
+    'reframes': reframes,
     'states': states,
     'zoomBefore': zoomBefore
   });

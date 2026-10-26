@@ -481,3 +481,21 @@ await test('leaving settled cancels the countdown and settling again restarts it
 
   assert.equal(host.liveCount(), 0);
 });
+
+await test('fit timers armed before a suspension never fire after the restored graph mounts', async (context) => {
+  context.mock.timers.enable({ 'apis': ['setTimeout'] });
+  const host = new FakeHost();
+  const controller = await IdleScenario.settledController(host);
+  const fired: string[] = [];
+
+  controller.schedule('fit', 1200, () => { fired.push('fit'); });
+  controller.schedule('fit', 1800, () => { fired.push('settleFallback'); });
+  controller.suspend();
+  controller.mount();
+  await MountedGraph.settled(controller);
+  context.mock.timers.tick(FakeHost.idleSuspendMs - 1);
+
+  assert.deepEqual(fired, []);
+  assert.equal(controller.getState().variant, 'settled');
+  assert.equal(host.liveCount(), 1);
+});

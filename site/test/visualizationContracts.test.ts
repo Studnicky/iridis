@@ -132,6 +132,42 @@ await test('parent-only graph revisions require one structural apply across a co
   assert.notDeepEqual(parentRevision.links, initial.links);
   assert.equal(paletteRevision.structureKey, parentRevision.structureKey);
   assert.strictEqual(paletteRevision.positions, parentRevision.positions);
-  assert.equal(buildColorGraphBuffers.requiresStructuralApply(initial.structureKey, paletteRevision), true);
-  assert.equal(buildColorGraphBuffers.requiresStructuralApply(paletteRevision.structureKey, paletteRevision), false);
+  assert.equal(buildColorGraphBuffers.requiresStructuralApply(initial.layoutKey, paletteRevision), true);
+  assert.equal(buildColorGraphBuffers.requiresStructuralApply(paletteRevision.layoutKey, paletteRevision), false);
+});
+
+await test('a role changing category alone keeps the layout and needs no structural apply', () => {
+  const visible = new ColorGraphCategoryVisibility();
+  const direct = buildColorGraphBuffers.build([
+    new ColorGraphRoleFixture('#102030', 'background', RoleMathOrigin.Direct, undefined),
+    new ColorGraphRoleFixture('#405060', 'keyword', RoleMathOrigin.Derived, 'background')
+  ], visible);
+  const synthesized = buildColorGraphBuffers.build([
+    new ColorGraphRoleFixture('#102030', 'background', RoleMathOrigin.Synthesized, undefined),
+    new ColorGraphRoleFixture('#405060', 'keyword', RoleMathOrigin.Derived, 'background')
+  ], visible);
+
+  assert.notEqual(synthesized.structureKey, direct.structureKey);
+  assert.equal(synthesized.layoutKey, direct.layoutKey);
+  assert.equal(buildColorGraphBuffers.requiresStructuralApply(direct.layoutKey, synthesized), false);
+});
+
+await test('a role added or re-parented changes the layout key', () => {
+  const visible = new ColorGraphCategoryVisibility();
+  const base = buildColorGraphBuffers.build([
+    new ColorGraphRoleFixture('#102030', 'background', RoleMathOrigin.Direct, undefined),
+    new ColorGraphRoleFixture('#405060', 'keyword', RoleMathOrigin.Derived, 'background')
+  ], visible);
+  const added = buildColorGraphBuffers.build([
+    new ColorGraphRoleFixture('#102030', 'background', RoleMathOrigin.Direct, undefined),
+    new ColorGraphRoleFixture('#405060', 'keyword', RoleMathOrigin.Derived, 'background'),
+    new ColorGraphRoleFixture('#708090', 'string', RoleMathOrigin.Direct, undefined)
+  ], visible);
+  const reparented = buildColorGraphBuffers.build([
+    new ColorGraphRoleFixture('#102030', 'background', RoleMathOrigin.Direct, undefined),
+    new ColorGraphRoleFixture('#405060', 'keyword', RoleMathOrigin.Direct, undefined)
+  ], visible);
+
+  assert.equal(buildColorGraphBuffers.requiresStructuralApply(base.layoutKey, added), true);
+  assert.equal(buildColorGraphBuffers.requiresStructuralApply(base.layoutKey, reparented), true);
 });
