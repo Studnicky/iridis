@@ -14,7 +14,6 @@ import { buildDecorativePalette } from '../app/composables/buildDecorativePalett
 import { ColorStreamHistoryState } from '../app/composables/colorStreamHistoryState.ts';
 import { createRingBuffer } from '../app/composables/createRingBuffer.ts';
 import { driftTarget } from '../app/composables/driftTarget.ts';
-import { resolveFromPalette } from '../app/composables/resolveFromPalette.ts';
 import { tokensForFrame } from '../app/composables/tokensForFrame.ts';
 import { oklchToHex } from '../app/utils/oklchToHex.ts';
 import { HistoryStateResolver } from './fixtures/HistoryStateResolver.ts';
@@ -64,20 +63,6 @@ await test('driftTarget keeps l and h fixed per role, nudges c within the subtle
     assert.notEqual(afterLow.c, afterHigh.c);
     assert.ok(Math.abs(afterHigh.c - before.c) <= 0.035 + 1e-9);
   }
-});
-
-await test('resolveFromPalette retries the build when the initial roleViews read was empty, instead of staying stuck', () => {
-  const stillEmpty = resolveFromPalette({}, []);
-  assert.deepEqual(stillEmpty, {});
-
-  const nowPopulated = resolveFromPalette({}, views);
-  assert.deepEqual(new Set(Object.keys(nowPopulated)), new Set(['accent-alt', 'brand', 'error', 'info', 'success', 'warning']));
-});
-
-await test('resolveFromPalette leaves an already-populated palette untouched', () => {
-  const from = buildDecorativePalette(views);
-  const resolved = resolveFromPalette(from, []);
-  assert.equal(resolved, from);
 });
 
 await test('oklchToHex composes oklchToRgb + rgbToHex into a valid hex string', () => {

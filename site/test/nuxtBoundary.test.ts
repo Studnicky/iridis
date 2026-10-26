@@ -356,23 +356,10 @@ await test('ambient canvas paints the colour drift without writing document root
   const page = await browser.newPage({ 'reducedMotion': 'no-preference', 'viewport': { 'height': 900, 'width': 1280 } });
   await page.goto(origin, { 'waitUntil': 'networkidle' });
   await page.waitForSelector('canvas.ambient-field');
-  await page.evaluate(async () => {
-    const root = document.documentElement;
-    let revision = root.dataset.iridisPaletteRevision;
-    let stableSince = performance.now();
-    await new Promise<void>((resolveSettled) => {
-      const timer = window.setInterval(() => {
-        const current = root.dataset.iridisPaletteRevision;
-        if (current !== revision) {
-          revision = current;
-          stableSince = performance.now();
-        }
-        if (performance.now() - stableSince > 2500) {
-          window.clearInterval(timer);
-          resolveSettled();
-        }
-      }, 100);
-    });
+  await page.waitForFunction(() => {
+    const revision = Number(document.documentElement.dataset.iridisPaletteRevision);
+    const committed = revision > 0;
+    return committed;
   });
 
   const observed = await page.evaluate(async () => {

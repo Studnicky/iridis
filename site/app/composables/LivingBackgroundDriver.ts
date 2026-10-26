@@ -7,7 +7,6 @@ import type { LivingBackgroundFrameInterface } from './interfaces/LivingBackgrou
 import { buildDecorativePalette } from './buildDecorativePalette.ts';
 import { LIVING_BACKGROUND } from './constants/LivingBackgroundConstants.ts';
 import { driftTarget } from './driftTarget.ts';
-import { resolveFromPalette } from './resolveFromPalette.ts';
 import { tokensForFrame } from './tokensForFrame.ts';
 
 /**
@@ -20,6 +19,7 @@ export class LivingBackgroundDriver {
   private animationMs = 0;
   private cycleMs = 0;
   private from: PaletteEntity.Type = {};
+  private ready = false;
   private handle: null | number = null;
   private lastFrame: LivingBackgroundFrameInterface | null = null;
   private lastTimeMs: null | number = null;
@@ -92,25 +92,25 @@ export class LivingBackgroundDriver {
     }
   }
 
-  /** The engine palette resolves asynchronously, so the drift source is retried until it is populated. */
+  /** The engine palette resolves asynchronously, so the drift source is read until the first populated palette is admitted. */
   private ensurePalette(): boolean {
-    this.from = PaletteEntity.intake(resolveFromPalette(this.from, this.options.readViews()));
-    const populated = Object.keys(this.from).length > 0;
-    if (populated && Object.keys(this.target).length === 0) {
-      this.target = PaletteEntity.intake(driftTarget(this.from, this.options.random));
+    if (!this.ready) {
+      this.reseed();
     }
-    return populated;
+    return this.ready;
   }
 
   private frameAt(cycleMs: number): PaletteEntity.Type {
-    const result = PaletteEntity.intake(evaluate(this.from, this.target, cycleMs / LIVING_BACKGROUND.CYCLE_MS));
+    const result = evaluate(this.from, this.target, cycleMs / LIVING_BACKGROUND.CYCLE_MS);
     return result;
   }
 
+  /** Admits the committed palette and a fresh drift target; the only place the palette is validated. */
   private reseed(): void {
-    this.from = PaletteEntity.intake(buildDecorativePalette(this.options.readViews()));
-    this.target = PaletteEntity.intake(driftTarget(this.from, this.options.random));
     this.cycleMs = 0;
+    this.from = PaletteEntity.intake(buildDecorativePalette(this.options.readViews()));
+    this.ready = Object.keys(this.from).length > 0;
+    this.target = this.ready ? PaletteEntity.intake(driftTarget(this.from, this.options.random)) : {};
   }
 
   private schedule(): void {
