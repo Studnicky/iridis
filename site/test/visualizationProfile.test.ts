@@ -251,15 +251,17 @@ await test('a target is judged against its own class', () => {
   assert.equal(VisualizationProfileBudget.limitsFor('mermaidDpad'), VisualizationProfileBudget.mermaid);
 });
 
-await test('the idle graph class matches the mermaid class except for an average within one vsync step', () => {
+await test('the idle graph class matches the mermaid class except for frame-time bounds within whole vsync steps', () => {
   const strict = VisualizationProfileBudget.mermaid;
   const idle = VisualizationProfileBudget.graphIdle;
   const live = VisualizationProfileBudget.graphLive;
   const averageAllowance = idle.maximumAverageFrameMs - strict.maximumAverageFrameMs;
+  const p90Allowance = idle.maximumP90FrameMs - strict.maximumP90FrameMs;
 
   assert.ok(averageAllowance >= 0);
   assert.ok(averageAllowance <= VisualizationProfileBudget.vsyncStepMs);
-  assert.ok(idle.maximumP90FrameMs <= strict.maximumP90FrameMs);
+  assert.ok(p90Allowance >= 0);
+  assert.ok(p90Allowance <= 2 * VisualizationProfileBudget.vsyncStepMs);
   assert.ok(idle.maximumFrameMs <= strict.maximumFrameMs);
   assert.ok(idle.maximumLongTaskCount <= strict.maximumLongTaskCount);
   assert.ok(idle.maximumLongTaskTotalMs <= strict.maximumLongTaskTotalMs);

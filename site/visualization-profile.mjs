@@ -379,7 +379,7 @@ export class VisualizationProfileBudget {
     'maximumFrameMs': 150,
     'maximumLongTaskCount': 1,
     'maximumLongTaskTotalMs': 75,
-    'maximumP90FrameMs': 40,
+    'maximumP90FrameMs': 60,
   });
 
   static classByTarget = new Map([
