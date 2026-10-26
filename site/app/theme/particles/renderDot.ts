@@ -1,16 +1,34 @@
+import type { ParticleDotInterface } from './interfaces/particleDotInterface.ts';
 import type { ParticleRendererInterface } from './interfaces/particleRendererInterface.ts';
 
 import { randomPlacement } from './randomPlacement.ts';
 
-/** The default starfield particle — one `box-shadow` entry per dot, all painted in a single CSS property. */
+/** The default starfield particle — viewport-unit dot placements the ambient canvas paints. */
 class RenderDotOperation {
-  static readonly render: ParticleRendererInterface['render'] = ({ blur, colorVar, count }) => {
-    const dots: string[] = [];
+  static readonly render: ParticleRendererInterface['render'] = ({
+    blur, colorVar, count
+  }) => {
+    const dots: ParticleDotInterface[] = [];
+
     for (let i = 0; i < count; i += 1) {
-      const { x, y } = randomPlacement();
-      dots.push(`${x}vw ${y}vh ${blur} ${colorVar}`);
+      const {
+        x, y
+      } = randomPlacement();
+
+      dots.push({
+        'x': Number(x),
+        'y': Number(y)
+      });
     }
-    return { 'rendering': { 'boxShadow': dots.join(','), 'surface': 'box-shadow' } };
+
+    return {
+      'rendering': {
+        'blurPx': Number.parseFloat(blur),
+        'colorVar': colorVar,
+        'dots': dots,
+        'surface': 'dots'
+      }
+    };
   };
 }
 

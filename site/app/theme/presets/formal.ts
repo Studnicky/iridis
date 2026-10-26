@@ -10,14 +10,20 @@ import { renderDot } from '../particles/renderDot.ts';
  */
 export const formal: ThemeDefinitionInterface = {
   'ambient': {
-    'blobCount':       0,
-    'gooFilter':       'none',
-    'gridDisplay':     'none',
-    'particleCounts':  [0, 0, 0, 0, 0],
+    'blobCount': 0,
+    'gooBlurPx': 0,
+    'gridDisplay': 'none',
+    'particleCounts': [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
     'particleRenderer': renderDot,
     'speedMultiplier': 2.75
   },
   'dataLayout': DataLayoutStrategy.table,
-  'key':   'formal',
+  'key': 'formal',
   'label': 'Formal'
 };

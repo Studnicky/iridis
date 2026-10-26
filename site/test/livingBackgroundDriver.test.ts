@@ -17,9 +17,11 @@ import { VirtualFrameScheduler } from './fixtures/VirtualFrameScheduler.ts';
 
 await test('drift advances the painted colours over frames', () => {
   const harness = new LivingBackgroundHarness();
+
   harness.driver.start();
   harness.environment.scheduler.advance(VirtualFrameScheduler.frameMs);
   const first = harness.frames[0]!;
+
   harness.environment.scheduler.advance(LIVING_BACKGROUND.CYCLE_MS / 2);
   const later = harness.frames.at(-1)!;
 
@@ -30,6 +32,7 @@ await test('drift advances the painted colours over frames', () => {
 await test('drift stays continuous across cycle boundaries', () => {
   const harness = new LivingBackgroundHarness();
   const totalMs = LIVING_BACKGROUND.CYCLE_MS * 2.5;
+
   harness.driver.start();
   harness.environment.scheduler.advance(totalMs);
 
@@ -42,6 +45,7 @@ await test('drift stays continuous across cycle boundaries', () => {
 await test('history records one sample per fixed step regardless of display frame rate', () => {
   const harness = new LivingBackgroundHarness();
   const totalMs = 1000;
+
   harness.driver.start();
   harness.environment.scheduler.advance(totalMs);
 
@@ -51,9 +55,11 @@ await test('history records one sample per fixed step regardless of display fram
 
 await test('a stalled frame catches up by a bounded number of samples', () => {
   const harness = new LivingBackgroundHarness();
+
   harness.driver.start();
   harness.environment.scheduler.advance(VirtualFrameScheduler.frameMs);
   const before = harness.recorder.frames.length;
+
   harness.environment.scheduler.nowMs += 60000;
   harness.environment.scheduler.advance(VirtualFrameScheduler.frameMs);
 
@@ -62,9 +68,11 @@ await test('a stalled frame catches up by a bounded number of samples', () => {
 
 await test('the loop never writes CSS variables to the document root', () => {
   const spy = new RootStyleSpy();
+
   spy.install();
   try {
     const harness = new LivingBackgroundHarness();
+
     harness.driver.start();
     harness.environment.scheduler.advance(LIVING_BACKGROUND.CYCLE_MS * 1.5);
     assert.ok(harness.frames.length > 0);
@@ -78,6 +86,7 @@ await test('the loop never writes CSS variables to the document root', () => {
 
 await test('reduced motion renders one static frame and schedules nothing', () => {
   const harness = new LivingBackgroundHarness();
+
   harness.environment.reduceMotion();
   harness.driver.start();
   harness.environment.scheduler.advance(2000);
@@ -90,6 +99,7 @@ await test('reduced motion renders one static frame and schedules nothing', () =
 
 await test('lifting reduced motion starts the drift', () => {
   const harness = new LivingBackgroundHarness();
+
   harness.environment.reduceMotion();
   harness.driver.start();
   harness.environment.allowMotion();
@@ -101,12 +111,14 @@ await test('lifting reduced motion starts the drift', () => {
 
 await test('a hidden tab pauses the loop and resumes without a time jump', () => {
   const harness = new LivingBackgroundHarness();
+
   harness.driver.start();
   harness.environment.scheduler.advance(500);
   harness.environment.hide();
   const pausedFrames = harness.frames.length;
   const pausedSamples = harness.recorder.frames.length;
   const pausedAnimationMs = harness.frames.at(-1)!.animationMs;
+
   harness.environment.scheduler.advance(5000);
 
   assert.equal(harness.environment.scheduler.hasPending(), false);
@@ -121,10 +133,12 @@ await test('a hidden tab pauses the loop and resumes without a time jump', () =>
 
 await test('stop cancels the pending frame and ignores later environment changes', () => {
   const harness = new LivingBackgroundHarness();
+
   harness.driver.start();
   harness.environment.scheduler.advance(200);
   harness.driver.stop();
   const frameCount = harness.frames.length;
+
   harness.environment.hide();
   harness.environment.show();
   harness.environment.scheduler.advance(500);
@@ -135,6 +149,7 @@ await test('stop cancels the pending frame and ignores later environment changes
 
 await test('the drift waits for the engine palette and starts once it resolves', () => {
   const harness = new LivingBackgroundHarness();
+
   harness.views = [];
   harness.driver.start();
   harness.environment.scheduler.advance(500);
@@ -149,6 +164,7 @@ await test('the drift waits for the engine palette and starts once it resolves',
 
 await test('a committed palette repaints the static frame under reduced motion', () => {
   const harness = new LivingBackgroundHarness();
+
   harness.views = [];
   harness.environment.reduceMotion();
   harness.driver.start();
@@ -164,18 +180,22 @@ await test('a committed palette repaints the static frame under reduced motion',
 await test('the painter draws one glow per blob from the frame tokens and moves them over time', () => {
   const harness = new LivingBackgroundHarness();
   const blobs = AmbientFieldPainter.buildBlobs(4);
+
   harness.driver.start();
   harness.environment.scheduler.advance(VirtualFrameScheduler.frameMs);
   const tokens = harness.frames[0]!.tokens;
 
   const first = new RecordingCanvasContext();
-  AmbientFieldPainter.paint(first, 400, 300, tokens, 0, blobs);
+
+  AmbientFieldPainter.paint(first, 400, 300, tokens, 0, blobs, 7);
   const second = new RecordingCanvasContext();
-  AmbientFieldPainter.paint(second, 400, 300, tokens, 4000, blobs);
+
+  AmbientFieldPainter.paint(second, 400, 300, tokens, 4000, blobs, 7);
 
   assert.equal(blobs.length, 4);
   assert.equal(first.fillRects.length, blobs.length);
   assert.equal(first.clears, 1);
+  assert.equal(first.filter, 'blur(7px)');
   assert.notDeepEqual(first.fillRects, second.fillRects);
   assert.ok(first.stops.length > 0);
   for (let index = 0; index < first.stops.length; index += 1) {
@@ -185,7 +205,8 @@ await test('the painter draws one glow per blob from the frame tokens and moves 
 
 await test('the painter skips blobs whose tokens are absent', () => {
   const context = new RecordingCanvasContext();
-  AmbientFieldPainter.paint(context, 400, 300, {}, 0, AmbientFieldPainter.buildBlobs(3));
+
+  AmbientFieldPainter.paint(context, 400, 300, {}, 0, AmbientFieldPainter.buildBlobs(3), 0);
 
   assert.equal(context.fillRects.length, 0);
   assert.equal(context.clears, 1);

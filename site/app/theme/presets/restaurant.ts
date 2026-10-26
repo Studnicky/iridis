@@ -11,14 +11,20 @@ import { renderDot } from '../particles/renderDot.ts';
  */
 export const restaurant: ThemeDefinitionInterface = {
   'ambient': {
-    'blobCount':       0,
-    'gooFilter':       'none',
-    'gridDisplay':     'none',
-    'particleCounts':  [0, 0, 0, 0, 0],
+    'blobCount': 0,
+    'gooBlurPx': 0,
+    'gridDisplay': 'none',
+    'particleCounts': [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
     'particleRenderer': renderDot,
     'speedMultiplier': 1.75
   },
   'dataLayout': DataLayoutStrategy.list,
-  'key':   'restaurant',
+  'key': 'restaurant',
   'label': 'Restaurant'
 };
