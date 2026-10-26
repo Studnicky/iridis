@@ -154,6 +154,18 @@ class ColorGraphLifecycleBrowser {
     await page.locator('#explore .cyl-face:not(.active) .cg-wrap[data-graph-state="suspended"]').waitFor({ 'timeout': ColorGraphLifecycleBrowser.graphWaitMs });
   }
 
+  static async frames(page: Page, count: number): Promise<void> {
+    await page.evaluate(async (frameCount) => {
+      for (let index = 0; index < frameCount; index += 1) {
+        await new Promise<void>((resolve) => {
+          requestAnimationFrame(() => {
+            resolve();
+          });
+        });
+      }
+    }, count);
+  }
+
   static async awaitIdleSuspension(page: Page): Promise<void> {
     await page.locator('#explore .cyl-face.active .cg-wrap[data-graph-state="suspended"]').waitFor({ 'timeout': ColorGraphLifecycleBrowser.graphWaitMs });
   }
@@ -333,6 +345,14 @@ await test('an idle graph disposes its live instance and pointer input restores 
   await ColorGraphLifecycleBrowser.wheelZoomInSettled(page, canvas, fitZoom);
   const zoomBefore = await ColorGraphLifecycleBrowser.zoomText(page);
 
+  await page.locator('#explore .cyl-face.active .cg-wrap').evaluate((node) => {
+    const log: [number, string | null][] = [];
+
+    Reflect.set(window, '__graphStates', log);
+    new MutationObserver(() => {
+      log.push([Math.round(performance.now()), node.getAttribute('data-graph-state')]);
+    }).observe(node, { 'attributeFilter': ['data-graph-state'], 'attributes': true });
+  });
   await page.mouse.move(0, 0);
   await ColorGraphLifecycleBrowser.awaitIdleSuspension(page);
   const liveCanvases = await page.locator('#explore .cyl-face.active .cg-cosmos canvas').count();
@@ -343,7 +363,28 @@ await test('an idle graph disposes its live instance and pointer input restores 
 
   await page.mouse.move(target[0], target[1]);
   await ColorGraphLifecycleBrowser.awaitState(page, 'settled');
-  const zoomAfter = await ColorGraphLifecycleBrowser.zoomText(page);
+  const atSettled = await ColorGraphLifecycleBrowser.zoomText(page);
 
-  assert.ok(Math.abs(zoomAfter - zoomBefore) / zoomBefore < 0.01, JSON.stringify({ 'zoomAfter': zoomAfter, 'zoomBefore': zoomBefore }));
+  await ColorGraphLifecycleBrowser.frames(page, 2);
+  const afterTwoFrames = await ColorGraphLifecycleBrowser.zoomText(page);
+
+  await ColorGraphLifecycleBrowser.frames(page, 30);
+  const afterThirtyFrames = await ColorGraphLifecycleBrowser.zoomText(page);
+  const states = await page.evaluate(() => {
+    const serialized = JSON.stringify(Reflect.get(window, '__graphStates'));
+
+    return serialized;
+  });
+  const series = JSON.stringify({
+    'afterThirtyFrames': afterThirtyFrames,
+    'afterTwoFrames': afterTwoFrames,
+    'atSettled': atSettled,
+    'fitZoom': fitZoom,
+    'states': states,
+    'zoomBefore': zoomBefore
+  });
+
+  assert.ok(Math.abs(atSettled - zoomBefore) / zoomBefore < 0.01, series);
+  assert.ok(Math.abs(afterTwoFrames - zoomBefore) / zoomBefore < 0.01, series);
+  assert.ok(Math.abs(afterThirtyFrames - zoomBefore) / zoomBefore < 0.01, series);
 });

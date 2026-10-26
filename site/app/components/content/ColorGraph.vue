@@ -34,6 +34,7 @@ import { CameraControls } from './viz/CameraControls.ts';
 import { ColorGraphLifecycleEvent } from './viz/ColorGraphLifecycleEvent.ts';
 import { ColorGraphMountController } from './viz/ColorGraphMountController.ts';
 import type { ColorGraphViewStateInterface } from './viz/ColorGraphViewStateInterface.ts';
+import { ColorGraphViewRestorer } from './viz/ColorGraphViewRestorer.ts';
 import { LegendMachine } from './viz/LegendMachine.ts';
 import { ViewportStatus } from './viz/ViewportStatus.ts';
 
@@ -161,6 +162,7 @@ function constructGraph(): Graph {
 }
 
 function disposeGraph(handle: Graph): void {
+  viewRestorer.cancel();
   cancelFitSequence();
   if (labelRaf !== null) {
     cancelAnimationFrame(labelRaf);
@@ -228,6 +230,16 @@ const controller = ColorGraphMountController.create<Graph, HTMLCanvasElement>({
     );
   }
 }, buildColorGraphViewModel.idleSuspendMs);
+const viewRestorer = ColorGraphViewRestorer.create(
+  {
+    'applyZoom': (zoom: number) => { graph.value?.setZoomLevel(zoom, 0, false); },
+    'readZoom': () => graph.value?.getZoomLevel() ?? 0
+  },
+  {
+    'cancel': (handle: number) => { cancelAnimationFrame(handle); },
+    'request': (run: () => void) => requestAnimationFrame(run)
+  }
+);
 const lifecycleState = shallowRef(controller.getState());
 controller.subscribe((next) => { lifecycleState.value = next; });
 
@@ -620,6 +632,7 @@ function paint(): void {
 }
 
 // A restored graph keeps the point layout, zoom and pan it was disposed with and skips the fit sweep.
+// It reports settled only once the camera reads the saved zoom back on a later frame.
 function restoreView(handle: Graph, buffers: ReturnType<typeof buildColorGraphBuffers.build>, view: ColorGraphViewStateInterface): void {
   handle.setPointPositions(Float32Array.from(view.positions), true);
   handle.trackPointPositionsByIndices(buffers.meta.map((_, index) => index));
@@ -627,17 +640,23 @@ function restoreView(handle: Graph, buffers: ReturnType<typeof buildColorGraphBu
   handle.setPointColors(buffers.colors);
   handle.setPointSizes(buffers.sizes);
   handle.setLinkColors(buffers.linkColors);
-  handle.render(0);
+  handle.render(0, 0);
   fitZoomLevel.value = view.fitZoomLevel;
-  handle.setZoomLevel(view.zoomLevel, 0, false);
+  appliedStructureKey = buffers.structureKey;
+  viewRestorer.start(view.zoomLevel, () => { completeRestore(handle, view); });
+}
+
+function completeRestore(handle: Graph, view: ColorGraphViewStateInterface): void {
+  if (graph.value !== handle) return;
+  const zoom = handle.getZoomLevel();
   const origin = handle.spaceToScreenPosition([0, 0]);
   const panned = buildColorGraphViewportModel.translatePoints(
     view.positions,
-    (view.originScreenX - origin[0]) / view.zoomLevel,
-    (view.originScreenY - origin[1]) / view.zoomLevel
+    (view.originScreenX - origin[0]) / zoom,
+    (view.originScreenY - origin[1]) / zoom
   );
   handle.setPointPositions(panned, true);
-  appliedStructureKey = buffers.structureKey;
+  handle.render(0, 0);
   controller.signal(ColorGraphLifecycleEvent.fitArmed());
   controller.signal(ColorGraphLifecycleEvent.fitSettled());
   controller.signal(ColorGraphLifecycleEvent.zoomEnded());
