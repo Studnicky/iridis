@@ -39,6 +39,8 @@ const resizeObserver = useDebouncedResizeObserver((entries) => {
  */
 const itemWidths = ref<number[]>([]);
 const measureRef = ref<HTMLElement | null>(null);
+/** The hidden measurement clone exists only while a measurement is pending, so settled content is not rendered twice. */
+const isMeasuring = ref(true);
 
 /**
  * Deliberately NOT observed by a ResizeObserver — item widths only change
@@ -49,7 +51,7 @@ const measureRef = ref<HTMLElement | null>(null);
  * path (that one stays pure JS packing over the cached widths).
  */
 function measureItems(): void {
-  if (!measureRef.value) return;
+  if (!measureRef.value) { isMeasuring.value = false; return; }
   const children = Array.from(measureRef.value.children)
     .filter((el): el is HTMLElement => el instanceof HTMLElement);
   const measured = children.map((el) => el.offsetWidth);
@@ -65,6 +67,7 @@ function measureItems(): void {
   const current = itemWidths.value;
   const unchanged = measured.length === current.length
     && measured.every((width, index) => width === current[index]);
+  isMeasuring.value = false;
   if (unchanged) return;
 
   itemWidths.value = measured;
@@ -82,7 +85,10 @@ onUnmounted(() => {
   resizeObserver.disconnect();
 });
 
-watch(() => props.items, () => { nextTick(() => measureItems()); });
+watch(() => props.items, () => {
+  isMeasuring.value = true;
+  nextTick(() => measureItems());
+});
 
 const rows = computed(() => {
   if (props.items.length === 0) return [];
@@ -125,6 +131,7 @@ function getAbsoluteIndex(rIdx: number, iIdx: number) {
          context, so leaving this a plain block keeps every child at its
          natural inline-block size instead of being stretched to fill it. -->
     <div
+      v-if="isMeasuring"
       ref="measureRef"
       class="balanced-measure"
       aria-hidden="true"
