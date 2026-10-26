@@ -11,7 +11,7 @@ import { test } from 'node:test';
 import type { VisualizationProfileLimitsInterface } from './fixtures/VisualizationProfileLimitsInterface.ts';
 
 import {
-  VisualizationProfileBudget, VisualizationProfileCalibration, VisualizationProfileOperation, VisualizationProfileStaticFile
+  VisualizationProfileBudget, VisualizationProfileOperation, VisualizationProfileStaticFile
 } from '../visualization-profile.mjs';
 
 await test('profile static files decode valid paths and remain contained under the public build', (context) => {
@@ -418,7 +418,7 @@ await test('a scale below one is clamped to one and a scale that is not finite i
 });
 
 await test('the environment scale is the frame floor in vsync steps, never below one, and rejects a bad calibration', () => {
-  const step = VisualizationProfileCalibration.referenceWorkloadMs;
+  const step = VisualizationProfileBudget.vsyncStepMs;
 
   assert.equal(VisualizationProfileBudget.environmentScale(step), 1);
   assert.equal(VisualizationProfileBudget.environmentScale(step / 2), 1);
@@ -462,7 +462,7 @@ class StubSteps {
 await test('calibration runs before the scenes and the scenes are judged against the calibrated scale', async () => {
   const limits = VisualizationProfileBudget.mermaid;
   const steps = new StubSteps(
-    VisualizationProfileCalibration.referenceWorkloadMs * ScaleScenario.scale,
+    VisualizationProfileBudget.vsyncStepMs * ScaleScenario.scale,
     [ScaleScenario.within('mermaid', limits)]
   );
 
@@ -475,7 +475,7 @@ await test('calibration runs before the scenes and the scenes are judged against
 await test('a scene beyond the scaled limit fails the profile', async () => {
   const limits = VisualizationProfileBudget.mermaid;
   const slow = { ...ScaleScenario.within('mermaid', limits), 'avgMs': limits.maximumAverageFrameMs * ScaleScenario.scale + 1 };
-  const steps = new StubSteps(VisualizationProfileCalibration.referenceWorkloadMs * ScaleScenario.scale, [slow]);
+  const steps = new StubSteps(VisualizationProfileBudget.vsyncStepMs * ScaleScenario.scale, [slow]);
 
   await assert.rejects(VisualizationProfileOperation.execute(steps), { 'name': 'Error' });
 });
@@ -489,9 +489,9 @@ await test('a non-finite calibration stops the profile before the scenes', async
 
 await test('a light calibration leaves the limits unscaled and a heavy calibration stretches them', async () => {
   const limits = VisualizationProfileBudget.mermaid;
-  const light = new StubSteps(VisualizationProfileCalibration.referenceWorkloadMs, [ScaleScenario.within('mermaid', limits)]);
-  const lightPass = new StubSteps(VisualizationProfileCalibration.referenceWorkloadMs, [ProfileFixture.within('mermaid', limits)]);
-  const heavy = new StubSteps(VisualizationProfileCalibration.referenceWorkloadMs * ScaleScenario.scale, [ScaleScenario.within('mermaid', limits)]);
+  const light = new StubSteps(VisualizationProfileBudget.vsyncStepMs, [ScaleScenario.within('mermaid', limits)]);
+  const lightPass = new StubSteps(VisualizationProfileBudget.vsyncStepMs, [ProfileFixture.within('mermaid', limits)]);
+  const heavy = new StubSteps(VisualizationProfileBudget.vsyncStepMs * ScaleScenario.scale, [ScaleScenario.within('mermaid', limits)]);
 
   await assert.rejects(VisualizationProfileOperation.execute(light), { 'name': 'Error' });
   const lightOutcome = await VisualizationProfileOperation.execute(lightPass);

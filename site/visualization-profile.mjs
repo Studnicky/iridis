@@ -14,6 +14,7 @@ const cliValue = (name, fallback) => {
   return fallback;
 };
 const isDebug = new Set(cliArgs).has('--headful') || new Set(cliArgs).has('--headed') || new Set(cliArgs).has('--interactive');
+const CPU_THROTTLE = Number(cliValue('--cpu-throttle', process.env.IRIDIS_VIZ_CPU_THROTTLE ?? '1'));
 const PROFILE_MS = Number(cliValue('--duration', process.env.IRIDIS_VIZ_PROFILE_MS ?? '14000'));
 const DEBUG_WAIT_MS = Number(cliValue('--wait-ms', process.env.IRIDIS_VIZ_WAIT_MS ?? '0'));
 
@@ -392,12 +393,12 @@ export class VisualizationProfileBudget {
     ['mermaidDpad', 'mermaid'],
   ]);
 
-  /** The scale that stretches the frame-time limits to the machine: its median calibration workload time over the reference time, never below one. */
-  static environmentScale(medianWorkloadMs) {
-    if (!Number.isFinite(medianWorkloadMs) || medianWorkloadMs <= 0) {
-      throw new RangeError('Visualization profile calibration is not a positive finite duration: ' + medianWorkloadMs);
+  /** The scale that stretches the frame-time limits to the machine: the calibration page's median frame interval in vsync steps, never below one. */
+  static environmentScale(medianFrameMs) {
+    if (!Number.isFinite(medianFrameMs) || medianFrameMs <= 0) {
+      throw new RangeError('Visualization profile calibration is not a positive finite frame time: ' + medianFrameMs);
     }
-    return Math.max(1, medianWorkloadMs / VisualizationProfileCalibration.referenceWorkloadMs);
+    return Math.max(1, medianFrameMs / this.vsyncStepMs);
   }
 
   /**
@@ -461,45 +462,75 @@ export class VisualizationProfileBudget {
 }
 
 export class VisualizationProfileCalibration {
-  /** Canvas fills per calibration frame; about a third of one vsync on the reference machine. */
-  static fillsPerFrame = 8000;
+  /** Absolutely positioned elements restyled every calibration frame; sized so one frame costs about one vsync on a developer machine. */
+  static elementCount = 6000;
 
-  /** Median duration, in milliseconds, of the calibration workload on the reference machine. */
-  static referenceWorkloadMs = 5;
+  /** SVG paths whose geometry changes every calibration frame, sharing that frame budget. */
+  static pathCount = 600;
 
-  /** Median duration of a fixed CPU-bound workload (canvas fills, readback, one forced layout read) timed inside each frame. */
-  static async sample(browser, durationMs) {
+  /** Median frame interval of a fixed rendering-bound page (restyled DOM elements plus changing SVG paths) in the same browser and viewport. */
+  static async sample(browser, durationMs, throttleRate = 1) {
     const page = await browser.newPage({ 'viewport': { 'height': 1100, 'width': 1680 } });
     try {
-      await page.setContent('<!doctype html><html><body><canvas id="c" width="640" height="480"></canvas><div id="d">x</div></body></html>');
-      return await page.evaluate(({ fills, sampleMs }) => new Promise((resolveSample) => {
-        const context = document.getElementById('c').getContext('2d', { 'willReadFrequently': true });
-        const probe = document.getElementById('d');
-        const durations = [];
-        const start = performance.now();
-        let sink = 0;
+      await VisualizationProfileThrottle.apply(page, throttleRate);
+      await page.setContent('<!doctype html><html><body style="margin:0"><div id="field" style="position:relative;width:1680px;height:1100px;overflow:hidden"></div><svg id="vector" width="1680" height="400" style="position:absolute;top:0;left:0"></svg></body></html>');
+      return await page.evaluate(({ elements, paths, sampleMs }) => new Promise((resolveSample) => {
+        const field = document.getElementById('field');
+        const vector = document.getElementById('vector');
+        const nodes = [];
+        const shapes = [];
+        for (let index = 0; index < elements; index += 1) {
+          const node = document.createElement('div');
+          node.style.cssText = 'position:absolute;width:48px;height:48px;border-radius:8px;left:' + ((index * 37) % 1620) + 'px;top:' + ((index * 53) % 1050) + 'px;background:hsl(' + ((index * 7) % 360) + ' 70% 55%)';
+          field.appendChild(node);
+          nodes.push(node);
+        }
+        for (let index = 0; index < paths; index += 1) {
+          const shape = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          shape.setAttribute('fill', 'hsl(' + ((index * 11) % 360) + ' 70% 55%)');
+          vector.appendChild(shape);
+          shapes.push(shape);
+        }
+        const intervals = [];
+        let previous = performance.now();
+        const start = previous;
+        let frame = 0;
         const tick = (timestamp) => {
-          const began = performance.now();
-          for (let index = 0; index < fills; index += 1) {
-            context.fillStyle = 'rgb(' + (index % 256) + ',' + ((index * 7) % 256) + ',' + ((index * 13) % 256) + ')';
-            context.fillRect((index * 17) % 600, (index * 31) % 440, 40, 40);
+          frame += 1;
+          for (let index = 0; index < nodes.length; index += 1) {
+            nodes[index].style.transform = 'translate(' + ((frame + index) % 9) + 'px,' + ((frame * 3 + index) % 7) + 'px) rotate(' + ((frame + index) % 5) + 'deg)';
+            nodes[index].style.opacity = String(0.5 + ((frame + index) % 10) / 20);
           }
-          sink += context.getImageData(0, 0, 1, 1).data[0];
-          probe.style.width = (100 + (durations.length % 50)) + 'px';
-          sink += probe.offsetWidth;
-          durations.push(performance.now() - began);
+          for (let index = 0; index < shapes.length; index += 1) {
+            const x = (index * 29) % 1600;
+            const y = (index * 13) % 360;
+            const wobble = (frame + index) % 12;
+            shapes[index].setAttribute('d', 'M' + x + ' ' + y + ' l' + (30 + wobble) + ' ' + wobble + ' l-' + wobble + ' ' + (30 + wobble) + ' z');
+          }
+          intervals.push(timestamp - previous);
+          previous = timestamp;
           if (timestamp - start < sampleMs) {
             requestAnimationFrame(tick);
           } else {
-            const ordered = durations.slice(1).sort((left, right) => left - right);
+            const ordered = intervals.slice(1).sort((left, right) => left - right);
             const middle = Math.floor(ordered.length / 2);
-            resolveSample((ordered.length % 2 === 0 ? (ordered[middle - 1] + ordered[middle]) / 2 : ordered[middle]) + sink * 0);
+            resolveSample(ordered.length % 2 === 0 ? (ordered[middle - 1] + ordered[middle]) / 2 : ordered[middle]);
           }
         };
         requestAnimationFrame(tick);
-      }), { 'fills': VisualizationProfileCalibration.fillsPerFrame, 'sampleMs': durationMs });
+      }), { 'elements': VisualizationProfileCalibration.elementCount, 'paths': VisualizationProfileCalibration.pathCount, 'sampleMs': durationMs });
     } finally {
       await page.close();
+    }
+  }
+}
+
+export class VisualizationProfileThrottle {
+  /** Applies a CPU throttling rate through the browser debugging protocol; rate 1 leaves the page unthrottled. */
+  static async apply(page, rate) {
+    if (rate > 1) {
+      const session = await page.context().newCDPSession(page);
+      await session.send('Emulation.setCPUThrottlingRate', { rate });
     }
   }
 }
@@ -547,9 +578,9 @@ export class VisualizationProfileOperation {
 
     const report = [];
     const steps = {
-      'calibrate': () => VisualizationProfileCalibration.sample(browser, PROFILE_MS),
+      'calibrate': () => VisualizationProfileCalibration.sample(browser, PROFILE_MS, CPU_THROTTLE),
       'report': (report, floorAverageFrameMs, scale) => {
-        console.log(`calibration workloadMedianMs=${floorAverageFrameMs.toFixed(2)} referenceMs=${VisualizationProfileCalibration.referenceWorkloadMs} environmentScale=${scale.toFixed(2)}`);
+        console.log(`calibration medianFrameMs=${floorAverageFrameMs.toFixed(2)} vsyncMs=${VisualizationProfileBudget.vsyncStepMs.toFixed(2)} environmentScale=${scale.toFixed(2)}`);
         VisualizationProfileOperation.print(report);
       },
       'scenes': async () => {
@@ -564,6 +595,7 @@ export class VisualizationProfileOperation {
           }
 
           const page = await browser.newPage({ 'viewport': { 'height': 1100, 'width': 1680 } });
+          await VisualizationProfileThrottle.apply(page, CPU_THROTTLE);
           await page.goto(`http://127.0.0.1:${address.port}${basePath}`, { 'timeout': 60000, 'waitUntil': 'domcontentloaded' });
           await establishCommittedPalette(page);
           await activateReadyGraph(page);
