@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { test } from 'node:test';
 
 import type { ColorGraphMountHostInterface } from '../app/components/content/viz/ColorGraphMountHostInterface.ts';
@@ -383,4 +385,10 @@ await test('rapid input and idle cycles leave one live graph and no timers after
   assert.equal(host.liveCount(), 0);
   assert.equal(controller.pendingTimerCount(), 0);
   assert.equal(host.constructed, cycles + 1);
+});
+
+await test('the graph never schedules the library fit that would override a restored view', () => {
+  const source = readFileSync(resolve(import.meta.dirname, '../app/components/content/ColorGraph.vue'), 'utf8');
+
+  assert.equal(source.includes("'fitViewOnInit': false"), true);
 });

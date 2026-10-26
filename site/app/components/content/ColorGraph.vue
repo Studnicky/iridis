@@ -130,6 +130,8 @@ function constructGraph(): Graph {
       // Cosmos's own dark-gray default ignores the site's light/dark framing;
       // the resolved --ui-bg token is re-applied whenever framing changes.
       'backgroundColor': colorGraphLabelPainter.backgroundColorFromTheme(),
+      // The component runs its own fit sequence; the library's delayed init fit would override a restored view.
+      'fitViewOnInit': false,
       'spaceSize': buildColorGraphViewModel.spaceSize,
       // Tuned to the scale buildBuffers seeds (hub ring radius 900, leaf
       // satellite radius 260): repulsion dominates the weak link spring so
@@ -645,6 +647,7 @@ function restoreView(handle: Graph, buffers: ReturnType<typeof buildColorGraphBu
   handle.setPointSizes(buffers.sizes);
   handle.setLinkColors(buffers.linkColors);
   handle.render(0);
+  fitZoomLevel.value = view.fitZoomLevel;
   handle.setZoomLevel(view.zoomLevel, 0, false);
   const origin = handle.spaceToScreenPosition([0, 0]);
   const panned = buildColorGraphViewportModel.translatePoints(
@@ -653,7 +656,6 @@ function restoreView(handle: Graph, buffers: ReturnType<typeof buildColorGraphBu
     (view.originScreenY - origin[1]) / view.zoomLevel
   );
   handle.setPointPositions(panned, true);
-  fitZoomLevel.value = view.fitZoomLevel;
   appliedStructureKey = buffers.structureKey;
   controller.signal(ColorGraphLifecycleEvent.fitArmed());
   controller.signal(ColorGraphLifecycleEvent.fitSettled());
