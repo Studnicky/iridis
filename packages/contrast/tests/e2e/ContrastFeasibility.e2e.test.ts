@@ -596,6 +596,38 @@ await test('ContrastFeasibility certifies a source-derived hue-target arc across
 });
 
 
+await test('ContrastFeasibility bounds an unanchored hue-target by the authored clamp image', () => {
+  const schema = RoleSchemaEntity.intake({
+    'contrastPairs': [{ 'background': 'background', 'foreground': 'target', 'minimumContrastRatio': 4.5 }],
+    'name': 'bounded-unanchored-hue-target',
+    'relationshipGraph': {
+      'groups': [{
+        'anchor': 'source',
+        'defaultMode': 'base',
+        'id': 'target-group',
+        'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'base' }], 'id': 'base' }],
+        'name': 'Target',
+        'relationships': [
+          { 'clamp': 180, 'hue': 0, 'id': 'background-hue', 'operation': 'hue-target', 'priority': 0, 'relaxability': 'fixed', 'target': 'background' },
+          { 'clamp': 30, 'hue': 25, 'id': 'target-hue', 'operation': 'hue-target', 'priority': 1, 'relaxability': 'fixed', 'source': 'source', 'target': 'target' }
+        ]
+      }]
+    },
+    'roles': [
+      ContrastFeasibilityFixture.role('background', 0.05, 0.01, 0),
+      ContrastFeasibilityFixture.role('source', 0.85, 0.2),
+      ContrastFeasibilityFixture.role('target', 0.85, 0.2)
+    ]
+  });
+
+  const pair = ContrastFeasibility.analyzeSchema(schema, ContrastFeasibilityFixture.options()).pairs[0];
+
+  assert.ok(pair !== undefined, 'unanchored target pair receives a feasibility result');
+  assert.strictEqual(pair.reachability, 'indeterminate', 'a thirty-degree movement clamp permits the full one-hundred-fifty-degree output arc');
+  assert.ok(pair.sampled !== undefined, 'the unresolved wide hue arc retains sampled evidence');
+});
+
+
 await test('ContrastFeasibility matches midpoint and clamped graph coordinate envelopes', () => {
   const schemaFor = (
     relationship: RoleRelationshipEntity.Type,

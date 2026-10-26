@@ -1272,7 +1272,7 @@ export class ContrastFeasibility {
       const resolvedHue = RoleGeometry.hueTowards(sourceHue, hue, clamp);
       return { 'resolvedHue': resolvedHue };
     }
-    const hueArcs = ContrastFeasibility.hueArcsFor(hue, clamp);
+    const hueArcs = ContrastFeasibility.hueArcsFor(hue, 180 - clamp);
     const relation = ContrastFeasibility.targetRelation(source, hue, clamp);
     return { 'hueArcs': hueArcs, 'relation': relation };
   }
