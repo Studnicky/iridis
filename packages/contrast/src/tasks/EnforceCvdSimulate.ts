@@ -1783,12 +1783,17 @@ class CvdCorrectionCoordinator {
     resolvedRoles: ReadonlyMap<string, ColorRecordEntity.Type>
   ): boolean {
     const constraints = group.resolve(resolvedRoles);
+    if (foreground === group.original) {
+      const result =
+        CvdSimulation.preservesBaselines(foreground, constraints) &&
+        CvdSimulation.preservesFailureSets(foreground, constraints);
+      return result;
+    }
     const result =
       CvdSimulation.preservesBaselines(foreground, constraints) &&
       CvdSimulation.preservesFailureSets(foreground, constraints) &&
       group.allows(foreground) &&
-      (foreground === group.original ||
-        CvdSimulation.improves(foreground, constraints));
+      CvdSimulation.improves(foreground, constraints);
     return result;
   }
 
