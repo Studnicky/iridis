@@ -751,12 +751,12 @@ void test('a conformant Display-P3 role seed retains verbatim P3 metadata when r
   assert.deepStrictEqual(accent.hints, hintedP3.hints, 'input intent remains exact');
 });
 
-void test('resolve roles defers an unstated graph-derived target until relationship derivation', () => {
+void test('resolve roles retains a graph target baseline before relationship derivation', () => {
   const engine = TestEngineFixture.freshEngine(['resolve:roles']);
   const root = RoleResolutionFixture.seed('root', 0.60, 0.10, 240);
   engine.tasks.hook(new RoleSeedTask([root]));
   const schema = TestEngineFixture.admitRoleSchema({
-    'name': 'deferred-derived-target',
+    'name': 'graph-target-baseline',
     'relationshipGraph': {
       'groups': [{
         'anchor': 'root',
@@ -781,8 +781,9 @@ void test('resolve roles defers an unstated graph-derived target until relations
   });
   const state = engine.run(TestEngineFixture.input([], schema));
   assert.strictEqual(state.roles.root, root);
-  assert.strictEqual(state.roles.derived, undefined);
+  assert.ok(state.roles.derived !== undefined, 'the relationship target retains a pre-derivation candidate');
   assert.deepStrictEqual(state.metadata['core:roleProvenance'], {
+    'derived': { 'adjustments': [], 'origin': 'derived' },
     'root': { 'adjustments': [], 'origin': 'stated' }
   });
 });

@@ -1,15 +1,14 @@
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
 import type { ColorHintsEntity } from '../../entities/ColorHintsEntity.ts';
+import type { RoleDefinitionEntity } from '../../entities/RoleDefinitionEntity.ts';
 import type { RoleSchemaEntity } from '../../entities/RoleSchemaEntity.ts';
 import type { PaletteStateInterface } from '../../interfaces/PaletteStateInterface.ts';
 import type { PipelineContextInterface } from '../../interfaces/PipelineContextInterface.ts';
 import type { TaskInterface } from '../../interfaces/TaskInterface.ts';
 
 import { ColorRecordEntity } from '../../entities/ColorRecordEntity.ts';
-import { RoleDefinitionEntity } from '../../entities/RoleDefinitionEntity.ts';
 import { RoleProvenanceEntity } from '../../entities/RoleProvenanceEntity.ts';
-import { RoleRelationshipGraphEntity } from '../../entities/RoleRelationshipGraphEntity.ts';
 import { TaskManifestEntity } from '../../entities/TaskManifestEntity.ts';
 import { PaletteRoleState } from '../../interfaces/PaletteStateInterface.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
@@ -150,20 +149,6 @@ class ResolveRoles implements TaskInterface {
     'writes':      ['roles', 'metadata']
   });
 
-  private static admitRole(
-    rawInputRole: RoleSchemaEntity.Type['roles'][number]
-  ): RoleDefinitionEntity.Type {
-    const result = RoleDefinitionEntity.create({
-      'name': rawInputRole.name,
-      ...(rawInputRole.chromaRange === undefined ? {} : { 'chromaRange': rawInputRole.chromaRange }),
-      ...(rawInputRole.description === undefined ? {} : { 'description': rawInputRole.description }),
-      ...(rawInputRole.intent === undefined ? {} : { 'intent': rawInputRole.intent }),
-      ...(rawInputRole.lightnessRange === undefined ? {} : { 'lightnessRange': rawInputRole.lightnessRange }),
-      ...(rawInputRole.required === undefined ? {} : { 'required': rawInputRole.required })
-    });
-    return result;
-  }
-
   private static colorsByRoleHint(colors: readonly ColorRecordEntity.Type[]): Map<string, ColorRecordEntity.Type> {
     const result = new Map<string, ColorRecordEntity.Type>();
     for (let colorIndex = 0; colorIndex < colors.length; colorIndex += 1) {
@@ -171,34 +156,6 @@ class ResolveRoles implements TaskInterface {
       const role = color?.hints?.role;
       if (color !== undefined && role !== undefined && !result.has(role)) {
         result.set(role, color);
-      }
-    }
-    return result;
-  }
-
-  private static derivedTargets(schema: RoleSchemaEntity.Type): ReadonlySet<string> {
-    const graphSource = schema.relationshipGraph;
-    if (graphSource === undefined) {
-      return new Set();
-    }
-    const graph = RoleRelationshipGraphEntity.intake(graphSource);
-    const result = new Set<string>();
-    for (let groupIndex = 0; groupIndex < graph.groups.length; groupIndex += 1) {
-      const group = graph.groups[groupIndex];
-      if (group === undefined) {
-        continue;
-      }
-      for (let relationshipIndex = 0; relationshipIndex < group.relationships.length; relationshipIndex += 1) {
-        const relationship = group.relationships[relationshipIndex];
-        if (relationship === undefined) {
-          continue;
-        }
-        const ownsTarget = relationship.operation === 'hue-target' && (
-          relationship.source === undefined || relationship.source === relationship.target
-        );
-        if (!ownsTarget) {
-          result.add(relationship.target);
-        }
       }
     }
     return result;
@@ -306,9 +263,8 @@ class ResolveRoles implements TaskInterface {
     distances: Map<string, Map<string, number>>,
     context: PipelineContextInterface
   ): void {
-    const inputRole = ResolveRoles.admitRole(rawInputRole);
-    const hintMatch = colorsByRoleHint.get(inputRole.name);
-    const role = inputRole;
+    const role = rawInputRole;
+    const hintMatch = colorsByRoleHint.get(role.name);
     if (hintMatch !== undefined) {
       ResolveRoles.assignStated(role, hintMatch, roles, provenance, context);
       return;
@@ -338,25 +294,19 @@ class ResolveRoles implements TaskInterface {
     const roleProvenance = Metadata.roleProvenance(state.metadata);
     const roles = PaletteRoleState.admit(state.roles);
     const colorsByRoleHint = ResolveRoles.colorsByRoleHint(state.colors);
-    const derivedTargets = ResolveRoles.derivedTargets(schema);
     for (let roleIndex = 0; roleIndex < schema.roles.length; roleIndex += 1) {
       const inputRole = schema.roles[roleIndex];
-      if (inputRole === undefined) {
-        continue;
+      if (inputRole !== undefined) {
+        ResolveRoles.resolveRole(
+          inputRole,
+          colorsByRoleHint,
+          state,
+          roles,
+          roleProvenance,
+          roleDistances,
+          context
+        );
       }
-      const stated = colorsByRoleHint.has(inputRole.name);
-      if (derivedTargets.has(inputRole.name) && !stated) {
-        continue;
-      }
-      ResolveRoles.resolveRole(
-        inputRole,
-        colorsByRoleHint,
-        state,
-        roles,
-        roleProvenance,
-        roleDistances,
-        context
-      );
     }
     roles.commit();
     if (roleDistances.size > 0) {
