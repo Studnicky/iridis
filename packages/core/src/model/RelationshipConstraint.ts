@@ -14,8 +14,27 @@ import { RelationshipConstraintDomain } from './RelationshipConstraintDomain.ts'
 import { RelationshipHueDegrees } from './RelationshipHueDegrees.ts';
 import { RelationshipSources } from './RelationshipSources.ts';
 
+class RelationshipConstraintContext {
+  readonly domains = new Map<string, RelationshipConstraintDomain | undefined>();
+  readonly graph: RoleRelationshipGraphEntity.Type;
+  readonly resolutions: ReturnType<typeof Metadata.relationshipResolution>;
+
+  constructor(
+    graph: RoleRelationshipGraphEntity.Type,
+    resolutions: ReturnType<typeof Metadata.relationshipResolution>
+  ) {
+    this.graph = graph;
+    this.resolutions = resolutions;
+  }
+}
+
 /** Reads authored graph relationships and their optional exact runtime constraint baselines. */
 export class RelationshipConstraint {
+  static readonly #contexts = new WeakMap<
+    Record<string, JSONSchema7Type>,
+    WeakMap<object, RelationshipConstraintContext>
+  >();
+
   static allows(
     input: InputEntity.Type,
     metadata: Record<string, JSONSchema7Type>,
@@ -36,15 +55,19 @@ export class RelationshipConstraint {
     metadata: Record<string, JSONSchema7Type>,
     roleName: string
   ): RelationshipConstraintDomain | undefined {
-    const graph = input.roles?.relationshipGraph === undefined
-      ? undefined
-      : RoleRelationshipGraphEntity.intake(input.roles.relationshipGraph);
-    if (graph === undefined) {
+    const graphSource = input.roles?.relationshipGraph;
+    if (graphSource === undefined) {
       return undefined;
     }
-    const resolution = Metadata.relationshipResolution(metadata).get(roleName);
-    const selected = RelationshipConstraint.selectedRelation(graph.groups, resolution, roleName);
+    const context = RelationshipConstraint.context(metadata, graphSource);
+    if (context.domains.has(roleName)) {
+      const result = context.domains.get(roleName);
+      return result;
+    }
+    const resolution = context.resolutions.get(roleName);
+    const selected = RelationshipConstraint.selectedRelation(context.graph.groups, resolution, roleName);
     if (selected === undefined) {
+      context.domains.set(roleName, undefined);
       return undefined;
     }
     const group = RoleRelationshipGroupEntity.intake(selected.group);
@@ -70,6 +93,26 @@ export class RelationshipConstraint {
       'sources': RelationshipSources.names(relationship),
       'tolerance': tolerance
     });
+    context.domains.set(roleName, result);
+    return result;
+  }
+
+  private static context(
+    metadata: Record<string, JSONSchema7Type>,
+    graphSource: object
+  ): RelationshipConstraintContext {
+    let byGraph = RelationshipConstraint.#contexts.get(metadata);
+    if (byGraph === undefined) {
+      byGraph = new WeakMap<object, RelationshipConstraintContext>();
+      RelationshipConstraint.#contexts.set(metadata, byGraph);
+    }
+    let result = byGraph.get(graphSource);
+    if (result === undefined) {
+      const graph = RoleRelationshipGraphEntity.intake(graphSource);
+      const resolutions = Metadata.relationshipResolution(metadata);
+      result = new RelationshipConstraintContext(graph, resolutions);
+      byGraph.set(graphSource, result);
+    }
     return result;
   }
 

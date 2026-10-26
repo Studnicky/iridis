@@ -5,7 +5,6 @@ import type { RelationshipGraphShape } from '../../model/RelationshipGraphShape.
 
 import { ColorRecordEntity } from '../../entities/ColorRecordEntity.ts';
 import { RelationshipResolutionEntity } from '../../entities/RelationshipResolutionEntity.ts';
-import { RoleDefinitionEntity } from '../../entities/RoleDefinitionEntity.ts';
 import { RoleProvenanceEntity } from '../../entities/RoleProvenanceEntity.ts';
 import { RoleRelationshipGraphEntity } from '../../entities/RoleRelationshipGraphEntity.ts';
 import { TaskManifestEntity } from '../../entities/TaskManifestEntity.ts';
@@ -36,7 +35,7 @@ class RelationshipOperation {
     group: RelationshipGraphShape.GroupInterface,
     relationship: RelationshipGraphShape.GroupInterface['relationships'][number],
     sources: readonly ColorRecordEntity.Type[],
-    target: RoleDefinitionEntity.Type
+    target: NonNullable<PaletteStateInterface['input']['roles']>['roles'][number]
   ): ColorRecordEntity.Type {
     const operationResult = RelationshipOperation.applyRaw(group, relationship, sources);
     if (target.lightnessRange === undefined && target.chromaRange === undefined) {
@@ -71,7 +70,7 @@ class RelationshipOperation {
     return targetResult;
   }
 
-  private static forTarget(record: ColorRecordEntity.Type, target: RoleDefinitionEntity.Type): ColorRecordEntity.Type {
+  private static forTarget(record: ColorRecordEntity.Type, target: NonNullable<PaletteStateInterface['input']['roles']>['roles'][number]): ColorRecordEntity.Type {
     const hints = target.intent === undefined
       ? undefined
       : { 'intent': target.intent };
@@ -174,19 +173,18 @@ class DeriveRoleRelations implements TaskInterface {
   });
 
   run(state: PaletteStateInterface, _context: PipelineContextInterface): void {
-    const graph = state.input.roles?.relationshipGraph === undefined
-      ? undefined
-      : RoleRelationshipGraphEntity.intake(state.input.roles.relationshipGraph);
-    if (graph === undefined) {
+    const roleSchema = state.input.roles;
+    if (roleSchema?.relationshipGraph === undefined) {
       return;
     }
+    const graph = RoleRelationshipGraphEntity.intake(roleSchema.relationshipGraph);
     const roles = PaletteRoleState.admit(state.roles);
     const provenance = Metadata.roleProvenance(state.metadata);
     const resolution = Metadata.relationshipResolution(state.metadata);
     const distances = Metadata.roleDistances(state.metadata);
-    const targets = new Map(state.input.roles?.roles.map((role) => {
-      return [role.name, RoleDefinitionEntity.intake(role)] as const;
-    }) ?? []);
+    const targets = new Map(roleSchema.roles.map((role) => {
+      return [role.name, role] as const;
+    }));
     const pending = DeriveRoleRelations.workItems(graph.groups);
     const unresolved = DeriveRoleRelations.resolvePending(roles, provenance, resolution, distances, targets, pending);
     DeriveRoleRelations.recordUnresolved(roles, resolution, unresolved);
@@ -221,7 +219,7 @@ class DeriveRoleRelations implements TaskInterface {
     provenance: ReturnType<typeof Metadata.roleProvenance>,
     resolution: ReturnType<typeof Metadata.relationshipResolution>,
     distances: ReturnType<typeof Metadata.roleDistances>,
-    targets: ReadonlyMap<string, RoleDefinitionEntity.Type>,
+    targets: ReadonlyMap<string, NonNullable<PaletteStateInterface['input']['roles']>['roles'][number]>,
     initialPending: readonly RelationshipWorkItem[]
   ): RelationshipWorkItem[] {
     let pending = [...initialPending];
@@ -309,7 +307,7 @@ class DeriveRoleRelations implements TaskInterface {
     resolution: ReturnType<typeof Metadata.relationshipResolution>,
     distances: ReturnType<typeof Metadata.roleDistances>,
     pendingTargets: ReadonlySet<string>,
-    targets: ReadonlyMap<string, RoleDefinitionEntity.Type>,
+    targets: ReadonlyMap<string, NonNullable<PaletteStateInterface['input']['roles']>['roles'][number]>,
     item: RelationshipWorkItem
   ): boolean {
     const { group, relationship } = item;
