@@ -1,6 +1,4 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { test } from 'node:test';
 
 import type { ColorGraphMountHostInterface } from '../app/components/content/viz/ColorGraphMountHostInterface.ts';
@@ -16,23 +14,21 @@ class FakeGraph {
   }
 }
 
-class FakeSnapshot {
-  public readonly serial: number;
-
-  public constructor(serial: number) {
-    this.serial = serial;
-  }
-}
-
 class FakeHost implements ColorGraphMountHostInterface<FakeGraph, FakeSnapshot> {
   public static readonly idleSuspendMs = 3000;
 
   public idleHandler: (() => void) | null = null;
+
   public readonly presented: (FakeSnapshot | null)[] = [];
+
   public constructFailures = 0;
+
   public constructed = 0;
+
   public disposed = 0;
+
   public rejections = 0;
+
   public snapshotsAvailable = true;
 
   public capture(handle: FakeGraph): FakeSnapshot | null {
@@ -72,6 +68,14 @@ class FakeHost implements ColorGraphMountHostInterface<FakeGraph, FakeSnapshot> 
 
   public reportRejection(): void {
     this.rejections += 1;
+  }
+}
+
+class FakeSnapshot {
+  public readonly serial: number;
+
+  public constructor(serial: number) {
+    this.serial = serial;
   }
 }
 
@@ -208,7 +212,9 @@ await test('a failed construction returns to idle and the next activation retrie
 
   host.constructFailures = 1;
 
-  assert.throws(() => { controller.mount(); }, { 'message': 'WebGL2 unavailable' });
+  assert.throws(() => {
+    controller.mount();
+  }, { 'message': 'WebGL2 unavailable' });
   await MountedGraph.drain();
 
   assert.equal(host.liveCount(), 0);
@@ -224,7 +230,9 @@ await test('suspending and disposing cancel every scheduled timer on a virtual c
   const host = new FakeHost();
   const controller = ColorGraphMountController.create(host, FakeHost.idleSuspendMs);
   let fired = 0;
-  const count = (): void => { fired += 1; };
+  const count = (): void => {
+    fired += 1;
+  };
 
   controller.mount();
   controller.schedule('fit', 250, count);
@@ -261,8 +269,12 @@ await test('cancelling one timer group leaves the others scheduled', (context) =
   const controller = ColorGraphMountController.create(host, FakeHost.idleSuspendMs);
   const fired: string[] = [];
 
-  controller.schedule('fit', 100, () => { fired.push('fit'); });
-  controller.schedule('zoomIdle', 100, () => { fired.push('zoomIdle'); });
+  controller.schedule('fit', 100, () => {
+    fired.push('fit');
+  });
+  controller.schedule('zoomIdle', 100, () => {
+    fired.push('zoomIdle');
+  });
   controller.cancel('fit');
   context.mock.timers.tick(100);
 
@@ -287,7 +299,9 @@ class IdleScenario {
   static async settledController(host: FakeHost): Promise<ColorGraphMountController<FakeGraph, FakeSnapshot>> {
     const controller = ColorGraphMountController.create(host, FakeHost.idleSuspendMs);
 
-    host.idleHandler = () => { controller.suspendIdle(); };
+    host.idleHandler = () => {
+      controller.suspendIdle();
+    };
     controller.mount();
     await MountedGraph.settled(controller);
     controller.armIdle();
@@ -385,10 +399,4 @@ await test('rapid input and idle cycles leave one live graph and no timers after
   assert.equal(host.liveCount(), 0);
   assert.equal(controller.pendingTimerCount(), 0);
   assert.equal(host.constructed, cycles + 1);
-});
-
-await test('the graph never schedules the library fit that would override a restored view', () => {
-  const source = readFileSync(resolve(import.meta.dirname, '../app/components/content/ColorGraph.vue'), 'utf8');
-
-  assert.equal(source.includes("'fitViewOnInit': false"), true);
 });

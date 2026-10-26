@@ -26,6 +26,7 @@ import { logger } from '~/composables/logger.ts';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useRoleMathList } from '~/composables/useRoleMathList.ts';
 import { buildColorGraphBuffers } from './graph/buildColorGraphBuffers.ts';
+import { buildColorGraphConfig } from './graph/buildColorGraphConfig.ts';
 import { buildColorGraphViewModel } from './graph/buildColorGraphViewModel.ts';
 import { buildColorGraphViewportModel } from './graph/buildColorGraphViewportModel.ts';
 import { colorGraphLabelPainter } from './graph/colorGraphLabelPainter.ts';
@@ -126,29 +127,12 @@ function constructGraph(): Graph {
     // instrumentation outside production unless this setting is explicit.
     globalThis.luma.log.set('debug', false);
     globalThis.luma.log.set('debug-webgl', false);
-    const constructed = new Ctor(container, {
+    const constructed = new Ctor(container, buildColorGraphConfig.build(
       // Cosmos's own dark-gray default ignores the site's light/dark framing;
       // the resolved --ui-bg token is re-applied whenever framing changes.
-      'backgroundColor': colorGraphLabelPainter.backgroundColorFromTheme(),
-      // The component runs its own fit sequence; the library's delayed init fit would override a restored view.
-      'fitViewOnInit': false,
-      'spaceSize': buildColorGraphViewModel.spaceSize,
-      // Tuned to the scale buildBuffers seeds (hub ring radius 900, leaf
-      // satellite radius 260): repulsion dominates the weak link spring so
-      // nodes push apart and only the ring/derivation edges hold structure.
-      'simulationLinkDistance': 260,
-      'simulationLinkSpring': 0.15,
-      'simulationRepulsion': 8,
-      'simulationRepulsionTheta': 1.4,
-      'simulationGravity': 0.02,
-      'simulationCollision': 1,
-      'simulationCollisionPadding': 10,
-      'simulationDecay': 12000,
-      'enableDrag': true,
-      'enableRightClickRepulsion': true,
-      'simulationRepulsionFromMouse': 3,
-      'onSimulationTick': () => { scheduleLabelPaint(); },
-      'onZoom': () => {
+      colorGraphLabelPainter.backgroundColorFromTheme(),
+      () => { scheduleLabelPaint(); },
+      () => {
         controller.signal(ColorGraphLifecycleEvent.zoomed());
         armZoomIdle();
         scheduleLabelPaint();
@@ -159,14 +143,14 @@ function constructGraph(): Graph {
           try { if (g.getZoomLevel() < floor) g.setZoomLevel(floor, 0, false); } catch { /* ignore */ }
         }
       },
-      'onZoomEnd': () => {
+      () => {
         if (captureFitZoomOnEnd) {
           settleFit();
         } else {
           controller.signal(ColorGraphLifecycleEvent.zoomEnded());
         }
       }
-    });
+    ));
 
     return constructed;
   } catch (error) {
