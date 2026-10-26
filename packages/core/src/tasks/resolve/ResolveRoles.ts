@@ -1,7 +1,6 @@
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
 import type { ColorHintsEntity } from '../../entities/ColorHintsEntity.ts';
-import type { RoleDefinitionEntity } from '../../entities/RoleDefinitionEntity.ts';
 import type { RoleSchemaEntity } from '../../entities/RoleSchemaEntity.ts';
 import type { PaletteStateInterface } from '../../interfaces/PaletteStateInterface.ts';
 import type { PipelineContextInterface } from '../../interfaces/PipelineContextInterface.ts';
@@ -22,7 +21,7 @@ class RoleNudge {
     return value;
   }
 
-  static distanceToRoleCenter(color: ColorRecordEntity.Type, role: RoleDefinitionEntity.Type): number {
+  static distanceToRoleCenter(color: ColorRecordEntity.Type, role: RoleSchemaEntity.Type['roles'][number]): number {
     const { c, l } = color.oklch;
     let distance = 0;
 
@@ -41,7 +40,7 @@ class RoleNudge {
 
   static hintsFor(
     candidate: ColorRecordEntity.Type,
-    role: RoleDefinitionEntity.Type
+    role: RoleSchemaEntity.Type['roles'][number]
   ): ColorHintsEntity.Type | undefined {
     const result = role.intent === undefined
       ? candidate.hints
@@ -71,7 +70,7 @@ class RoleNudge {
 
   static intoRole(
     candidate: ColorRecordEntity.Type,
-    role: RoleDefinitionEntity.Type
+    role: RoleSchemaEntity.Type['roles'][number]
   ) {
     const { c, h, l } = candidate.oklch;
     const targetL = role.lightnessRange !== undefined ? RoleNudge.clampToRange(l, role.lightnessRange) : l;
@@ -106,7 +105,7 @@ class RoleSynthesis {
     return 0;
   }
 
-  static forRole(role: RoleDefinitionEntity.Type): ColorRecordEntity.Type {
+  static forRole(role: RoleSchemaEntity.Type['roles'][number]): ColorRecordEntity.Type {
     const l = role.lightnessRange !== undefined ? RoleGeometry.rangeCenter(role.lightnessRange) : 0.5;
     const c = role.chromaRange    !== undefined ? RoleGeometry.rangeCenter(role.chromaRange)    : 0;
     const h = RoleSynthesis.hueFor();
@@ -163,7 +162,7 @@ class ResolveRoles implements TaskInterface {
 
   private static selectCandidate(
     colors: readonly ColorRecordEntity.Type[],
-    role: RoleDefinitionEntity.Type
+    role: RoleSchemaEntity.Type['roles'][number]
   ): RoleCandidateSelection {
     let candidate: ColorRecordEntity.Type | undefined;
     let distance = Infinity;
@@ -185,7 +184,7 @@ class ResolveRoles implements TaskInterface {
   }
 
   private static assignStated(
-    role: RoleDefinitionEntity.Type,
+    role: RoleSchemaEntity.Type['roles'][number],
     color: ColorRecordEntity.Type,
     roles: PaletteRoleState,
     provenance: Map<string, RoleProvenanceEntity.Type>,
@@ -205,7 +204,7 @@ class ResolveRoles implements TaskInterface {
   }
 
   private static synthesize(
-    role: RoleDefinitionEntity.Type,
+    role: RoleSchemaEntity.Type['roles'][number],
     roles: PaletteRoleState,
     provenance: Map<string, RoleProvenanceEntity.Type>,
     context: PipelineContextInterface
@@ -227,7 +226,7 @@ class ResolveRoles implements TaskInterface {
   }
 
   private static assignDerived(
-    role: RoleDefinitionEntity.Type,
+    role: RoleSchemaEntity.Type['roles'][number],
     colors: readonly ColorRecordEntity.Type[],
     roles: PaletteRoleState,
     provenance: Map<string, RoleProvenanceEntity.Type>,
