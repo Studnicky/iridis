@@ -1,5 +1,4 @@
 import { CvdModeEntity } from '../composables/entities/CvdModeEntity.ts';
-import { DerivationConfigEntity } from '../composables/entities/DerivationConfigEntity.ts';
 import { NonMandatoryLevelEntity } from '../composables/entities/NonMandatoryLevelEntity.ts';
 import { PaletteResolveRequestEntity } from '../composables/entities/PaletteResolveRequestEntity.ts';
 import { SchemaNameEntity } from '../composables/entities/SchemaNameEntity.ts';
@@ -19,12 +18,10 @@ export class DefaultThemeCss {
   private static readonly parameters = {
     'colorSpace': 'srgb',
     'cvdMode': CvdModeEntity.defaultValue,
-    'derivationConfig': DerivationConfigEntity.defaultValue,
     'enableStrictCompliance': false,
     'nonMandatoryLevel': NonMandatoryLevelEntity.defaultValue,
     'schemaName': SchemaNameEntity.defaultValue,
     'seeds': DefaultThemeCss.seeds,
-    'semanticHuesEnabled': true,
     'strictness': 2
   } as const;
 
