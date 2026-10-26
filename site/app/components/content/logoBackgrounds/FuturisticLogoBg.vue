@@ -1,10 +1,8 @@
 <script setup lang="ts">
 /**
- * Futuristic logo background — the SAME lava-glob visual as
- * AmbientBackground.vue's metaball wash (gooey blend, two-role engine
- * gradient per blob), just orbiting the eye logo in a tight ellipse instead
- * of rising across the viewport. Literal blob shapes only — never a
- * glow/blur halo.
+ * Futuristic logo background — gooey lava globs with a two-role engine
+ * gradient per blob, orbiting the eye logo in a tight ellipse. Literal blob
+ * shapes only — never a glow/blur halo.
  */
 import { buildStaggeredItems } from '~/utils/buildStaggeredItems';
 

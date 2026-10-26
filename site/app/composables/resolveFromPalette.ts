@@ -9,7 +9,7 @@ import { buildDecorativePalette } from './buildDecorativePalette.ts';
  * already populated, it's returned unchanged. Otherwise this re-attempts
  * `buildDecorativePalette(views)` — the engine's initial palette resolves
  * asynchronously (image extraction in useIridis.ts), so `views` may still be
- * empty on the first several ticks after `useLivingBackground()` is invoked;
+ * empty on the first several frames after the drift starts;
  * retrying here (rather than giving up after one empty read) is what lets the
  * loop pick up the palette once it becomes available.
  */

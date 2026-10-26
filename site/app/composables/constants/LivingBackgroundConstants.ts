@@ -1,5 +1,8 @@
 export namespace LIVING_BACKGROUND {
+  /** Length of one drift cycle between two palette targets. */
   export const CYCLE_MS = 11000;
-  export const LIVE_FPS = 20;
-  export const FRAME_BUDGET_MS = Math.max(1, Math.round(1000 / LIVE_FPS));
+  /** Upper bound on steps simulated for one display frame. */
+  export const STEP_LIMIT_PER_FRAME = 4;
+  /** Fixed simulation step; the colour stream records one sample per step. */
+  export const STEP_MS = 50;
 }

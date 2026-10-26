@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from 'vue';
 
-import { ColorStreamHistoryState } from '../../composables/colorStreamHistoryState.ts';
 import type { ColorSampleType } from '../../composables/types/colorSampleType.ts';
 import type { RoleViewType } from '../../composables/types/roleViewType.ts';
 import { useIridis } from '../../composables/useIridis.ts';
-import { useLivingBackground } from '../../composables/useLivingBackground.ts';
+import { useColorStreamHistoryState } from '../../composables/useColorStreamHistoryState.ts';
 import { buildColorStreamShowcaseModel } from './colorStream/buildColorStreamShowcaseModel.ts';
 import { drawColorStream } from './colorStream/drawColorStream.ts';
 
 const ROLES = buildColorStreamShowcaseModel.buildRoles();
+const historyState = useColorStreamHistoryState();
 const LIVE_FPS = 20;
 const FRAME_BUDGET_MS = 1000 / LIVE_FPS;
 
@@ -34,7 +34,7 @@ function drawStream(force: boolean = false): void {
   if (canvas === null) {
     return;
   }
-  const latestSampleVersion = ColorStreamHistoryState.sampleVersion.value;
+  const latestSampleVersion = historyState.sampleVersion;
   if (!force && latestSampleVersion === lastSampleVersion) {
     return;
   }
@@ -44,7 +44,7 @@ function drawStream(force: boolean = false): void {
   for (let index = 0; index < ROLES.length; index += 1) {
     const role = ROLES[index];
     if (role !== undefined) {
-      samplesByAlias.set(role.alias, ColorStreamHistoryState.sampleArray(role.alias));
+      samplesByAlias.set(role.alias, historyState.sampleArray(role.alias));
     }
   }
   drawColorStream.drawAll(canvas, ROLES, samplesByAlias, views);
@@ -78,7 +78,6 @@ function startLoop(): void {
 }
 
 onMounted(() => {
-  useLivingBackground({ 'recorder': ColorStreamHistoryState });
   reducedMotion.value = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const { roleViews } = useIridis();
   watch(roleViews, (nextViews) => {

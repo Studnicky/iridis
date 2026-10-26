@@ -9,9 +9,9 @@ import type { ParticleRendererInterface } from './particles/interfaces/particleR
 export declare class ThemeDefinitionInterface {
   /** Ambient background parameters read by AmbientBackground.vue. */
   readonly 'ambient': {
-    /** Number of lava blobs generated. */
+    /** Number of glows painted on the ambient canvas. */
     'blobCount': number;
-    /** Fully resolved CSS filter applied to the lava-blob layer. */
+    /** Fully resolved CSS filter applied to the ambient canvas. */
     'gooFilter': string;
     /** Fully resolved CSS display applied to the perspective grid floor. */
     'gridDisplay': string;

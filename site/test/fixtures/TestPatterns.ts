@@ -42,6 +42,7 @@ export const TestPatterns = Object.freeze({
     '11-architecture-internals', '12-living-color'
   ]),
   'HEX': /^#[0-9a-f]{6}$/iu,
+  'HEX_WITH_ALPHA': /^#[0-9a-f]{6}(?:[0-9a-f]{2})?$/iu,
   'INVALID_DRAG_END': /Cannot handle event "DRAG_END" in state "idle"/u,
   'INVALID_DRAG_MOVE': /Cannot handle event "DRAG_MOVE" in state "idle"/u,
   'SSR_COMBINE_STAGE': /id="combine"/u,
