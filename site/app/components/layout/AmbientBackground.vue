@@ -17,12 +17,14 @@ import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vu
 import type { LivingBackgroundFrameInterface } from '~/composables/interfaces/LivingBackgroundFrameInterface.ts';
 
 import { drawColorStream } from '~/components/content/colorStream/drawColorStream.ts';
+import { BrowserLivingBackgroundEnvironment } from '~/composables/BrowserLivingBackgroundEnvironment.ts';
 import { useLivingBackground } from '~/composables/useLivingBackground.ts';
 import { useThemePreset } from '~/composables/useThemePreset.ts';
 import { randomPlacement } from '~/theme/particles/randomPlacement.ts';
 
 import { AmbientFieldPainter } from './ambient/AmbientFieldPainter.ts';
 import type { AmbientStarLayerInterface } from './ambient/AmbientStarLayerInterface.ts';
+import { AmbientStarfieldLoop } from './ambient/AmbientStarfieldLoop.ts';
 import { AmbientStarfieldPainter } from './ambient/AmbientStarfieldPainter.ts';
 
 /**
@@ -192,12 +194,12 @@ const STAR_MAX_PIXEL_RATIO = 1.5;
 
 const starCanvas = shallowRef<HTMLCanvasElement | null>(null);
 const starRoot = ref<HTMLElement | null>(null);
-let starFrame: number | null = null;
+let starLoop: AmbientStarfieldLoop | null = null;
+let starEnvironment: BrowserLivingBackgroundEnvironment | null = null;
 let starResizeObserver: ResizeObserver | null = null;
 let starColors: string[] = [];
 let starColorsAt = Number.NEGATIVE_INFINITY;
 let starLastPaintAt = Number.NEGATIVE_INFINITY;
-let isReducedMotion = false;
 const starEpoch = performance.now();
 
 function resolveStarColors(now: number): void {
@@ -239,28 +241,8 @@ function paintStars(now: number): void {
   if (canvas !== null && context !== null) {
     starLastPaintAt = now;
     resolveStarColors(now);
-    const elapsed = isReducedMotion ? 0 : now - starEpoch;
+    const elapsed = starEnvironment?.prefersReducedMotion() === true ? 0 : now - starEpoch;
     AmbientStarfieldPainter.paint(context, canvas.width, canvas.height, starLayers(), elapsed, activeAmbient.value.speedMultiplier);
-  }
-}
-
-function starTick(now: number): void {
-  starFrame = requestAnimationFrame(starTick);
-  if (now - starLastPaintAt >= STAR_FRAME_MS) {
-    paintStars(now);
-  }
-}
-
-function stopStars(): void {
-  if (starFrame !== null) {
-    cancelAnimationFrame(starFrame);
-    starFrame = null;
-  }
-}
-
-function startStars(): void {
-  if (starFrame === null && !isReducedMotion && document.visibilityState === 'visible') {
-    starFrame = requestAnimationFrame(starTick);
   }
 }
 
@@ -283,18 +265,10 @@ function starCanvasRef(element: unknown): void {
   }
 }
 
-function onStarVisibility(): void {
-  if (document.visibilityState === 'visible') {
-    startStars();
-  } else {
-    stopStars();
-  }
-}
-
 onMounted(() => {
-  isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  document.addEventListener('visibilitychange', onStarVisibility);
-  startStars();
+  starEnvironment = new BrowserLivingBackgroundEnvironment(window);
+  starLoop = AmbientStarfieldLoop.create(starEnvironment, paintStars, STAR_FRAME_MS);
+  starLoop.start();
 });
 watch(starOutputs, () => { paintStars(performance.now()); });
 
@@ -303,8 +277,7 @@ watch(blobField, paintLastFrame);
 onBeforeUnmount(() => {
   resizeObserver?.disconnect();
   starResizeObserver?.disconnect();
-  stopStars();
-  document.removeEventListener('visibilitychange', onStarVisibility);
+  starLoop?.stop();
 });
 </script>
 
