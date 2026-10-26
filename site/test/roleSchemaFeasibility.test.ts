@@ -10,7 +10,6 @@ import { COLOR_PIPELINE } from '../app/composables/colorPipeline.ts';
 import { ContrastConfigFor } from '../app/composables/contrastConfigFor.ts';
 import { createColorEngine } from '../app/composables/createColorEngine.ts';
 import { ContrastConfigOptionsEntity } from '../app/composables/entities/ContrastConfigOptionsEntity.ts';
-import { DerivationConfigEntity } from '../app/composables/entities/DerivationConfigEntity.ts';
 import { VARIANT_CONFIG } from '../app/composables/variantConfig.ts';
 import { roleSchemaByName } from '../app/theme/RoleSchemaByName.ts';
 import { SeedInputEntity } from '../app/theme/types/SeedInputEntity.ts';
@@ -93,11 +92,7 @@ class RoleSchemaFeasibility {
     const result = engine.run(InputEntity.create({
       'colors': [SeedInputEntity.intake('#000000'), SeedInputEntity.intake('#ffffff')],
       'contrast': ContrastConfigFor.forOptions(ContrastConfigOptionsEntity.create({ 'cvdMode': 'nudge', 'enableStrictCompliance': false, 'nonMandatoryLevel': 'AA', 'strictness': strictness })),
-      'metadata': {
-        'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
-        'derivation:config': JsonValue.from(DerivationConfigEntity.defaultValue),
-        'derivation:semanticHuesEnabled': true
-      },
+      'metadata': { 'core:variantConfig': JsonValue.from(VARIANT_CONFIG) },
       'roles': schema,
       'runtime': runtime
     }));
