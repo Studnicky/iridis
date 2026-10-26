@@ -14,6 +14,8 @@ const props = defineProps<{
   dpadReady: boolean;
 }>();
 
+const emit = defineEmits<{ activity: [] }>();
+
 const containerRef = defineModel<HTMLDivElement | null>('containerRef', { default: null });
 const labelsRef = defineModel<HTMLCanvasElement | null>('labelsRef', { default: null });
 const snapshotRef = defineModel<HTMLDivElement | null>('snapshotRef', { default: null });
@@ -39,6 +41,12 @@ const snapshotRef = defineModel<HTMLDivElement | null>('snapshotRef', { default:
       class="cg-wrap"
       :class="{ 'cg-wrap--fullscreen': fullscreen }"
       :data-graph-state="lifecycle"
+      @focusin="emit('activity')"
+      @keydown="emit('activity')"
+      @pointerdown="emit('activity')"
+      @pointerenter="emit('activity')"
+      @pointermove="emit('activity')"
+      @wheel.passive="emit('activity')"
     >
       <div class="cg-canvas">
         <div

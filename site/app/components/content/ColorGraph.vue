@@ -32,6 +32,7 @@ import { colorGraphLabelPainter } from './graph/colorGraphLabelPainter.ts';
 import { CameraControls } from './viz/CameraControls.ts';
 import { ColorGraphLifecycleEvent } from './viz/ColorGraphLifecycleEvent.ts';
 import { ColorGraphMountController } from './viz/ColorGraphMountController.ts';
+import type { ColorGraphViewStateInterface } from './viz/ColorGraphViewStateInterface.ts';
 import { LegendMachine } from './viz/LegendMachine.ts';
 import { ViewportStatus } from './viz/ViewportStatus.ts';
 
@@ -106,6 +107,7 @@ let pendingLabelPaint = false;
 let isGraphVisible = true;
 let isInView = true;
 let appliedStructureKey: string | null = null;
+let savedView: ColorGraphViewStateInterface | null = null;
 
 function isEnabled(): boolean {
   const result = props.enabled ?? true;
@@ -226,6 +228,7 @@ const controller = ColorGraphMountController.create<Graph, HTMLCanvasElement>({
   'capture': captureSnapshot,
   'construct': constructGraph,
   'dispose': disposeGraph,
+  'idleElapsed': onIdleElapsed,
   'presentSnapshot': presentSnapshot,
   'reportRejection': () => {
     logger.error(
@@ -238,7 +241,7 @@ const controller = ColorGraphMountController.create<Graph, HTMLCanvasElement>({
       })
     );
   }
-});
+}, buildColorGraphViewModel.idleSuspendMs);
 const lifecycleState = shallowRef(controller.getState());
 controller.subscribe((next) => { lifecycleState.value = next; });
 
@@ -278,6 +281,7 @@ function settleFit(): void {
   controller.signal(ColorGraphLifecycleEvent.fitSettled());
   controller.signal(ColorGraphLifecycleEvent.zoomEnded());
   controller.releaseSnapshot();
+  controller.armIdle();
   if (shouldStartSimulation) {
     try { handle.start(1); } catch { /* ignore */ }
   }
@@ -377,11 +381,54 @@ async function activateGraph(): Promise<void> {
   }
 }
 
+function readView(): ColorGraphViewStateInterface | null {
+  const handle = graph.value;
+  let view: ColorGraphViewStateInterface | null = null;
+  const floor = fitZoomLevel.value;
+  if (handle !== null && floor !== null && controller.getState().isSettled()) {
+    try {
+      const origin = handle.spaceToScreenPosition([0, 0]);
+      view = {
+        'fitZoomLevel': floor,
+        'originScreenX': origin[0],
+        'originScreenY': origin[1],
+        'positions': handle.getPointPositions(),
+        'zoomLevel': handle.getZoomLevel()
+      };
+    } catch { /* ignore */ }
+  }
+
+  return view;
+}
+
 function suspendGraph(): void {
+  savedView = readView();
   disarmRuntime();
   fullscreen.value = false;
   controller.suspend();
   resetGraphState();
+}
+
+function suspendGraphForIdle(): void {
+  savedView = readView();
+  disarmRuntime();
+  controller.suspendIdle();
+  resetGraphState();
+}
+
+// A graph the user is not touching disposes its WebGL loop; a fullscreen graph stays live.
+function onIdleElapsed(): void {
+  if (!fullscreen.value && controller.getState().isSettled()) {
+    suspendGraphForIdle();
+  } else {
+    controller.armIdle();
+  }
+}
+
+function onActivity(): void {
+  if (isEnabled() && controller.noteActivity()) {
+    void activateGraph();
+  }
 }
 
 function pollZoom(): void {
@@ -562,7 +609,13 @@ function paint(): void {
     appliedStructureKey,
     buffers
   );
+  const restoredView = shouldReframe && savedView?.positions.length === positions.length ? savedView : null;
+  savedView = null;
   labelMeta = meta;
+  if (restoredView !== null) {
+    restoreView(handle, buffers, restoredView);
+    return;
+  }
   if (shouldReframe) {
     handle.setPointPositions(positions);
     handle.trackPointPositionsByIndices(meta.map((_, index) => index));
@@ -580,6 +633,34 @@ function paint(): void {
     armFitSequence(true);
     appliedStructureKey = buffers.structureKey;
   }
+  scheduleLabelPaint();
+}
+
+// A restored graph keeps the point layout, zoom and pan it was disposed with and skips the fit sweep.
+function restoreView(handle: Graph, buffers: ReturnType<typeof buildColorGraphBuffers.build>, view: ColorGraphViewStateInterface): void {
+  handle.setPointPositions(Float32Array.from(view.positions), true);
+  handle.trackPointPositionsByIndices(buffers.meta.map((_, index) => index));
+  handle.setLinks(buffers.links);
+  handle.setPointColors(buffers.colors);
+  handle.setPointSizes(buffers.sizes);
+  handle.setLinkColors(buffers.linkColors);
+  handle.render(0);
+  handle.setZoomLevel(view.zoomLevel, 0, false);
+  const origin = handle.spaceToScreenPosition([0, 0]);
+  const panned = buildColorGraphViewportModel.translatePoints(
+    view.positions,
+    (view.originScreenX - origin[0]) / view.zoomLevel,
+    (view.originScreenY - origin[1]) / view.zoomLevel
+  );
+  handle.setPointPositions(panned, true);
+  fitZoomLevel.value = view.fitZoomLevel;
+  appliedStructureKey = buffers.structureKey;
+  controller.signal(ColorGraphLifecycleEvent.fitArmed());
+  controller.signal(ColorGraphLifecycleEvent.fitSettled());
+  controller.signal(ColorGraphLifecycleEvent.zoomEnded());
+  controller.releaseSnapshot();
+  controller.armIdle();
+  pollZoom();
   scheduleLabelPaint();
 }
 
@@ -654,5 +735,6 @@ function paintLabels(): void {
     :dpad-ready="graph !== null"
     :zoom-level="zoomLevel"
     :role-count="mathList.length"
+    @activity="onActivity"
   />
 </template>

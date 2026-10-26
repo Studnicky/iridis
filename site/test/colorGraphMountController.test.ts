@@ -23,6 +23,9 @@ class FakeSnapshot {
 }
 
 class FakeHost implements ColorGraphMountHostInterface<FakeGraph, FakeSnapshot> {
+  public static readonly idleSuspendMs = 3000;
+
+  public idleHandler: (() => void) | null = null;
   public readonly presented: (FakeSnapshot | null)[] = [];
   public constructFailures = 0;
   public constructed = 0;
@@ -49,6 +52,10 @@ class FakeHost implements ColorGraphMountHostInterface<FakeGraph, FakeSnapshot> 
 
   public dispose(): void {
     this.disposed += 1;
+  }
+
+  public idleElapsed(): void {
+    this.idleHandler?.();
   }
 
   public liveCount(): number {
@@ -89,7 +96,7 @@ class MountedGraph {
 
 await test('an active face mounts one live graph and a repeated activation reuses it', async () => {
   const host = new FakeHost();
-  const controller = ColorGraphMountController.create(host);
+  const controller = ColorGraphMountController.create(host, FakeHost.idleSuspendMs);
 
   const first = controller.mount();
   const second = controller.mount();
@@ -104,7 +111,7 @@ await test('an active face mounts one live graph and a repeated activation reuse
 
 await test('an inactive face takes a snapshot, disposes the graph, and shows the snapshot', async () => {
   const host = new FakeHost();
-  const controller = ColorGraphMountController.create(host);
+  const controller = ColorGraphMountController.create(host, FakeHost.idleSuspendMs);
 
   controller.mount();
   await MountedGraph.settled(controller);
@@ -119,7 +126,7 @@ await test('an inactive face takes a snapshot, disposes the graph, and shows the
 
 await test('a face that deactivates before its device is ready disposes without a snapshot', async () => {
   const host = new FakeHost();
-  const controller = ColorGraphMountController.create(host);
+  const controller = ColorGraphMountController.create(host, FakeHost.idleSuspendMs);
 
   controller.mount();
   controller.suspend();
@@ -132,7 +139,7 @@ await test('a face that deactivates before its device is ready disposes without 
 
 await test('a failed capture leaves no snapshot and returns the machine to idle', async () => {
   const host = new FakeHost();
-  const controller = ColorGraphMountController.create(host);
+  const controller = ColorGraphMountController.create(host, FakeHost.idleSuspendMs);
 
   host.snapshotsAvailable = false;
   controller.mount();
@@ -146,7 +153,7 @@ await test('a failed capture leaves no snapshot and returns the machine to idle'
 
 await test('reactivating a suspended face mounts a new graph and releasing the snapshot clears it', async () => {
   const host = new FakeHost();
-  const controller = ColorGraphMountController.create(host);
+  const controller = ColorGraphMountController.create(host, FakeHost.idleSuspendMs);
 
   controller.mount();
   await MountedGraph.settled(controller);
@@ -169,7 +176,7 @@ await test('reactivating a suspended face mounts a new graph and releasing the s
 
 await test('rapid face changes never leave more than one live graph', async () => {
   const host = new FakeHost();
-  const controller = ColorGraphMountController.create(host);
+  const controller = ColorGraphMountController.create(host, FakeHost.idleSuspendMs);
   const toggles = 25;
 
   for (let index = 0; index < toggles; index += 1) {
@@ -195,7 +202,7 @@ await test('rapid face changes never leave more than one live graph', async () =
 
 await test('a failed construction returns to idle and the next activation retries', async () => {
   const host = new FakeHost();
-  const controller = ColorGraphMountController.create(host);
+  const controller = ColorGraphMountController.create(host, FakeHost.idleSuspendMs);
 
   host.constructFailures = 1;
 
@@ -213,7 +220,7 @@ await test('a failed construction returns to idle and the next activation retrie
 await test('suspending and disposing cancel every scheduled timer on a virtual clock', (context) => {
   context.mock.timers.enable({ 'apis': ['setTimeout'] });
   const host = new FakeHost();
-  const controller = ColorGraphMountController.create(host);
+  const controller = ColorGraphMountController.create(host, FakeHost.idleSuspendMs);
   let fired = 0;
   const count = (): void => { fired += 1; };
 
@@ -249,7 +256,7 @@ await test('suspending and disposing cancel every scheduled timer on a virtual c
 await test('cancelling one timer group leaves the others scheduled', (context) => {
   context.mock.timers.enable({ 'apis': ['setTimeout'] });
   const host = new FakeHost();
-  const controller = ColorGraphMountController.create(host);
+  const controller = ColorGraphMountController.create(host, FakeHost.idleSuspendMs);
   const fired: string[] = [];
 
   controller.schedule('fit', 100, () => { fired.push('fit'); });
@@ -263,7 +270,7 @@ await test('cancelling one timer group leaves the others scheduled', (context) =
 
 await test('lifecycle events are delivered without rejections', async () => {
   const host = new FakeHost();
-  const controller = ColorGraphMountController.create(host);
+  const controller = ColorGraphMountController.create(host, FakeHost.idleSuspendMs);
 
   controller.mount();
   await MountedGraph.settled(controller);
@@ -272,4 +279,108 @@ await test('lifecycle events are delivered without rejections', async () => {
   await MountedGraph.drain();
 
   assert.equal(host.rejections, 0);
+});
+
+class IdleScenario {
+  static async settledController(host: FakeHost): Promise<ColorGraphMountController<FakeGraph, FakeSnapshot>> {
+    const controller = ColorGraphMountController.create(host, FakeHost.idleSuspendMs);
+
+    host.idleHandler = () => { controller.suspendIdle(); };
+    controller.mount();
+    await MountedGraph.settled(controller);
+    controller.armIdle();
+
+    return controller;
+  }
+}
+
+await test('a settled graph without input suspends behind a snapshot once the idle interval elapses', async (context) => {
+  context.mock.timers.enable({ 'apis': ['setTimeout'] });
+  const host = new FakeHost();
+  const controller = await IdleScenario.settledController(host);
+
+  context.mock.timers.tick(FakeHost.idleSuspendMs - 1);
+
+  assert.equal(host.liveCount(), 1);
+
+  context.mock.timers.tick(1);
+  await MountedGraph.drain();
+
+  assert.equal(host.liveCount(), 0);
+  assert.equal(host.presented.at(-1)?.serial, 1);
+  assert.equal(controller.getState().variant, 'suspended');
+  assert.equal(controller.pendingTimerCount(), 0);
+});
+
+await test('input before the idle interval elapses restarts the countdown', async (context) => {
+  context.mock.timers.enable({ 'apis': ['setTimeout'] });
+  const host = new FakeHost();
+  const controller = await IdleScenario.settledController(host);
+
+  context.mock.timers.tick(FakeHost.idleSuspendMs - 1);
+
+  assert.equal(controller.noteActivity(), false);
+
+  context.mock.timers.tick(FakeHost.idleSuspendMs - 1);
+
+  assert.equal(host.liveCount(), 1);
+
+  context.mock.timers.tick(1);
+  await MountedGraph.drain();
+
+  assert.equal(host.liveCount(), 0);
+});
+
+await test('input on an idle-suspended graph requests a mount and the new graph is the only live one', async (context) => {
+  context.mock.timers.enable({ 'apis': ['setTimeout'] });
+  const host = new FakeHost();
+  const controller = await IdleScenario.settledController(host);
+
+  context.mock.timers.tick(FakeHost.idleSuspendMs);
+  await MountedGraph.drain();
+
+  assert.equal(controller.noteActivity(), true);
+  assert.equal(controller.noteActivity(), false);
+
+  controller.mount();
+  await MountedGraph.drain();
+
+  assert.equal(host.liveCount(), 1);
+  assert.equal(host.constructed, 2);
+  assert.equal(controller.getState().variant, 'constructing');
+});
+
+await test('a face that deactivates after an idle suspension does not wake on input', async (context) => {
+  context.mock.timers.enable({ 'apis': ['setTimeout'] });
+  const host = new FakeHost();
+  const controller = await IdleScenario.settledController(host);
+
+  context.mock.timers.tick(FakeHost.idleSuspendMs);
+  controller.suspend();
+
+  assert.equal(controller.noteActivity(), false);
+});
+
+await test('rapid input and idle cycles leave one live graph and no timers after dispose', async (context) => {
+  context.mock.timers.enable({ 'apis': ['setTimeout'] });
+  const host = new FakeHost();
+  const controller = await IdleScenario.settledController(host);
+  const cycles = 30;
+
+  for (let index = 0; index < cycles; index += 1) {
+    context.mock.timers.tick(FakeHost.idleSuspendMs);
+    assert.equal(host.liveCount(), 0);
+    assert.equal(controller.noteActivity(), true);
+    controller.mount();
+    controller.noteActivity();
+    controller.noteActivity();
+    assert.equal(host.liveCount(), 1);
+    assert.equal(controller.pendingTimerCount(), 1);
+  }
+  controller.dispose();
+  context.mock.timers.tick(FakeHost.idleSuspendMs * 2);
+
+  assert.equal(host.liveCount(), 0);
+  assert.equal(controller.pendingTimerCount(), 0);
+  assert.equal(host.constructed, cycles + 1);
 });

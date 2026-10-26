@@ -154,6 +154,10 @@ class ColorGraphLifecycleBrowser {
     await page.locator('#explore .cyl-face:not(.active) .cg-wrap[data-graph-state="suspended"]').waitFor({ 'timeout': ColorGraphLifecycleBrowser.graphWaitMs });
   }
 
+  static async awaitIdleSuspension(page: Page): Promise<void> {
+    await page.locator('#explore .cyl-face.active .cg-wrap[data-graph-state="suspended"]').waitFor({ 'timeout': ColorGraphLifecycleBrowser.graphWaitMs });
+  }
+
   static async selectGraphCard(page: Page): Promise<void> {
     await page.locator('#explore').getByRole('button', {
       'exact': true,
@@ -295,4 +299,51 @@ await test('a graph on an inactive neighbour face is disposed behind a snapshot 
   });
 
   assert.deepEqual(resumed, { 'liveCanvases': 1, 'snapshotCanvases': 0 });
+});
+
+await test('an idle graph disposes its live instance and pointer input restores the same zoom', { 'timeout': 180_000 }, async (context) => {
+  assert.ok(ProductionNitroServer.isBuilt(), 'The production Nitro entrypoint is required; run through the site test script.');
+  const running = await ProductionNitroServer.start();
+
+  context.after(async () => {
+    await ProductionNitroServer.stop(running.child);
+  });
+
+  const browser = await chromium.launch({ 'headless': true });
+
+  context.after(async () => {
+    await browser.close();
+  });
+  const page = await browser.newPage({
+    'reducedMotion': 'reduce',
+    'viewport': {
+      'height': 900,
+      'width': 1280
+    }
+  });
+
+  await page.goto(running.origin, { 'waitUntil': 'networkidle' });
+  await page.locator('#explore').scrollIntoViewIfNeeded();
+  await ColorGraphLifecycleBrowser.selectGraphCard(page);
+  await ColorGraphLifecycleBrowser.awaitState(page, 'settled');
+
+  const canvas = page.locator('#explore .cyl-face.active .cg-cosmos');
+  const fitZoom = await ColorGraphLifecycleBrowser.zoomText(page);
+
+  await ColorGraphLifecycleBrowser.wheelZoomInSettled(page, canvas, fitZoom);
+  const zoomBefore = await ColorGraphLifecycleBrowser.zoomText(page);
+
+  await page.mouse.move(0, 0);
+  await ColorGraphLifecycleBrowser.awaitIdleSuspension(page);
+  const liveCanvases = await page.locator('#explore .cyl-face.active .cg-cosmos canvas').count();
+
+  assert.equal(liveCanvases, 0);
+
+  const target = await ColorGraphLifecycleBrowser.wheelTarget(canvas);
+
+  await page.mouse.move(target[0], target[1]);
+  await ColorGraphLifecycleBrowser.awaitState(page, 'settled');
+  const zoomAfter = await ColorGraphLifecycleBrowser.zoomText(page);
+
+  assert.ok(Math.abs(zoomAfter - zoomBefore) / zoomBefore < 0.01, JSON.stringify({ 'zoomAfter': zoomAfter, 'zoomBefore': zoomBefore }));
 });

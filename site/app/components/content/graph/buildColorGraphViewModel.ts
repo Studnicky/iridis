@@ -3,9 +3,13 @@ import { ColorGraphNodeCategory } from './ColorGraphNodeCategory.ts';
 
 class ColorGraphLegendItem {
   public readonly category: ColorGraphNodeCategory;
+
   public readonly color: string;
+
   public readonly label: string;
+
   public readonly markClass: string;
+
   private readonly categoryVisibility: ColorGraphCategoryVisibility;
 
   public constructor(
@@ -24,25 +28,36 @@ class ColorGraphLegendItem {
 
   public get active(): boolean {
     const visible = this.categoryVisibility.isVisible(this.category);
+
     return visible;
   }
 
   public get key(): string {
     const identifier = this.category.identifier;
+
     return identifier;
   }
 
-  public get swatch(): 'solid' | 'dashed' | 'square' | 'circle' {
-    if (this.markClass === 'circle') {return 'circle';}
-    if (this.markClass === 'dashed') {return 'dashed';}
-    if (this.markClass === 'square') {return 'square';}
+  public get swatch(): 'circle' | 'dashed' | 'solid' | 'square' {
+    if (this.markClass === 'circle') {
+      return 'circle';
+    }
+    if (this.markClass === 'dashed') {
+      return 'dashed';
+    }
+    if (this.markClass === 'square') {
+      return 'square';
+    }
+
     return 'solid';
   }
 }
 
 class ColorGraphLegendSection {
   public readonly entries: readonly ColorGraphLegendItem[];
+
   public readonly key: string;
+
   public readonly label: string;
 
   public constructor(entries: readonly ColorGraphLegendItem[], key: string, label: string) {
@@ -53,10 +68,24 @@ class ColorGraphLegendSection {
 }
 
 export const buildColorGraphViewModel = class ColorGraphViewModelBuilder {
-  public static readonly fitDelaysMs: readonly number[] = [0, 250, 500, 750, 1200];
+  public static readonly fitDelaysMs: readonly number[] = [
+    0,
+    250,
+    500,
+    750,
+    1200
+  ];
+
   public static readonly fitPadding = 0.15;
+
+
+  /** Input-free time after which a settled graph is disposed behind its snapshot. */
+  public static readonly idleSuspendMs = 3000;
+
   public static readonly panStep = 80;
+
   public static readonly spaceSize = 4096;
+
   public static readonly zoomStep = 1.25;
 
   public static buildLegendTabs(
@@ -98,12 +127,13 @@ export const buildColorGraphViewModel = class ColorGraphViewModelBuilder {
       )
     ];
     const sections = [new ColorGraphLegendSection(entries, 'resolution', `iridis-${roleCount}`)];
+
     return sections;
   }
 
   public static createCategoryVisibility(): ColorGraphCategoryVisibility {
     const categoryVisibility = new ColorGraphCategoryVisibility();
+
     return categoryVisibility;
   }
-
 };
