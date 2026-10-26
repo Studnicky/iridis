@@ -192,8 +192,7 @@ class ContrastFeasibilityDomain {
     const foregroundCandidates = foregroundArcs ?? ContrastFeasibilityDomain.fixedHueArcs(foreground);
     const backgroundCandidates = backgroundArcs ?? ContrastFeasibilityDomain.fixedHueArcs(background);
     if (foregroundCandidates === undefined || backgroundCandidates === undefined) {
-      const result = ContrastFeasibilityDomain.sampledIndeterminate(foreground, background, requirement);
-      return result;
+      return undefined;
     }
     for (let foregroundIndex = 0; foregroundIndex < foregroundCandidates.length; foregroundIndex += 1) {
       const foregroundArc = foregroundCandidates[foregroundIndex];
@@ -548,6 +547,12 @@ class ContrastFeasibilityDomain {
     if (domain.hue !== undefined) {
       const result = { 'end': domain.hue, 'start': domain.hue };
       return result;
+    }
+    const relation = domain.relation;
+    if (relation?.root === root && relation.affineOffset === undefined) {
+      const start = relation.resolve(arc.start);
+      const end = relation.resolve(arc.end);
+      return { 'end': Math.max(start, end), 'start': Math.min(start, end) };
     }
     const offset = ContrastFeasibilityDomain.domainAffineOffset(domain, root);
     if (offset === undefined) {
