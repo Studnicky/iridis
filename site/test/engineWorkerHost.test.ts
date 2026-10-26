@@ -103,14 +103,12 @@ await test('the host combines weighted hexes into seeds and resolves a palette r
   fixture.send(WorkerMessageEntity.create({
     'colorSpace': request.colorSpace,
     'cvdMode': request.cvdMode,
-    'derivationConfig': request.derivationConfig,
     'enableStrictCompliance': request.enableStrictCompliance,
     'framing': request.framing,
     'hexes': ['#7c3aed', '#7c3aed', '#06b6d4', '#101820'],
     'kind': 'combine',
     'nonMandatoryLevel': request.nonMandatoryLevel,
     'schemaName': request.schemaName,
-    'semanticHuesEnabled': request.semanticHuesEnabled,
     'settings': HostFixture.settings(),
     'strictness': request.strictness
   }));

@@ -3,9 +3,9 @@ import type {
 } from '@studnicky/json-tology/types';
 
 import { EntityCompiler } from '@studnicky/entity/browser';
+import { RoleRelationshipGraphEntity } from '@studnicky/iridis';
 
 import { CvdModeEntity } from './CvdModeEntity.ts';
-import { DerivationConfigEntity } from './DerivationConfigEntity.ts';
 import { FramingEntity } from './FramingEntity.ts';
 import { NonMandatoryLevelEntity } from './NonMandatoryLevelEntity.ts';
 import { SchemaNameEntity } from './SchemaNameEntity.ts';
@@ -34,34 +34,31 @@ export namespace PaletteResolveRequestEntity {
         'type': 'string'
       },
       'cvdMode': CvdModeEntity.Schema,
-      'derivationConfig': DerivationConfigEntity.Schema,
       'enableStrictCompliance': { 'type': 'boolean' },
       'framing': FramingEntity.Schema,
       'nonMandatoryLevel': NonMandatoryLevelEntity.Schema,
+      'relationshipGraph': RoleRelationshipGraphEntity.Schema,
       'schemaName': SchemaNameEntity.Schema,
       'seeds': {
         'items': seedSchema,
         'type': 'array'
       },
-      'semanticHuesEnabled': { 'type': 'boolean' },
       'strictness': { 'type': 'integer' }
     },
     'required': [
       'colorSpace',
       'cvdMode',
-      'derivationConfig',
       'enableStrictCompliance',
       'framing',
       'nonMandatoryLevel',
       'schemaName',
       'seeds',
-      'semanticHuesEnabled',
       'strictness'
     ],
     'type': 'object'
   } as const;
 
-  export type Type = NominalSchemaType<typeof Schema> & { 'derivationConfig': DerivationConfigEntity.Type };
+  export type Type = NominalSchemaType<typeof Schema> & { 'relationshipGraph'?: RoleRelationshipGraphEntity.Type };
 
   export const validate = EntityCompiler.compile<Type>(Schema);
   export const intake = EntityCompiler.compileIntake<Type>(Schema);

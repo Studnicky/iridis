@@ -16,7 +16,6 @@ import * as VueModule from 'vue';
 
 import { useNuxtApp, useRuntimeConfig, useState } from '#imports';
 
-import type { DerivationRelationEntity } from './entities/DerivationRelationEntity.ts';
 import type { PaletteSnapshotEntity } from './entities/PaletteSnapshotEntity.ts';
 import type { WorkerEnvelopeEntity } from './entities/WorkerEnvelopeEntity.ts';
 import type { WorkerReplyEntity } from './entities/WorkerReplyEntity.ts';
@@ -39,7 +38,6 @@ import { AccessibilityBlockers } from './accessibilityBlockers.ts';
 import { BrowserWorkerPort } from './browserWorkerPort.ts';
 import { IRIDIS_CONSTANTS } from './constants/IridisConstants.ts';
 import { CvdModeEntity } from './entities/CvdModeEntity.ts';
-import { DerivationConfigEntity } from './entities/DerivationConfigEntity.ts';
 import { ExtractionSettingsEntity } from './entities/ExtractionSettingsEntity.ts';
 import { FramingEntity } from './entities/FramingEntity.ts';
 import { ModeEntity } from './entities/ModeEntity.ts';
@@ -174,69 +172,6 @@ class IridisContextFactory {
     const enableStrictCompliance = VueModule.ref<boolean>(false);
     const nonMandatoryLevel = VueModule.ref<NonMandatoryLevelEntity.Type>(NonMandatoryLevelEntity.defaultValue);
     const colorSpace = VueModule.ref<'srgb' | 'displayP3'>('srgb');
-
-    /**
- * Color derivation configuration — a hue-algorithm choice per derivedFrom
- * relation (keyed by the child role's own name). Passed through metadata to
- * the derive:roleRelations/derive:semanticHues pipeline tasks, which write
- * the resolved overrides those relations consult; changing it re-runs the
- * whole pipeline via the FSM's schedule(), the same as any other palette
- * parameter — never recomputed and reapplied client-side.
- */
-    const derivationConfig = VueModule.ref<DerivationConfigEntity.Type>(DerivationConfigEntity.defaultValue);
-
-    /** Merges a single relation's config into `derivationConfig` and re-runs the pipeline — the ONLY way a relation changes; the resolved hue is always recomputed by derive:roleRelations, never written directly here. */
-    class RelationUpdateOperation {
-      static run(roleName: string, relation: DerivationRelationEntity.Type): void {
-        const patch: Record<string, DerivationRelationEntity.Type> = {};
-        Object.defineProperty(patch, roleName, { 'configurable': true, 'enumerable': true, 'value': relation, 'writable': true });
-        relationsUpdate(patch);
-      }
-    }
-
-    const relationUpdate = RelationUpdateOperation.run;
-
-    /**
- * Merges a whole batch of relations into `derivationConfig` in a SINGLE
- * dispatch — required (not just an optimization) for a multi-child bulk
- * change like "apply this algorithm to every child in a hub": the FSM's
- * `EffectInterpreter.send()` is async, so firing one `send()` per relation
- * in a tight synchronous loop races — only the first lands before the
- * interpreter is busy processing it, and the rest are silently dropped.
- * One dispatch carrying every changed relation sidesteps the race entirely.
- */
-    class RelationsUpdateOperation {
-      static run(newRelations: Record<string, DerivationRelationEntity.Type>): void {
-        const updated = DerivationConfigEntity.create({ 'relations': { ...derivationConfig.value.relations, ...newRelations } });
-        sendUiEvent(IridisUiEvent.setDerivationConfig(updated));
-      }
-    }
-
-    const relationsUpdate = RelationsUpdateOperation.run;
-
-    /**
- * Whether `derive:semanticHues` runs at all — when off, success/warning/
- * error/info keep whatever hue their own relation (or the schema default)
- * gives them, with no built-in nudge toward their intent's conventional
- * meaning. Passed through metadata; the task itself checks this and is a
- * full no-op when disabled, same as any other palette parameter.
- */
-    const semanticHuesEnabled = VueModule.ref(true);
-    class SemanticHuesEnabledSetOperation {
-      static run(nextState: boolean | string): void {
-        if (nextState === true) {
-          sendUiEvent(IridisUiEvent.setSemanticHuesEnabled());
-          return;
-        }
-        if (nextState === false) {
-          sendUiEvent(IridisUiEvent.setSemanticHuesDisabled());
-          return;
-        }
-        throw new TypeError('Semantic hue state must be boolean');
-      }
-    }
-
-    const semanticHuesEnabledSet = SemanticHuesEnabledSetOperation.run;
 
     /**
  * Visual CVD preview — purely a display-time filter over whatever the engine
@@ -544,13 +479,11 @@ class IridisContextFactory {
         const result = PaletteResolveRequestEntity.create({
           'colorSpace': colorSpace.value,
           'cvdMode': cvdMode.value,
-          'derivationConfig': VueModule.toRaw(derivationConfig.value),
           'enableStrictCompliance': enableStrictCompliance.value,
           'framing': pendingFraming ?? framing.value,
           'nonMandatoryLevel': nonMandatoryLevel.value,
           'schemaName': schemaName.value,
           'seeds': PaletteResolve.seeds(seeds),
-          'semanticHuesEnabled': semanticHuesEnabled.value,
           'strictness': contrastStrictness.value
         });
         return result;
@@ -970,14 +903,12 @@ class IridisContextFactory {
         void CombineNowRunOperation.send(WorkerMessageEntity.create({
           'colorSpace': colorSpace.value,
           'cvdMode': cvdMode.value,
-          'derivationConfig': VueModule.toRaw(derivationConfig.value),
           'enableStrictCompliance': enableStrictCompliance.value,
           'framing': framing.value,
           'hexes': combinedHexes,
           'kind': 'combine',
           'nonMandatoryLevel': nonMandatoryLevel.value,
           'schemaName': schemaName.value,
-          'semanticHuesEnabled': semanticHuesEnabled.value,
           'settings': ExtractionSettingsOperation.from(defaultEntrySettings()),
           'strictness': contrastStrictness.value
         }));
@@ -1210,16 +1141,13 @@ class IridisContextFactory {
     }
 
     class PaletteParameterOperation {
-      static disableSemanticHues(): void { semanticHuesEnabled.value = false; schedule(); }
       static disableStrictCompliance(): void { enableStrictCompliance.value = false; schedule(); }
-      static enableSemanticHues(): void { semanticHuesEnabled.value = true; schedule(); }
       static enableStrictCompliance(): void { enableStrictCompliance.value = true; schedule(); }
       static setContrastStrictness(strictness: number): void { contrastStrictness.value = strictness; schedule(); }
       static setCvdMode(nextCvdMode: string): void { cvdMode.value = CvdModeEntity.intake(nextCvdMode); schedule(); }
       static setNonMandatoryLevel(nextLevel: string): void { nonMandatoryLevel.value = NonMandatoryLevelEntity.intake(nextLevel); schedule(); }
       static setDarkFraming(): void { pendingFraming = FramingEntity.intake('dark'); run(); }
       static setDeltaEImageAlgorithm(): void { imgStrategy.value = ClusterDispatcher.resolve('delta-e'); scheduleCombine(); }
-      static setDerivationConfig(config: DerivationConfigEntity.Type): void { derivationConfig.value = config; schedule(); }
       static setDisplayP3ColorSpace(): void { colorSpace.value = 'displayP3'; schedule(); }
       static setImageChromaRange(range: [number, number][]): void { imgChromaRange.value = range; scheduleCombine(); }
       static setImageDeltaECap(cap: number): void { imgDeltaECap.value = cap; scheduleCombine(); }
@@ -1317,9 +1245,7 @@ class IridisContextFactory {
     registerEffectHandlers({
       'addSeed': SeedMutationOperation.add,
       'clearCvdPreviews': CvdPreviewOperation.clear,
-      'disableSemanticHues': PaletteParameterOperation.disableSemanticHues,
       'disableStrictCompliance': PaletteParameterOperation.disableStrictCompliance,
-      'enableSemanticHues': PaletteParameterOperation.enableSemanticHues,
       'enableStrictCompliance': PaletteParameterOperation.enableStrictCompliance,
       'extractImageFiles': ImageEffectExtractionOperation.files,
       'extractSampleImage': ImageEffectExtractionOperation.sample,
@@ -1335,7 +1261,6 @@ class IridisContextFactory {
       'setCvdMode': PaletteParameterOperation.setCvdMode,
       'setDarkFraming': PaletteParameterOperation.setDarkFraming,
       'setDeltaEImageAlgorithm': PaletteParameterOperation.setDeltaEImageAlgorithm,
-      'setDerivationConfig': PaletteParameterOperation.setDerivationConfig,
       'setDisplayP3ColorSpace': PaletteParameterOperation.setDisplayP3ColorSpace,
       'setImageChromaRange': PaletteParameterOperation.setImageChromaRange,
       'setImageDeltaECap': PaletteParameterOperation.setImageDeltaECap,
@@ -1419,8 +1344,8 @@ class IridisContextFactory {
         void addUploadedImages([logoUrl()], ['Sample']);
         // framing is intentionally absent here — its swap is dispatched directly by
         // the framing setters via run(), not through this debounce.
-        stopWatches.push(VueModule.watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, cvdMode, enableStrictCompliance, nonMandatoryLevel, colorSpace, mode, derivationConfig, semanticHuesEnabled], schedule, { 'deep': true }));
-        stopWatches.push(VueModule.watch([schemaName, contrastStrictness, cvdMode, enableStrictCompliance, nonMandatoryLevel, derivationConfig, semanticHuesEnabled], scheduleSchemaFeasibility, { 'deep': true }));
+        stopWatches.push(VueModule.watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, cvdMode, enableStrictCompliance, nonMandatoryLevel, colorSpace, mode], schedule, { 'deep': true }));
+        stopWatches.push(VueModule.watch([schemaName, contrastStrictness, cvdMode, enableStrictCompliance, nonMandatoryLevel], scheduleSchemaFeasibility, { 'deep': true }));
         scheduleSchemaFeasibility();
         stopWatches.push(VueModule.watch([schemaName, imgStrategy, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange], scheduleCombine, { 'deep': true }));
       }
@@ -1434,7 +1359,7 @@ class IridisContextFactory {
         }
         ConsumerLifecycleOperation.register();
         const result = {
-          'accessibilityBlockers': accessibilityBlockers, 'activeSeeds': activeSeeds, 'addUploadedImages': addUploadedImages, 'candidates': candidates, 'colorSpace': colorSpace, 'combineLocked': combineLocked, 'contrastReport': contrastReport, 'contrastStrictness': contrastStrictness, 'cvdMode': cvdMode,          'cvdPreviewTypes': cvdPreviewTypes, 'derivationConfig': derivationConfig, 'diagramIsExpanded': diagramIsExpanded, 'diagramScale': diagramScale,
+          'accessibilityBlockers': accessibilityBlockers, 'activeSeeds': activeSeeds, 'addUploadedImages': addUploadedImages, 'candidates': candidates, 'colorSpace': colorSpace, 'combineLocked': combineLocked, 'contrastReport': contrastReport, 'contrastStrictness': contrastStrictness, 'cvdMode': cvdMode,          'cvdPreviewTypes': cvdPreviewTypes, 'diagramIsExpanded': diagramIsExpanded, 'diagramScale': diagramScale,
           'diagramTranslateX': diagramTranslateX, 'diagramTranslateY': diagramTranslateY,
           'effectiveHexesFor': effectiveHexesFor, 'enableStrictCompliance': enableStrictCompliance, 'error': error, 'framing': framing,
           'histogram': histogram,
@@ -1449,7 +1374,7 @@ class IridisContextFactory {
           'schemaFeasibilityChecking': schemaFeasibilityChecking, 'schemaFeasibilityReport': schemaFeasibilityReport,
           'schemaName': schemaName,
           'selectedCandidateLabel': selectedCandidateLabel,
-          'selectEntryCandidate': selectEntryCandidate, 'semanticHuesEnabled': semanticHuesEnabled, 'send': sendUiEvent, 'setSemanticHuesEnabled': semanticHuesEnabledSet, 'sortedRoleContrastRows': sortedRoleContrastRows, 'updateRelation': relationUpdate, 'updateRelations': relationsUpdate,
+          'selectEntryCandidate': selectEntryCandidate, 'send': sendUiEvent, 'sortedRoleContrastRows': sortedRoleContrastRows,
           'updateUploadedImageSetting': uploadedImageSettingUpdate, 'uploadedImages': uploadedImages
         };
         return result;

@@ -1,9 +1,9 @@
 import type { CanonicalShapeType, NominalSchemaType } from '@studnicky/json-tology/types';
 
 import { EntityCompiler } from '@studnicky/entity/browser';
+import { RoleRelationshipGraphEntity } from '@studnicky/iridis';
 
 import { CvdModeEntity } from './CvdModeEntity.ts';
-import { DerivationConfigEntity } from './DerivationConfigEntity.ts';
 import { ExtractionSettingsEntity } from './ExtractionSettingsEntity.ts';
 import { FramingEntity } from './FramingEntity.ts';
 import { NonMandatoryLevelEntity } from './NonMandatoryLevelEntity.ts';
@@ -48,28 +48,25 @@ export namespace WorkerMessageEntity {
         'properties': {
           'colorSpace': { 'enum': ['srgb', 'displayP3'], 'type': 'string' },
           'cvdMode': CvdModeEntity.Schema,
-          'derivationConfig': DerivationConfigEntity.Schema,
           'enableStrictCompliance': { 'type': 'boolean' },
           'framing': FramingEntity.Schema,
           'hexes': { 'items': { 'type': 'string' }, 'type': 'array' },
           'kind': { 'const': 'combine', 'type': 'string' },
           'nonMandatoryLevel': NonMandatoryLevelEntity.Schema,
+          'relationshipGraph': RoleRelationshipGraphEntity.Schema,
           'schemaName': SchemaNameEntity.Schema,
-          'semanticHuesEnabled': { 'type': 'boolean' },
           'settings': ExtractionSettingsEntity.Schema,
           'strictness': { 'type': 'integer' }
         },
         'required': [
           'colorSpace',
           'cvdMode',
-          'derivationConfig',
           'enableStrictCompliance',
           'framing',
           'hexes',
           'kind',
           'nonMandatoryLevel',
           'schemaName',
-          'semanticHuesEnabled',
           'settings',
           'strictness'
         ],
@@ -99,7 +96,7 @@ export namespace WorkerMessageEntity {
   } as const;
 
   export type Type = NominalSchemaType<typeof Schema> & (
-    | { 'derivationConfig': DerivationConfigEntity.Type; 'kind': 'combine'; 'settings': ExtractionSettingsEntity.Type }
+    | { 'kind': 'combine'; 'relationshipGraph'?: RoleRelationshipGraphEntity.Type; 'settings': ExtractionSettingsEntity.Type }
     | { 'kind': 'extract'; 'settings': ExtractionSettingsEntity.Type }
     | { 'kind': 'palette'; 'request': PaletteResolveRequestEntity.Type }
     | { 'kind': 'schema-feasibility'; 'request': PaletteResolveRequestEntity.Type }

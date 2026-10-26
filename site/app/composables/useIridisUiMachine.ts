@@ -4,7 +4,6 @@ import * as VueModule from 'vue';
 
 import { useNuxtApp } from '#imports';
 
-import type { DerivationConfigEntity } from './entities/DerivationConfigEntity.ts';
 import type { IridisUiEffect, IridisUiEvent } from './types/index.ts';
 import type { RoleSortKeyType } from './types/roleSortKeyType.ts';
 
@@ -14,9 +13,7 @@ import { logger } from './logger.ts';
 interface IridisUiEffectHandlersInterface {
   addSeed(hex: string | undefined): void;
   clearCvdPreviews(): void;
-  disableSemanticHues(): void;
   disableStrictCompliance(): void;
-  enableSemanticHues(): void;
   enableStrictCompliance(): void;
   extractImageFiles(files: File | File[]): void;
   extractSampleImage(): void;
@@ -32,7 +29,6 @@ interface IridisUiEffectHandlersInterface {
   setCvdMode(cvdMode: string): void;
   setDarkFraming(): void;
   setDeltaEImageAlgorithm(): void;
-  setDerivationConfig(config: DerivationConfigEntity.Type): void;
   setDisplayP3ColorSpace(): void;
   setImageChromaRange(range: [number, number][]): void;
   setImageDeltaECap(cap: number): void;

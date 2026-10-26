@@ -3,14 +3,6 @@ export class PaletteResolveFixture {
     const result = ({
       'colorSpace': 'srgb',
       'cvdMode': 'nudge',
-      'derivationConfig': ({
-        'relations': ({
-          'success': ({
-            'algorithm': 'analogous',
-            'hueVariantIndex': 1
-          })
-        })
-      }),
       'enableStrictCompliance': false,
       'framing': 'dark',
       'nonMandatoryLevel': 'AA',
@@ -22,7 +14,6 @@ export class PaletteResolveFixture {
         }),
         ({ 'hex': '#06b6d4' })
       ]),
-      'semanticHuesEnabled': true,
       'strictness': 2
     });
     return result;

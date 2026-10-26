@@ -1,6 +1,6 @@
 import type { Engine } from '@studnicky/iridis';
 
-import { InputEntity } from '@studnicky/iridis';
+import { InputEntity, RoleSchemaEntity } from '@studnicky/iridis';
 import { imagePlugin } from '@studnicky/iridis-image';
 import { JsonValue } from '@studnicky/types/browser';
 
@@ -20,7 +20,6 @@ import { ImageExtractionResultEntity } from './entities/ImageExtractionResultEnt
 import { GalleryMetadataSlot } from './galleryMetadataSlot.ts';
 import { roleSchemaFor } from './roleSchemaFor.ts';
 import { schemaRoleCount } from './schemaRoleCount.ts';
-import { VARIANT_CONFIG } from './variantConfig.ts';
 
 const HISTOGRAM_BIN_LIMIT = 96;
 
@@ -29,6 +28,10 @@ export class ImageExtract {
   public static combine(message: Extract<WorkerMessageEntity.Type, { 'kind': 'combine' }>): ImageCombineResultEntity.Type {
     const pair = roleSchemaByName[message.schemaName];
     const selected = message.framing === 'dark' ? pair.dark : pair.light;
+    const roles = RoleSchemaEntity.intake({
+      ...selected,
+      ...(message.relationshipGraph === undefined ? {} : { 'relationshipGraph': message.relationshipGraph })
+    });
     const engine = ImageExtract.engine();
     engine.pipeline([...IRIDIS_CONSTANTS.COMBINE_EXTRACTION_STAGES]);
     const state = engine.run(InputEntity.create({
@@ -40,12 +43,9 @@ export class ImageExtract {
         'strictness': message.strictness
       })),
       'metadata': {
-        'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
-        'derivation:config': JsonValue.from(message.derivationConfig),
-        'derivation:semanticHuesEnabled': JsonValue.from(message.semanticHuesEnabled),
         'gallery': ImageExtract.gallery(message.settings)
       },
-      'roles': roleSchemaFor(selected),
+      'roles': roleSchemaFor(roles),
       'runtime': { 'colorSpace': message.colorSpace, 'framing': message.framing }
     }));
     const dominant = GalleryMetadataSlot.dominantColors(state.metadata);

@@ -1,8 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { reactive, toRaw } from 'vue';
+import { reactive } from 'vue';
 
-import { DerivationConfigEntity } from '../app/composables/entities/DerivationConfigEntity.ts';
 import { PaletteResolveRequestEntity } from '../app/composables/entities/PaletteResolveRequestEntity.ts';
 import { PaletteSnapshotEntity } from '../app/composables/entities/PaletteSnapshotEntity.ts';
 import { PaletteResolve } from '../app/composables/paletteResolve.ts';
@@ -28,13 +27,9 @@ await test('snapshot entity survives a JSON round trip unchanged', () => {
   assert.equal(text, JSON.stringify(PaletteResolveFixture.snapshot()));
 });
 
-await test('a request built from reactive state is structured-cloneable', () => {
-  const derivationConfig = reactive(DerivationConfigEntity.create({
-    'relations': { 'success': { 'algorithm': 'analogous', 'hueVariantIndex': 1 } }
-  }));
+await test('a request built from reactive seed state is structured-cloneable', () => {
   const request = PaletteResolveRequestEntity.create({
     ...PaletteResolveFixture.request(),
-    'derivationConfig': toRaw(derivationConfig),
     'seeds': PaletteResolve.seeds(reactive([{ 'hex': '#7c3aed', 'role': 'brand' }, { 'hex': '#06b6d4', 'role': void 0 }]))
   });
 

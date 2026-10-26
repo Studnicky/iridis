@@ -3,7 +3,6 @@ import type { ContrastFeasibilityReportEntity } from '@studnicky/iridis-contrast
 
 import { colorRecordFactory, ContrastOptionsEntity, InputEntity, Metadata, RoleSchemaEntity } from '@studnicky/iridis';
 import { ComplianceReportEntity, ContrastFeasibility, CvdResultSetEntity } from '@studnicky/iridis-contrast';
-import { JsonValue } from '@studnicky/types/browser';
 
 import type { PaletteResolveRequestEntity } from './entities/PaletteResolveRequestEntity.ts';
 import type { PickerSeedType } from './types/pickerSeedType.ts';
@@ -17,7 +16,6 @@ import { ContrastConfigOptionsEntity } from './entities/ContrastConfigOptionsEnt
 import { PaletteSnapshotEntity } from './entities/PaletteSnapshotEntity.ts';
 import { pickerSeedInputs } from './pickerSeedInputs.ts';
 import { roleSchemaFor } from './roleSchemaFor.ts';
-import { VARIANT_CONFIG } from './variantConfig.ts';
 
 class ContrastMetadataSlot {
   static compliance(metadata: PaletteStateInterface['metadata']): ComplianceReportEntity.Type | undefined {
@@ -82,6 +80,10 @@ export class PaletteResolve {
   public static input(request: PaletteResolveRequestEntity.Type): InputEntity.Type {
     const pair = roleSchemaByName[request.schemaName];
     const selected = request.framing === 'dark' ? pair.dark : pair.light;
+    const roles = RoleSchemaEntity.intake({
+      ...selected,
+      ...(request.relationshipGraph === undefined ? {} : { 'relationshipGraph': request.relationshipGraph })
+    });
     const seeds = request.seeds.map((seed) => {
       const result = { 'hex': seed.hex, 'role': seed.role };
       return result;
@@ -94,12 +96,7 @@ export class PaletteResolve {
         'nonMandatoryLevel': request.nonMandatoryLevel,
         'strictness': request.strictness
       })),
-      'metadata': {
-        'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
-        'derivation:config': JsonValue.from(request.derivationConfig),
-        'derivation:semanticHuesEnabled': JsonValue.from(request.semanticHuesEnabled)
-      },
-      'roles': roleSchemaFor(selected),
+      'roles': roleSchemaFor(roles),
       'runtime': { 'colorSpace': request.colorSpace, 'framing': request.framing }
     });
     return result;
