@@ -34,6 +34,7 @@ import { TaskManifestEntity } from '../../src/entities/TaskManifestEntity.ts';
 import { colorRecordFactory } from '../../src/math/ColorRecordFactory.ts';
 import { coreTasks } from '../../src/tasks/index.ts';
 import { intakeP3 } from '../../src/tasks/intake/IntakeP3.ts';
+import { Metadata } from '../../src/types/metadata.ts';
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -823,7 +824,9 @@ void test('resolve roles preserves a required target when its graph source canno
   const state = engine.run(TestEngineFixture.input([], schema));
   const target = state.roles.target;
   assert.ok(target !== undefined, 'the required target remains resolved when its relationship source is absent');
-  assert.strictEqual(state.metadata['core:roleProvenance']?.target?.origin, 'synthesized');
-  assert.strictEqual(state.metadata['core:relationshipResolution']?.target?.disposition, 'unresolved');
-  assert.strictEqual(state.metadata['core:relationshipResolution']?.target?.blockedReason, 'missing-source');
+  const provenance = Metadata.roleProvenance(state.metadata).get('target');
+  const resolution = Metadata.relationshipResolution(state.metadata).get('target');
+  assert.strictEqual(provenance?.origin, 'synthesized');
+  assert.strictEqual(resolution?.disposition, 'unresolved');
+  assert.strictEqual(resolution?.blockedReason, 'missing-source');
 });
