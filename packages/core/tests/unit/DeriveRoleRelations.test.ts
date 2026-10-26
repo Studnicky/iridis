@@ -397,5 +397,8 @@ void test('core tasks resolve relationship graphs immediately after role resolut
   const relationshipResolverIndex = taskNames.indexOf('derive:roleRelations');
 
   assert.equal(relationshipResolverIndex, resolveRolesIndex + 1);
-  assert.equal(taskNames.includes('expand:family'), false);
+  assert.equal(taskNames.every((name) => {
+    const result = !name.startsWith('expand');
+    return result;
+  }), true);
 });
