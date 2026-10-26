@@ -10,7 +10,7 @@ import { sortRoleRows } from '~/utils/sortRoleRows.ts';
 class SchemaTreeLeaf {
   public readonly c: number;
   public readonly compliance: string;
-  public readonly derivedFrom: string | undefined;
+  public readonly relationshipSource: string | undefined;
   public readonly h: number;
   public readonly hex: string;
   public readonly l: number;
@@ -22,11 +22,11 @@ class SchemaTreeLeaf {
   public constructor(
     row: RoleSortableRowEntity.Type,
     tierLabel: string,
-    options: { readonly 'derivedFrom': string | undefined }
+    options: { readonly 'relationshipSource': string | undefined }
   ) {
     this.c = row.c;
     this.compliance = row.compliance;
-    this.derivedFrom = options.derivedFrom;
+    this.relationshipSource = options.relationshipSource;
     this.h = row.h;
     this.hex = row.hex;
     this.l = row.l;
@@ -96,7 +96,7 @@ export const buildSchemaTree = class SchemaTreeBuilder {
         'ratio': row?.ratio ?? 1
       });
       const leaf = new SchemaTreeLeaf(sortableRow, label, {
-        'derivedFrom': relationshipSources.get(role.name)
+        'relationshipSource': relationshipSources.get(role.name)
       });
       leafRows.set(role.name, leaf);
       sortableRows.push(sortableRow);
