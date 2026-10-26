@@ -23,6 +23,7 @@ import { nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vu
 
 import type { Graph } from '@cosmos.gl/graph';
 import { logger } from '~/composables/logger.ts';
+import { AnimationFrameScheduler } from '~/composables/AnimationFrameScheduler.ts';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useRoleMathList } from '~/composables/useRoleMathList.ts';
 import { buildColorGraphBuffers } from './graph/buildColorGraphBuffers.ts';
@@ -163,7 +164,7 @@ function constructGraph(): Graph {
 }
 
 function disposeGraph(handle: Graph): void {
-  viewRestorer.cancel();
+  viewRestorer?.cancel();
   cancelFitSequence();
   if (labelRaf !== null) {
     cancelAnimationFrame(labelRaf);
@@ -231,16 +232,7 @@ const controller = ColorGraphMountController.create<Graph, HTMLCanvasElement>({
     );
   }
 }, buildColorGraphViewModel.idleSuspendMs);
-const viewRestorer = ColorGraphViewRestorer.create(
-  {
-    'applyZoom': (zoom: number) => { graph.value?.setZoomLevel(zoom, 0, false); },
-    'readZoom': () => graph.value?.getZoomLevel() ?? 0
-  },
-  {
-    'cancel': (handle: number) => { cancelAnimationFrame(handle); },
-    'request': (run: () => void) => requestAnimationFrame(run)
-  }
-);
+let viewRestorer: ColorGraphViewRestorer | null = null;
 const lifecycleState = shallowRef(controller.getState());
 controller.subscribe((next) => { lifecycleState.value = next; });
 
@@ -645,6 +637,13 @@ function restoreView(handle: Graph, buffers: ReturnType<typeof buildColorGraphBu
   handle.render(0, 0);
   fitZoomLevel.value = view.fitZoomLevel;
   appliedLayoutKey = buffers.layoutKey;
+  viewRestorer ??= ColorGraphViewRestorer.create(
+    {
+      'applyZoom': (zoom: number) => { graph.value?.setZoomLevel(zoom, 0, false); },
+      'readZoom': () => graph.value?.getZoomLevel() ?? 0
+    },
+    new AnimationFrameScheduler(window)
+  );
   viewRestorer.start(view.zoomLevel, () => { completeRestore(handle, view); });
 }
 

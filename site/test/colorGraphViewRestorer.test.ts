@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import type { ColorGraphFrameSchedulerInterface } from '../app/components/content/viz/ColorGraphFrameSchedulerInterface.ts';
 import type { ColorGraphViewTargetInterface } from '../app/components/content/viz/ColorGraphViewTargetInterface.ts';
 
 import { ColorGraphViewRestorer } from '../app/components/content/viz/ColorGraphViewRestorer.ts';
+import { VirtualFrameScheduler } from './fixtures/VirtualFrameScheduler.ts';
 
 /** A camera that lands an applied zoom a number of frames later, optionally landing a different value first. */
 class LaggingCamera implements ColorGraphViewTargetInterface {
@@ -14,44 +14,44 @@ class LaggingCamera implements ColorGraphViewTargetInterface {
 
   public zoom = 1;
 
-  readonly #frames: VirtualFrames;
+  readonly #frames: VirtualFrameScheduler;
 
-  readonly #lag: number;
+  readonly #lagFrames: number;
 
   readonly #wrongFirst: null | number;
 
-  public constructor(frames: VirtualFrames, lag: number, wrongFirst: null | number) {
+  #landing: null | { readonly 'atMs': number;
+    readonly 'zoom': number; } = null;
+
+  public constructor(frames: VirtualFrameScheduler, lagFrames: number, wrongFirst: null | number) {
     this.#frames = frames;
-    this.#lag = lag;
+    this.#lagFrames = lagFrames;
     this.#wrongFirst = wrongFirst;
   }
 
   public applyZoom(zoom: number): void {
     const wrong = this.applied.length === 0 ? this.#wrongFirst : null;
-    const landing = wrong ?? zoom;
 
     this.applied.push(zoom);
-    if (this.stuckAt !== null) {
-      this.zoom = this.stuckAt;
-    } else if (this.#lag === 0) {
-      this.zoom = landing;
+    if (this.stuckAt === null) {
+      this.#landing ??= {
+        'atMs': this.#frames.nowMs + this.#lagFrames * VirtualFrameScheduler.frameMs,
+        'zoom': wrong ?? zoom
+      };
     } else {
-      this.#land(landing, this.#frames.frame + this.#lag);
+      this.zoom = this.stuckAt;
     }
   }
 
   public readZoom(): number {
-    return this.zoom;
-  }
+    const landing = this.#landing;
 
-  #land(landing: number, atFrame: number): void {
-    this.#frames.request(() => {
-      if (this.#frames.frame >= atFrame) {
-        this.zoom = landing;
-      } else {
-        this.#land(landing, atFrame);
-      }
-    });
+    if (landing !== null && this.#frames.nowMs >= landing.atMs) {
+      this.zoom = landing.zoom;
+      this.#landing = null;
+    }
+
+    return this.zoom;
   }
 }
 
@@ -66,17 +66,17 @@ class RestoreExpectation {
 class RestoreRun {
   public readonly camera: LaggingCamera;
 
-  public readonly frames: VirtualFrames;
+  public readonly frames: VirtualFrameScheduler;
 
   public readonly restored: number[] = [];
 
-  private constructor(frames: VirtualFrames, camera: LaggingCamera) {
+  private constructor(frames: VirtualFrameScheduler, camera: LaggingCamera) {
     this.frames = frames;
     this.camera = camera;
   }
 
   public static start(lag: number, wrongFirst: null | number, zoom: number, stuckAt: null | number = null): RestoreRun {
-    const frames = new VirtualFrames();
+    const frames = new VirtualFrameScheduler();
     const camera = new LaggingCamera(frames, lag, wrongFirst);
     const restorer = ColorGraphViewRestorer.create(camera, frames);
     const run = new RestoreRun(frames, camera);
@@ -88,42 +88,9 @@ class RestoreRun {
 
     return run;
   }
-}
-
-class VirtualFrames implements ColorGraphFrameSchedulerInterface {
-  public frame = 0;
-
-  readonly #pending = new Map<number, () => void>();
-
-  #next = 1;
-
-  public cancel(handle: number): void {
-    this.#pending.delete(handle);
-  }
-
-  public pendingCount(): number {
-    const result = this.#pending.size;
-
-    return result;
-  }
-
-  public request(run: () => void): number {
-    const handle = this.#next;
-
-    this.#next += 1;
-    this.#pending.set(handle, run);
-
-    return handle;
-  }
 
   public step(): void {
-    const due = [...this.#pending.values()];
-
-    this.#pending.clear();
-    this.frame += 1;
-    due.forEach((run) => {
-      run();
-    });
+    this.frames.advance(VirtualFrameScheduler.frameMs);
   }
 }
 
@@ -132,7 +99,7 @@ await test('restoration completes on the first frame when the camera holds the z
 
   assert.deepEqual(run.restored, []);
 
-  run.frames.step();
+  run.step();
 
   assert.deepEqual(run.restored, [RestoreExpectation.zoom]);
 });
@@ -140,12 +107,12 @@ await test('restoration completes on the first frame when the camera holds the z
 await test('restoration does not complete while the camera has not yet landed the zoom', () => {
   const run = RestoreRun.start(RestoreExpectation.lag, null, RestoreExpectation.zoom);
 
-  run.frames.step();
+  run.step();
 
   assert.deepEqual(run.restored, []);
 
   for (let index = 0; index < ColorGraphViewRestorer.maximumAttempts && run.restored.length === 0; index += 1) {
-    run.frames.step();
+    run.step();
   }
 
   assert.deepEqual(run.restored, [RestoreExpectation.zoom]);
@@ -155,12 +122,12 @@ await test('restoration does not complete while the camera has not yet landed th
 await test('a camera that first lands a different zoom is corrected before completion', () => {
   const run = RestoreRun.start(0, RestoreExpectation.wrongZoom, RestoreExpectation.zoom);
 
-  run.frames.step();
+  run.step();
 
   assert.deepEqual(run.restored, []);
   assert.equal(run.camera.applied.length, 2);
 
-  run.frames.step();
+  run.step();
 
   assert.deepEqual(run.restored, [RestoreExpectation.zoom]);
   assert.equal(run.camera.zoom, RestoreExpectation.zoom);
@@ -170,7 +137,7 @@ await test('a camera that never holds the zoom completes after the attempt limit
   const run = RestoreRun.start(0, null, RestoreExpectation.zoom, RestoreExpectation.wrongZoom);
 
   for (let index = 0; index < ColorGraphViewRestorer.maximumAttempts + 2 && run.restored.length === 0; index += 1) {
-    run.frames.step();
+    run.step();
   }
 
   assert.deepEqual(run.restored, [RestoreExpectation.wrongZoom]);
@@ -178,7 +145,7 @@ await test('a camera that never holds the zoom completes after the attempt limit
 });
 
 await test('cancelling stops the verification and leaves no pending frame', () => {
-  const frames = new VirtualFrames();
+  const frames = new VirtualFrameScheduler();
   const camera = new LaggingCamera(frames, 0, null);
   const restorer = ColorGraphViewRestorer.create(camera, frames);
   const restored: number[] = [];
@@ -187,8 +154,8 @@ await test('cancelling stops the verification and leaves no pending frame', () =
     restored.push(held);
   });
   restorer.cancel();
-  frames.step();
+  frames.advance(VirtualFrameScheduler.frameMs);
 
   assert.deepEqual(restored, []);
-  assert.equal(frames.pendingCount(), 0);
+  assert.equal(frames.hasPending(), false);
 });

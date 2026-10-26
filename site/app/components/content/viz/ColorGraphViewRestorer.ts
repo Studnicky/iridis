@@ -1,4 +1,4 @@
-import type { ColorGraphFrameSchedulerInterface } from './ColorGraphFrameSchedulerInterface.ts';
+import type { FrameSchedulerInterface } from '../../../composables/interfaces/FrameSchedulerInterface.ts';
 import type { ColorGraphViewTargetInterface } from './ColorGraphViewTargetInterface.ts';
 
 /** Applies a saved zoom and reports completion only once the camera reads it back on a later frame. */
@@ -7,7 +7,7 @@ export class ColorGraphViewRestorer {
 
   public static readonly relativeTolerance = 1e-3;
 
-  readonly #frames: ColorGraphFrameSchedulerInterface;
+  readonly #frames: FrameSchedulerInterface;
 
   readonly #target: ColorGraphViewTargetInterface;
 
@@ -15,14 +15,14 @@ export class ColorGraphViewRestorer {
 
   #frame: null | number = null;
 
-  private constructor(target: ColorGraphViewTargetInterface, frames: ColorGraphFrameSchedulerInterface) {
+  private constructor(target: ColorGraphViewTargetInterface, frames: FrameSchedulerInterface) {
     this.#target = target;
     this.#frames = frames;
   }
 
   public static create(
     target: ColorGraphViewTargetInterface,
-    frames: ColorGraphFrameSchedulerInterface
+    frames: FrameSchedulerInterface
   ): ColorGraphViewRestorer {
     const result = new ColorGraphViewRestorer(target, frames);
 
