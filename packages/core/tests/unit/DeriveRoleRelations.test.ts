@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import type { ColorRecordEntity } from '../../src/entities/ColorRecordEntity.ts';
-import type { RoleDefinitionEntity } from '../../src/entities/RoleDefinitionEntity.ts';
 import type { PaletteStateInterface } from '../../src/interfaces/PaletteStateInterface.ts';
 
 import { Engine } from '../../src/engine/Engine.ts';
@@ -108,7 +107,7 @@ class DeriveRoleRelationsFixture {
     const result = RoleSchemaEntity.create({
       'name': 'relationship-resolver-ranges',
       'relationshipGraph': graph,
-      'roles': roles
+      'roles': [...roles]
     });
     return result;
   }
@@ -131,7 +130,8 @@ void test('derive:roleRelations resolves every canonical relationship operation'
     [brand, background]
   );
 
-  assert.strictEqual(state.roles.accent, brand);
+  assert.equal(state.roles.accent?.hex, brand.hex);
+  assert.equal(state.roles.accent?.hints, undefined);
   const near = state.roles['accent-near'];
   const light = state.roles['accent-light'];
   const soft = state.roles['accent-soft'];
@@ -154,6 +154,30 @@ void test('derive:roleRelations resolves every canonical relationship operation'
   assert.equal(resolution.get('brand-overlay')?.relationshipId, 'overlay');
   assert.equal(resolution.get('brand-overlay')?.after?.hex, overlay.hex);
   assert.equal(resolution.get('semantic')?.operation, 'hue-target');
+});
+
+void test('derive:roleRelations assigns target intent to derived records', () => {
+  const relationship = RoleRelationshipEntity.create({
+    'id': 'accent-to-on-accent',
+    'operation': 'alias',
+    'priority': 0,
+    'relaxability': 'fixed',
+    'source': 'brand',
+    'target': 'on-accent'
+  });
+  const schema = DeriveRoleRelationsFixture.schemaWithRoles(
+    [relationship],
+    [
+      RoleDefinitionEntity.create({ 'intent': 'accent', 'name': 'brand' }),
+      RoleDefinitionEntity.create({ 'intent': 'onAccent', 'name': 'on-accent' })
+    ]
+  );
+  const state = DeriveRoleRelationsFixture.runSchema(
+    schema,
+    [DeriveRoleRelationsFixture.color('#7c3aed', 'brand')]
+  );
+  assert.equal(state.roles['on-accent']?.hints?.intent, 'onAccent');
+  assert.equal(state.roles['on-accent']?.hints?.role, undefined);
 });
 
 void test('derive:roleRelations resolves dependent targets after their sources become available', () => {

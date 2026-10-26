@@ -1,9 +1,9 @@
-import type { ColorRecordEntity } from '../../entities/ColorRecordEntity.ts';
 import type { PaletteStateInterface } from '../../interfaces/PaletteStateInterface.ts';
 import type { PipelineContextInterface } from '../../interfaces/PipelineContextInterface.ts';
 import type { TaskInterface } from '../../interfaces/TaskInterface.ts';
 import type { RelationshipGraphShape } from '../../model/RelationshipGraphShape.ts';
 
+import { ColorRecordEntity } from '../../entities/ColorRecordEntity.ts';
 import { RelationshipResolutionEntity } from '../../entities/RelationshipResolutionEntity.ts';
 import { RoleDefinitionEntity } from '../../entities/RoleDefinitionEntity.ts';
 import { RoleProvenanceEntity } from '../../entities/RoleProvenanceEntity.ts';
@@ -40,13 +40,15 @@ class RelationshipOperation {
   ): ColorRecordEntity.Type {
     const operationResult = RelationshipOperation.applyRaw(group, relationship, sources);
     if (target.lightnessRange === undefined && target.chromaRange === undefined) {
-      return operationResult;
+      const result = RelationshipOperation.forTarget(operationResult, target);
+      return result;
     }
     const ownsTarget = relationship.operation === 'hue-target' && (
       relationship.source === undefined || relationship.source === relationship.target
     );
     if (ownsTarget) {
-      return operationResult;
+      const result = RelationshipOperation.forTarget(operationResult, target);
+      return result;
     }
     const options = {
       'chromaRange': target.chromaRange,
@@ -65,6 +67,23 @@ class RelationshipOperation {
       operationResult.oklch.h,
       { 'alpha': operationResult.alpha }
     );
+    const targetResult = RelationshipOperation.forTarget(result, target);
+    return targetResult;
+  }
+
+  private static forTarget(record: ColorRecordEntity.Type, target: RoleDefinitionEntity.Type): ColorRecordEntity.Type {
+    const hints = target.intent === undefined
+      ? undefined
+      : { 'intent': target.intent };
+    const result = ColorRecordEntity.create({
+      'alpha': record.alpha,
+      ...(record.displayP3 === undefined ? {} : { 'displayP3': record.displayP3 }),
+      'hex': record.hex,
+      ...(hints === undefined ? {} : { 'hints': hints }),
+      'oklch': record.oklch,
+      'rgb': record.rgb,
+      'sourceFormat': record.sourceFormat
+    });
     return result;
   }
 
