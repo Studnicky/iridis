@@ -251,19 +251,23 @@ await test('a target is judged against its own class', () => {
   assert.equal(VisualizationProfileBudget.limitsFor('mermaidDpad'), VisualizationProfileBudget.mermaid);
 });
 
-await test('the idle graph class is at least as strict as the mermaid class and the live class is looser', () => {
+await test('the idle graph class matches the mermaid class except for an average within one vsync step', () => {
   const strict = VisualizationProfileBudget.mermaid;
   const idle = VisualizationProfileBudget.graphIdle;
   const live = VisualizationProfileBudget.graphLive;
+  const averageAllowance = idle.maximumAverageFrameMs - strict.maximumAverageFrameMs;
 
-  assert.ok(idle.maximumAverageFrameMs <= strict.maximumAverageFrameMs);
+  assert.ok(averageAllowance >= 0);
+  assert.ok(averageAllowance <= VisualizationProfileBudget.vsyncStepMs);
   assert.ok(idle.maximumP90FrameMs <= strict.maximumP90FrameMs);
   assert.ok(idle.maximumFrameMs <= strict.maximumFrameMs);
   assert.ok(idle.maximumLongTaskCount <= strict.maximumLongTaskCount);
   assert.ok(idle.maximumLongTaskTotalMs <= strict.maximumLongTaskTotalMs);
+  assert.ok(idle.maximumDomElements <= strict.maximumDomElements);
+  assert.ok(idle.maximumCanvasElements <= strict.maximumCanvasElements);
   assert.equal(live.maximumDomElements, strict.maximumDomElements);
   assert.equal(live.maximumCanvasElements, strict.maximumCanvasElements);
-  assert.ok(live.maximumAverageFrameMs >= strict.maximumAverageFrameMs);
+  assert.ok(live.maximumAverageFrameMs >= idle.maximumAverageFrameMs);
   assert.ok(live.maximumLongTaskCount >= strict.maximumLongTaskCount);
 });
 

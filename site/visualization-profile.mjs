@@ -346,6 +346,9 @@ export class VisualizationProfileStaticFile {
 export class VisualizationProfileBudget {
   static minimumFrameCount = 5;
 
+  /** One display refresh at 60 Hz; frame times land on multiples of it. */
+  static vsyncStepMs = 1000 / 60;
+
   /** Scenes without live WebGL. */
   static mermaid = Object.freeze({
     'maximumAverageFrameMs': 30,
@@ -368,8 +371,16 @@ export class VisualizationProfileBudget {
     'maximumP90FrameMs': 100,
   });
 
-  /** The graph after idle suspension, held to the strict limits: an idle graph costs nothing. */
-  static graphIdle = this.mermaid;
+  /** The graph after idle suspension: the strict limits, with an average that allows for the carousel face the idle graph sits on. */
+  static graphIdle = Object.freeze({
+    'maximumAverageFrameMs': 36,
+    'maximumCanvasElements': 4,
+    'maximumDomElements': 7000,
+    'maximumFrameMs': 150,
+    'maximumLongTaskCount': 1,
+    'maximumLongTaskTotalMs': 75,
+    'maximumP90FrameMs': 40,
+  });
 
   static classByTarget = new Map([
     ['graph', 'graphLive'],
