@@ -84,11 +84,7 @@ export namespace TailwindPluginScenarioEntity {
         'name': 'test-schema',
         'roles': roleNames.map((name) => {return {
           'chromaRange': options.chromaRange,
-          'derivedFrom': undefined,
           'description': undefined,
-          'hue': undefined,
-          'hueClamp': undefined,
-          'hueOffset': undefined,
           'intent': undefined,
           'lightnessRange': options.lightnessRange,
           'name': name,

@@ -40,7 +40,7 @@ export function generateShadcnTheme(roleSchema: RoleSchemaEntity.Type) {
   engine.pipeline([
     'intake:any',
     'resolve:roles',
-    'expand:family',
+    'derive:roleRelations',
     'enforce:compliance',
     'emit:shadcnTheme',
   ]);

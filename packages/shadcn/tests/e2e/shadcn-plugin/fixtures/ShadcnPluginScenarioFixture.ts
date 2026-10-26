@@ -1,6 +1,8 @@
 import {
   InputEntity,
   RoleDefinitionEntity,
+  RoleRelationshipEntity,
+  RoleRelationshipGraphEntity,
   RoleSchemaEntity
 } from '@studnicky/iridis';
 import { shadcnPlugin } from '@studnicky/iridis-shadcn';
@@ -108,25 +110,30 @@ export class ShadcnPluginScenarioFixture {
   }
 
   static oklchPipeline(): readonly string[] {
-    const result = ['intake:oklch', 'resolve:roles', 'emit:shadcnTheme'];
+    const result = ['intake:oklch', 'resolve:roles', 'derive:roleRelations', 'emit:shadcnTheme'];
     return result;
   }
 
   static hexPipeline(): readonly string[] {
-    const result = ['intake:hex', 'resolve:roles', 'emit:shadcnTheme'];
+    const result = ['intake:hex', 'resolve:roles', 'derive:roleRelations', 'emit:shadcnTheme'];
     return result;
   }
 
   static fullCoverageRoles(): RoleSchemaEntity.Type {
     const roles: RoleDefinitionEntity.Type[] = [];
+    const hueTargets = new Map<string, number>();
     const nameCount = ShadcnPluginScenarioFixture.fullCoverageRoleNames.length;
     for (let index = 0; index < nameCount; index += 1) {
       const name = ShadcnPluginScenarioFixture.fullCoverageRoleNames[index];
       if (name !== undefined) {
-        roles.push(ShadcnPluginScenarioFixture.requiredRole(name, index * 30));
+        roles.push(ShadcnPluginScenarioFixture.requiredRole(name));
+        hueTargets.set(name, index * 30);
       }
     }
-    const result = ShadcnPluginScenarioFixture.schema('full-coverage', roles);
+    const result = ShadcnPluginScenarioFixture.schema('full-coverage', roles, {
+      'anchor': 'background',
+      'hueTargets': hueTargets
+    });
     return result;
   }
 
@@ -140,10 +147,11 @@ export class ShadcnPluginScenarioFixture {
   }
 
   static partialRoles(): RoleSchemaEntity.Type {
+    const hueTargets = new Map<string, number>([['background', 0], ['text', 180]]);
     const result = ShadcnPluginScenarioFixture.schema('partial', [
-      ShadcnPluginScenarioFixture.requiredRole('background', 0),
-      ShadcnPluginScenarioFixture.requiredRole('text', 180)
-    ]);
+      ShadcnPluginScenarioFixture.requiredRole('background'),
+      ShadcnPluginScenarioFixture.requiredRole('text')
+    ], { 'anchor': 'background', 'hueTargets': hueTargets });
     return result;
   }
 
@@ -179,16 +187,53 @@ export class ShadcnPluginScenarioFixture {
     return result;
   }
 
-  private static requiredRole(name: string, hueOffset: number): RoleDefinitionEntity.Type {
-    const result = RoleDefinitionEntity.create({ 'hueOffset': hueOffset, 'name': name, 'required': true });
+  private static requiredRole(name: string): RoleDefinitionEntity.Type {
+    const result = RoleDefinitionEntity.create({ 'name': name, 'required': true });
+    return result;
+  }
+
+  private static relationshipGraph(
+    anchor: string,
+    hueTargets: ReadonlyMap<string, number>
+  ): RoleRelationshipGraphEntity.Type {
+    const relationships: RoleRelationshipGraphEntity.Type['groups'][number]['relationships'][number][] = [];
+    for (const [target, hue] of hueTargets) {
+      relationships.push(RoleRelationshipEntity.create({
+        'clamp': 180,
+        'hue': hue,
+        'id': `hue-${target}`,
+        'operation': 'hue-target',
+        'priority': 0,
+        'relaxability': 'fixed',
+        'target': target
+      }));
+    }
+    const result = RoleRelationshipGraphEntity.intake({
+      'groups': [{
+        'anchor': anchor,
+        'defaultMode': 'default',
+        'id': 'test-hues',
+        'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'default' }], 'id': 'default' }],
+        'name': 'Test hues',
+        'relationships': relationships
+      }]
+    });
     return result;
   }
 
   private static schema(
     name: string,
-    roles: RoleDefinitionEntity.Type[]
+    roles: RoleDefinitionEntity.Type[],
+    options?: { 'anchor': string; 'hueTargets': ReadonlyMap<string, number> }
   ): RoleSchemaEntity.Type {
-    const result = RoleSchemaEntity.create({ 'name': name, 'roles': roles });
+    const relationshipGraph = options === undefined
+      ? undefined
+      : ShadcnPluginScenarioFixture.relationshipGraph(options.anchor, options.hueTargets);
+    const result = RoleSchemaEntity.create({
+      'name': name,
+      ...(relationshipGraph === undefined ? {} : { 'relationshipGraph': relationshipGraph }),
+      'roles': roles
+    });
     return result;
   }
 }
