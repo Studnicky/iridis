@@ -170,9 +170,9 @@ class VscodeRoleSchemas64 {
     classification: string,
     chromaRange: [number, number],
     lightnessRange: [number, number],
-    ...derivation: readonly [string | undefined, number | undefined, { readonly 'chromaScale'?: number; readonly 'lightnessOffset'?: number }?]
+    ...relationshipInput: readonly [string | undefined, number | undefined, { readonly 'chromaScale'?: number; readonly 'lightnessOffset'?: number }?]
   ): VscodeRoleDraft {
-    const [sourceRole, hueOffset, options = {}] = derivation;
+    const [sourceRole, degrees, options = {}] = relationshipInput;
     const definition = RoleDefinitionEntity.create({
       'chromaRange': chromaRange,
       'description': description,
@@ -183,7 +183,7 @@ class VscodeRoleSchemas64 {
     });
     const relationship = VscodeRoleSchemas64.relationship(name, {
       ...(sourceRole === undefined ? {} : { 'source': sourceRole }),
-      ...(hueOffset === undefined ? {} : { 'hueOffset': hueOffset }),
+      ...(degrees === undefined ? {} : { 'degrees': degrees }),
       ...(options.chromaScale === undefined ? {} : { 'chromaScale': options.chromaScale }),
       ...(options.lightnessOffset === undefined ? {} : { 'lightnessOffset': options.lightnessOffset })
     });
@@ -237,7 +237,7 @@ class VscodeRoleSchemas64 {
     target: string,
     options: Readonly<{
       'chromaScale'?: number;
-      'hueOffset'?: number;
+      'degrees'?: number;
       'lightnessOffset'?: number;
       'source'?: string;
     }>
@@ -251,7 +251,7 @@ class VscodeRoleSchemas64 {
     if (options.chromaScale !== undefined || options.lightnessOffset !== undefined) {
       const result = RoleRelationshipEntity.create({
         ...shared,
-        ...(options.hueOffset === undefined ? {} : { 'hueOffset': options.hueOffset }),
+        ...(options.degrees === undefined ? {} : { 'hueOffset': options.degrees }),
         ...(options.chromaScale === undefined ? {} : { 'chromaScale': options.chromaScale }),
         ...(options.lightnessOffset === undefined ? {} : { 'lightnessOffset': options.lightnessOffset }),
         'operation': 'oklch-delta',
@@ -259,11 +259,11 @@ class VscodeRoleSchemas64 {
       });
       return result;
     }
-    if (options.hueOffset === undefined) {
+    if (options.degrees === undefined) {
       const result = RoleRelationshipEntity.create({ ...shared, 'operation': 'alias', 'tolerance': VscodeRoleSchemas64.#toleranceByOperation.alias });
       return result;
     }
-    const result = RoleRelationshipEntity.create({ ...shared, 'degrees': options.hueOffset, 'operation': 'hue-offset', 'tolerance': VscodeRoleSchemas64.#toleranceByOperation['hue-offset'] });
+    const result = RoleRelationshipEntity.create({ ...shared, 'degrees': options.degrees, 'operation': 'hue-offset', 'tolerance': VscodeRoleSchemas64.#toleranceByOperation['hue-offset'] });
     return result;
   }
 

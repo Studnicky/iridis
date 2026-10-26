@@ -50,7 +50,7 @@ class DeriveVscodeUiRoles implements TaskInterface {
     'description': 'Derives the 48 VS Code UI extension roles from resolved base roles while preserving caller-stated role values.',
     'name':        'vscode:deriveUiRoles',
     'reads':       ['roles', 'metadata.core:roleProvenance'],
-    'requires':    ['expand:family'],
+    'requires':    ['derive:roleRelations'],
     'writes':      ['roles']
   });
 
