@@ -216,7 +216,7 @@ class IridisContextFactory {
       }
     }
 
-    const relationshipGraph = VueModule.ref<RoleRelationshipGraphEntity.Type | undefined>(
+    const relationshipGraph = VueModule.shallowRef<RoleRelationshipGraphEntity.Type | undefined>(
       RelationshipGraphSelection.fromCurrentSchema()
     );
     const selectRelationshipMode = RelationshipGraphSelection.selectMode;
