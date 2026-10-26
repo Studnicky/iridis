@@ -11,17 +11,17 @@ import { RoleSchemaEntity } from '../../src/entities/RoleSchemaEntity.ts';
 import { RoleSchemaSchema } from '../../src/model/RoleSchemaSchema.ts';
 import { Validator } from '../../src/model/Validator.ts';
 
-await test('role definitions reject retired derivation controls', () => {
+await test('role definitions reject undeclared controls', () => {
   assert.strictEqual(RoleDefinitionEntity.validate({
-    'derivedFrom': 'surface',
+    'deprecatedSourceControl': 'surface',
     'name': 'accent'
   }), false);
   assert.strictEqual(RoleDefinitionEntity.validate({
-    'hueOffset': 30,
+    'deprecatedHueControl': 30,
     'name': 'accent'
   }), false);
   assert.strictEqual(RoleDefinitionEntity.validate({
-    'lightnessOffset': 0.1,
+    'deprecatedRangeControl': 0.1,
     'name': 'accent'
   }), false);
 });
@@ -76,7 +76,7 @@ await test('contrast-pair admission uses WCAG and APCA ratio domains', () => {
   }), false);
 });
 
-await test('role schemas admit graph relationships and reject retired derivation controls', () => {
+await test('role schemas admit graph relationships and reject undeclared controls', () => {
   const validator = new Validator();
   const valid = validator.validate(RoleSchemaSchema, {
     'contrastPairs': [{
@@ -92,7 +92,7 @@ await test('role schemas admit graph relationships and reject retired derivation
   const invalid = validator.validate(RoleSchemaSchema, {
     'name': 'contract',
     'roles': [{
-      'chromaScale': -0.01,
+      'deprecatedChromaControl': -0.01,
       'name': 'accent'
     }]
   });

@@ -54,8 +54,6 @@ class IridisVocab {
    * Role resolution/relations — how the engine actually arrived at this
    * role's color, not just its final value.
    */
-  /** This role's color is a hue-rotated offset of another role's (ExpandFamily), rather than resolved independently from a seed. Object is the parent role's IRI. */
-  readonly 'derivedFrom' = `${this.base}derivedFrom`;
   /** Canonical resolution origin from `core:roleProvenance`: 'stated', 'derived', or 'synthesized'. */
   readonly 'resolutionOrigin' = `${this.base}resolutionOrigin`;
   /** Connects a role to a concrete adjustment resource for each canonical transformation. */
@@ -84,8 +82,6 @@ class IridisVocab {
   readonly 'greatestPermittedLightness' = `${this.base}lightnessRangeMax`;
   readonly 'leastPermittedChroma'    = `${this.base}chromaRangeMin`;
   readonly 'greatestPermittedChroma'    = `${this.base}chromaRangeMax`;
-  /** Maximum degrees the resolved hue may rotate toward the schema's target `hue` (RoleDefinitionEntity.hueClamp). */
-  readonly 'hueClamp' = `${this.base}hueClamp`;
 
   /**
    * Derived compatibility predicate for a canonical `role-range` adjustment.

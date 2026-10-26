@@ -97,7 +97,6 @@ void test('reason:annotate emits canonical stated and derived provenance without
     'stated role retains the compatibility provenance predicate'
   );
   assert.strictEqual(graph.countQuads(stated, hasAdjustment, null, null), 0, 'stated role has no adjustment claim');
-  assert.strictEqual(graph.countQuads(stated, DataFactory.namedNode(iridisVocab.derivedFrom), null, null), 0, 'stated role has no derivation claim');
 
   const adjustments = graph.getQuads(derived, hasAdjustment, null, null);
   assert.strictEqual(adjustments.length, 1, 'derived role links to its canonical adjustment');

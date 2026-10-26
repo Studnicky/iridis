@@ -56,15 +56,15 @@ await test('required role keeps an achromatic input within a neutral chroma rang
   assert.ok(role.oklch.c >= 0 && role.oklch.c <= 0.02);
 });
 
-await test('required role rejects a retired hue offset property', () => {
+await test('required role rejects an undeclared numeric control', () => {
   assert.throws(() => {
-    RoleDefinitionEntity.intake({ 'hueOffset': 20, 'name': 'anchor', 'required': true });
+    RoleDefinitionEntity.intake({ 'deprecatedNumericControl': 20, 'name': 'anchor', 'required': true });
   });
 });
 
-await test('required role rejects a retired source property', () => {
+await test('required role rejects an undeclared source control', () => {
   assert.throws(() => {
-    RoleDefinitionEntity.intake({ 'derivedFrom': 'brand', 'name': 'anchor', 'required': true });
+    RoleDefinitionEntity.intake({ 'deprecatedSourceControl': 'brand', 'name': 'anchor', 'required': true });
   });
 });
 
