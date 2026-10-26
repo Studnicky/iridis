@@ -9,6 +9,7 @@ import type { TaskInterface } from '../../interfaces/TaskInterface.ts';
 import { ColorRecordEntity } from '../../entities/ColorRecordEntity.ts';
 import { RoleDefinitionEntity } from '../../entities/RoleDefinitionEntity.ts';
 import { RoleProvenanceEntity } from '../../entities/RoleProvenanceEntity.ts';
+import { RoleRelationshipGraphEntity } from '../../entities/RoleRelationshipGraphEntity.ts';
 import { TaskManifestEntity } from '../../entities/TaskManifestEntity.ts';
 import { PaletteRoleState } from '../../interfaces/PaletteStateInterface.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
@@ -175,6 +176,34 @@ class ResolveRoles implements TaskInterface {
     return result;
   }
 
+  private static derivedTargets(schema: RoleSchemaEntity.Type): ReadonlySet<string> {
+    const graphSource = schema.relationshipGraph;
+    if (graphSource === undefined) {
+      return new Set();
+    }
+    const graph = RoleRelationshipGraphEntity.intake(graphSource);
+    const result = new Set<string>();
+    for (let groupIndex = 0; groupIndex < graph.groups.length; groupIndex += 1) {
+      const group = graph.groups[groupIndex];
+      if (group === undefined) {
+        continue;
+      }
+      for (let relationshipIndex = 0; relationshipIndex < group.relationships.length; relationshipIndex += 1) {
+        const relationship = group.relationships[relationshipIndex];
+        if (relationship === undefined) {
+          continue;
+        }
+        const ownsTarget = relationship.operation === 'hue-target' && (
+          relationship.source === undefined || relationship.source === relationship.target
+        );
+        if (!ownsTarget) {
+          result.add(relationship.target);
+        }
+      }
+    }
+    return result;
+  }
+
   private static selectCandidate(
     colors: readonly ColorRecordEntity.Type[],
     role: RoleDefinitionEntity.Type
@@ -309,19 +338,25 @@ class ResolveRoles implements TaskInterface {
     const roleProvenance = Metadata.roleProvenance(state.metadata);
     const roles = PaletteRoleState.admit(state.roles);
     const colorsByRoleHint = ResolveRoles.colorsByRoleHint(state.colors);
+    const derivedTargets = ResolveRoles.derivedTargets(schema);
     for (let roleIndex = 0; roleIndex < schema.roles.length; roleIndex += 1) {
       const inputRole = schema.roles[roleIndex];
-      if (inputRole !== undefined) {
-        ResolveRoles.resolveRole(
-          inputRole,
-          colorsByRoleHint,
-          state,
-          roles,
-          roleProvenance,
-          roleDistances,
-          context
-        );
+      if (inputRole === undefined) {
+        continue;
       }
+      const stated = colorsByRoleHint.has(inputRole.name);
+      if (derivedTargets.has(inputRole.name) && !stated) {
+        continue;
+      }
+      ResolveRoles.resolveRole(
+        inputRole,
+        colorsByRoleHint,
+        state,
+        roles,
+        roleProvenance,
+        roleDistances,
+        context
+      );
     }
     roles.commit();
     if (roleDistances.size > 0) {

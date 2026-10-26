@@ -750,3 +750,39 @@ void test('a conformant Display-P3 role seed retains verbatim P3 metadata when r
   assert.deepStrictEqual(accent.displayP3, p3Candidate.displayP3, 'verbatim Display-P3 channels are preserved');
   assert.deepStrictEqual(accent.hints, hintedP3.hints, 'input intent remains exact');
 });
+
+void test('resolve roles defers an unstated graph-derived target until relationship derivation', () => {
+  const engine = TestEngineFixture.freshEngine(['resolve:roles']);
+  const root = RoleResolutionFixture.seed('root', 0.60, 0.10, 240);
+  engine.tasks.hook(new RoleSeedTask([root]));
+  const schema = TestEngineFixture.admitRoleSchema({
+    'name': 'deferred-derived-target',
+    'relationshipGraph': {
+      'groups': [{
+        'anchor': 'root',
+        'defaultMode': 'default',
+        'id': 'family',
+        'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'base' }], 'id': 'default' }],
+        'name': 'Family',
+        'relationships': [{
+          'id': 'derived',
+          'operation': 'alias',
+          'priority': 1,
+          'relaxability': 'fixed',
+          'source': 'root',
+          'target': 'derived'
+        }]
+      }]
+    },
+    'roles': [
+      { 'name': 'root', 'required': true },
+      { 'name': 'derived', 'required': true }
+    ]
+  });
+  const state = engine.run(TestEngineFixture.input([], schema));
+  assert.strictEqual(state.roles.root, root);
+  assert.strictEqual(state.roles.derived, undefined);
+  assert.deepStrictEqual(state.metadata['core:roleProvenance'], {
+    'root': { 'adjustments': [], 'origin': 'stated' }
+  });
+});
