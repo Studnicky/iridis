@@ -486,3 +486,18 @@ await test('a non-finite calibration stops the profile before the scenes', async
   await assert.rejects(VisualizationProfileOperation.execute(steps), { 'name': 'RangeError' });
   assert.deepEqual(steps.calls, ['calibrate']);
 });
+
+await test('a light calibration leaves the limits unscaled and a heavy calibration stretches them', async () => {
+  const limits = VisualizationProfileBudget.mermaid;
+  const light = new StubSteps(VisualizationProfileBudget.vsyncStepMs, [ScaleScenario.within('mermaid', limits)]);
+  const lightPass = new StubSteps(VisualizationProfileBudget.vsyncStepMs, [ProfileFixture.within('mermaid', limits)]);
+  const heavy = new StubSteps(VisualizationProfileBudget.vsyncStepMs * ScaleScenario.scale, [ScaleScenario.within('mermaid', limits)]);
+
+  await assert.rejects(VisualizationProfileOperation.execute(light), { 'name': 'Error' });
+  const lightOutcome = await VisualizationProfileOperation.execute(lightPass);
+  const heavyOutcome = await VisualizationProfileOperation.execute(heavy);
+
+  assert.equal(lightOutcome.scale, 1);
+  assert.equal(heavyOutcome.scale, ScaleScenario.scale);
+  assert.deepEqual(light.calls[1], 'scenes@1.00');
+});
