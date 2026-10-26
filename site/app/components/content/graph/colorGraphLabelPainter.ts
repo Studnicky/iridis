@@ -8,20 +8,20 @@ import type { ColorGraphCategoryVisibility } from './ColorGraphCategoryVisibilit
 import type { ColorGraphNodeCategory } from './ColorGraphNodeCategory.ts';
 
 class ColorGraphPointMeta {
-  public readonly algorithm: string | null;
+  public readonly relationshipOperation: string | null;
   public readonly category: ColorGraphNodeCategory;
   public readonly hex: string;
   public readonly labelSuffix: string;
   public readonly name: string;
 
   public constructor(
-    algorithm: string | null,
+    relationshipOperation: string | null,
     category: ColorGraphNodeCategory,
     hex: string,
     labelSuffix: string,
     name: string
   ) {
-    this.algorithm = algorithm;
+    this.relationshipOperation = relationshipOperation;
     this.category = category;
     this.hex = hex;
     this.labelSuffix = labelSuffix;
@@ -116,7 +116,7 @@ export const colorGraphLabelPainter = class ColorGraphLabelPainter {
     if (screenPosition === null) {return;}
     const [screenX, screenY] = screenPosition;
     if (screenX < 0 || screenY < 0 || screenX > width || screenY > height) {return;}
-    const label = meta.algorithm !== null ? `${meta.name} · ${meta.algorithm}` : meta.name;
+    const label = meta.relationshipOperation !== null ? `${meta.name} · ${meta.relationshipOperation}` : meta.name;
     const text = `${label}${meta.labelSuffix}`;
     const textWidth = context.measureText(text).width;
     const pillWidth = textWidth + padX * 2;

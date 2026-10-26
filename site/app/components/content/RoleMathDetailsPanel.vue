@@ -3,7 +3,6 @@ import type { RoleMathEntry } from '~/composables/types/roleMathEntry.ts';
 
 defineProps<{
   role: RoleMathEntry;
-  algorithmLabel: string;
 }>();
 </script>
 
@@ -17,7 +16,6 @@ defineProps<{
     <div v-else-if="role.origin.isDerived()">
       <RoleMathDerivedDetails
         :role="role"
-        :algorithm-label="algorithmLabel"
       />
     </div>
     <div v-else-if="role.origin.isPinned()">

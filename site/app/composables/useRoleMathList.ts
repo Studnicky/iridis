@@ -1,7 +1,6 @@
 import { colorRecordFactory, RoleDefinitionEntity } from '@studnicky/iridis';
 import { computed } from 'vue';
 
-import type { RoleMathAlgorithmInfoType } from '~/composables/types/roleMathAlgorithmInfoType.ts';
 import type { RoleMathCandidateType } from '~/composables/types/roleMathCandidateType.ts';
 import type { RoleMathEntry } from '~/composables/types/roleMathEntry.ts';
 
@@ -85,7 +84,7 @@ class UseRoleMathListOperation {
         } else if (relationship !== undefined) {
           parentRole = relationship.source;
         }
-        const algorithmInfo: RoleMathAlgorithmInfoType | null = null;
+        const relationshipOperation = relationship?.operation ?? null;
 
         // roleName comes from Object.keys(roles.value) itself, so this lookup
         // can never miss — never a hardcoded placeholder.
@@ -101,7 +100,6 @@ class UseRoleMathListOperation {
         );
 
         return {
-          'algorithmInfo': algorithmInfo,
           'c': oklch.c,
           'candidates': candidates,
           'clamp': clamp ?? null,
@@ -114,7 +112,8 @@ class UseRoleMathListOperation {
           'origin': origin,
           'parentRole': parentRole,
           'pinnedSeedHex': origin.isPinned() ? (clamp?.seedHex.toLowerCase() ?? null) : null,
-          'ratio': ratio
+          'ratio': ratio,
+          'relationshipOperation': relationshipOperation
         };
       });
 

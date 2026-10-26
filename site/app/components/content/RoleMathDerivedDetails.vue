@@ -4,7 +4,6 @@ import { computed } from 'vue';
 import { buildRoleMathDerivedDetailsModel } from './roleMath/buildRoleMathDerivedDetailsModel.ts';
 
 const props = defineProps<{
-  algorithmLabel: string;
   role: RoleMathEntry;
 }>();
 
@@ -25,19 +24,13 @@ const detailsModel = computed(() => buildRoleMathDerivedDetailsModel.build(props
       />
     </div>
 
-    <div
-      v-if="detailsModel.algorithmSummary !== null"
-      class="mt-2 pt-2 border-t border-default/30 space-y-1"
-    >
+    <div class="mt-2 pt-2 border-t border-default/30 space-y-1">
       <PanelHeading
-        title="Hue-derivation algorithm"
+        title="Relationship operation"
         as="div"
       />
       <div class="not-italic text-highlighted">
-        {{ props.algorithmLabel }}
-      </div>
-      <div class="not-italic font-mono text-[11px] text-muted">
-        {{ detailsModel.algorithmSummary }}
+        {{ props.role.relationshipOperation ?? 'none' }}
       </div>
     </div>
   </div>

@@ -3,8 +3,6 @@ export type * from '../entities/ModeEntity.ts';
 export type * from '../entities/SchemaNameEntity.ts';
 export type * from '../entities/SupportedLangEntity.ts';
 export type * from './carouselCardType.ts';
-export type * from './colorDerivation.ts';
-export * from './colorDerivation.ts';
 export type * from './colorSampleType.ts';
 export * from './iridisUiEffect.ts';
 export * from './iridisUiEvent.ts';

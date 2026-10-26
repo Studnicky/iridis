@@ -11,27 +11,10 @@ class RoleMathDerivedMetric {
 }
 
 export const buildRoleMathDerivedDetailsModel = class RoleMathDerivedDetailsModel {
-  public readonly algorithmSummary: string | null;
   public readonly metrics: RoleMathDerivedMetric[];
 
-  private constructor(algorithmSummary: string | null, metrics: RoleMathDerivedMetric[]) {
-    this.algorithmSummary = algorithmSummary;
+  private constructor(metrics: RoleMathDerivedMetric[]) {
     this.metrics = metrics;
-  }
-
-  private static algorithmSummary(role: RoleMathEntry): string | null {
-    const algorithmInfo = role.algorithmInfo;
-    if (algorithmInfo === null) {
-      return null;
-    }
-    const computedHues: string[] = [];
-    for (let index = 0; index < algorithmInfo.computedHues.length; index += 1) {
-      const hue = algorithmInfo.computedHues[index];
-      if (hue !== undefined) {
-        computedHues.push(`${Math.round(hue)}°`);
-      }
-    }
-    return `Seed hue ${Math.round(algorithmInfo.baseHue)}° → computed ${computedHues.join(', ')}`;
   }
 
   public static build(role: RoleMathEntry): RoleMathDerivedDetailsModel {
@@ -52,9 +35,6 @@ export const buildRoleMathDerivedDetailsModel = class RoleMathDerivedDetailsMode
       }
     }
 
-    return new RoleMathDerivedDetailsModel(
-      RoleMathDerivedDetailsModel.algorithmSummary(role),
-      metrics
-    );
+    return new RoleMathDerivedDetailsModel(metrics);
   }
 };
