@@ -67,14 +67,18 @@ class ColorGraphLifecycleBrowser {
     let target = await ColorGraphLifecycleBrowser.wheelTarget(canvas);
 
     for (let attempt = 0; attempt < ColorGraphLifecycleBrowser.wheelAttempts; attempt += 1) {
+      await canvas.scrollIntoViewIfNeeded();
       target = await ColorGraphLifecycleBrowser.wheelTarget(canvas);
+      assert.ok(target[1] >= 0 && target[2] !== 'none', `The wheel target is outside the viewport: ${JSON.stringify(target)}.`);
       await page.mouse.move(target[0], target[1]);
       await page.mouse.wheel(0, ColorGraphLifecycleBrowser.wheelZoomInDelta);
       if (await ColorGraphLifecycleBrowser.zoomRaised(page, floor * ColorGraphLifecycleBrowser.wheelZoomRatio)) {
         return;
       }
     }
-    throw new Error(`The wheel never raised the zoom well above ${floor}; last target ${JSON.stringify(target)}.`);
+    const scrollY = await page.evaluate(() => {return window.scrollY;});
+
+    throw new Error(`The wheel never raised the zoom well above ${floor}; last target ${JSON.stringify(target)} at scrollY ${scrollY}.`);
   }
 
   // A refit while the carousel settles can reset the zoom, so the raised zoom is confirmed after the graph settles.
@@ -212,6 +216,9 @@ await test('tearing down during a final fit cannot impose a zoom floor on a repl
   });
 
   await page.goto(running.origin, { 'waitUntil': 'networkidle' });
+  const session = await page.context().newCDPSession(page);
+
+  await session.send('Emulation.setCPUThrottlingRate', { 'rate': ColorGraphLifecycleBrowser.cpuThrottleRate });
 
   const explore = page.locator('#explore');
 
