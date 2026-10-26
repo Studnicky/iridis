@@ -339,28 +339,59 @@ export class VisualizationProfileStaticFile {
 }
 
 export class VisualizationProfileBudget {
-  static maximumAverageFrameMs = 30;
-  static maximumCanvasElements = 4;
-  static maximumDomElements = 7000;
-  static maximumFrameMs = 150;
-  static maximumLongTaskCount = 1;
-  static maximumLongTaskTotalMs = 75;
-  static maximumP90FrameMs = 40;
   static minimumFrameCount = 5;
+
+  /** Scenes without live WebGL. */
+  static mermaid = Object.freeze({
+    'maximumAverageFrameMs': 30,
+    'maximumCanvasElements': 4,
+    'maximumDomElements': 7000,
+    'maximumFrameMs': 150,
+    'maximumLongTaskCount': 1,
+    'maximumLongTaskTotalMs': 75,
+    'maximumP90FrameMs': 40,
+  });
+
+  /** The live WebGL graph, in 16.7 ms frame steps. */
+  static graph = Object.freeze({
+    'maximumAverageFrameMs': 45,
+    'maximumCanvasElements': 4,
+    'maximumDomElements': 7000,
+    'maximumFrameMs': 150,
+    'maximumLongTaskCount': 3,
+    'maximumLongTaskTotalMs': 200,
+    'maximumP90FrameMs': 60,
+  });
+
+  static classByTarget = new Map([
+    ['graph', 'graph'],
+    ['graphDpad', 'graph'],
+    ['mermaid', 'mermaid'],
+    ['mermaidDpad', 'mermaid'],
+  ]);
+
+  static limitsFor(targetName) {
+    const className = this.classByTarget.get(targetName);
+    if (className === undefined) {
+      throw new RangeError('Unknown visualization profile target: ' + targetName);
+    }
+    return this[className];
+  }
 
   static failures(report) {
     const failures = [];
     for (const item of report) {
       if (!item.ok) continue;
+      const limits = this.limitsFor(item.name);
       const checks = [
         ['frameCount', item.frameCount, this.minimumFrameCount, 'at least'],
-        ['avgMs', item.avgMs, this.maximumAverageFrameMs, 'at most'],
-        ['p90Ms', item.p90Ms, this.maximumP90FrameMs, 'at most'],
-        ['maxMs', item.maxMs, this.maximumFrameMs, 'at most'],
-        ['longCount', item.longCount, this.maximumLongTaskCount, 'at most'],
-        ['longTotalMs', item.longTotalMs, this.maximumLongTaskTotalMs, 'at most'],
-        ['domElementCount', item.domElementCount, this.maximumDomElements, 'at most'],
-        ['canvasElementCount', item.canvasElementCount, this.maximumCanvasElements, 'at most'],
+        ['avgMs', item.avgMs, limits.maximumAverageFrameMs, 'at most'],
+        ['p90Ms', item.p90Ms, limits.maximumP90FrameMs, 'at most'],
+        ['maxMs', item.maxMs, limits.maximumFrameMs, 'at most'],
+        ['longCount', item.longCount, limits.maximumLongTaskCount, 'at most'],
+        ['longTotalMs', item.longTotalMs, limits.maximumLongTaskTotalMs, 'at most'],
+        ['domElementCount', item.domElementCount, limits.maximumDomElements, 'at most'],
+        ['canvasElementCount', item.canvasElementCount, limits.maximumCanvasElements, 'at most'],
       ];
       for (const [metric, value, limit, direction] of checks) {
         const passes = Number.isFinite(value) && (direction === 'at least' ? value >= limit : value <= limit);

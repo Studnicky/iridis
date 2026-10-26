@@ -1,14 +1,28 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync
+} from 'node:fs';
 import { tmpdir } from 'node:os';
-import { isAbsolute, join, relative, resolve, sep } from 'node:path';
+import {
+  isAbsolute, join, relative, resolve, sep
+} from 'node:path';
 import { test } from 'node:test';
 
-import { VisualizationProfileBudget, VisualizationProfileOperation, VisualizationProfileStaticFile } from '../visualization-profile.mjs';
+import type { VisualizationProfileLimitsInterface } from './fixtures/VisualizationProfileLimitsInterface.ts';
+
+import {
+  VisualizationProfileBudget, VisualizationProfileOperation, VisualizationProfileStaticFile
+} from '../visualization-profile.mjs';
 
 await test('profile static files decode valid paths and remain contained under the public build', (context) => {
   const publicRoot = mkdtempSync(join(tmpdir(), 'iridis-profile-public-'));
-  context.after(() => { rmSync(publicRoot, { 'force': true, 'recursive': true }); });
+
+  context.after(() => {
+    rmSync(publicRoot, {
+      'force': true,
+      'recursive': true
+    });
+  });
   mkdirSync(join(publicRoot, 'assets'));
   writeFileSync(join(publicRoot, 'index.html'), 'index');
   writeFileSync(join(publicRoot, '404.html'), 'missing');
@@ -25,12 +39,21 @@ await test('profile static files decode valid paths and remain contained under t
   assert.equal(missing.filePath, realpathSync(join(publicRoot, '404.html')));
   assert.equal(missing.statusCode, 404);
 
-  const results = [index, asset, missing];
+  const results = [
+    index,
+    asset,
+    missing
+  ];
   const resultCount = results.length;
+
   for (let resultIndex = 0; resultIndex < resultCount; resultIndex += 1) {
     const result = results[resultIndex];
-    if (result === undefined) { throw new Error('Profile result index must resolve'); }
+
+    if (result === undefined) {
+      throw new Error('Profile result index must resolve');
+    }
     const relativePath = relative(realpathSync(publicRoot), result.filePath);
+
     assert.equal(isAbsolute(relativePath), false);
     assert.equal(relativePath === '..' || relativePath.startsWith(`..${sep}`), false);
   }
@@ -39,9 +62,16 @@ await test('profile static files decode valid paths and remain contained under t
 await test('profile static files reject traversal, dot segments, escaped paths, and symlink escapes', (context) => {
   const publicRoot = mkdtempSync(join(tmpdir(), 'iridis-profile-public-'));
   const outsideRoot = mkdtempSync(join(tmpdir(), 'iridis-profile-outside-'));
+
   context.after(() => {
-    rmSync(publicRoot, { 'force': true, 'recursive': true });
-    rmSync(outsideRoot, { 'force': true, 'recursive': true });
+    rmSync(publicRoot, {
+      'force': true,
+      'recursive': true
+    });
+    rmSync(outsideRoot, {
+      'force': true,
+      'recursive': true
+    });
   });
   writeFileSync(join(publicRoot, 'index.html'), 'index');
   writeFileSync(join(outsideRoot, 'secret.txt'), 'secret');
@@ -57,24 +87,39 @@ await test('profile static files reject traversal, dot segments, escaped paths, 
     '//etc/passwd'
   ];
   const rejectedPathCount = rejectedPaths.length;
+
   for (let pathIndex = 0; pathIndex < rejectedPathCount; pathIndex += 1) {
     const requestPath = rejectedPaths[pathIndex];
-    if (requestPath === undefined) { throw new Error('Rejected path index must resolve'); }
-    assert.throws(() => { VisualizationProfileStaticFile.resolve(publicRoot, requestPath); }, TypeError);
+
+    if (requestPath === undefined) {
+      throw new Error('Rejected path index must resolve');
+    }
+    assert.throws(() => {
+      VisualizationProfileStaticFile.resolve(publicRoot, requestPath);
+    }, TypeError);
   }
 
   assert.throws(
-    () => { VisualizationProfileStaticFile.resolve(publicRoot, '/linked-secret.txt'); },
+    () => {
+      VisualizationProfileStaticFile.resolve(publicRoot, '/linked-secret.txt');
+    },
     TypeError
   );
 });
 
 await test('profile mounts generated assets beneath the declared Nuxt base path', (context) => {
   const publicRoot = mkdtempSync(join(tmpdir(), 'iridis-profile-public-'));
-  context.after(() => { rmSync(publicRoot, { 'force': true, 'recursive': true }); });
+
+  context.after(() => {
+    rmSync(publicRoot, {
+      'force': true,
+      'recursive': true
+    });
+  });
   writeFileSync(join(publicRoot, 'index.html'), '<a href="/iridis/_nuxt/app.js">entry</a>');
 
   const basePath = VisualizationProfileStaticFile.basePath(publicRoot);
+
   assert.equal(basePath, '/iridis/');
   assert.equal(VisualizationProfileStaticFile.mountedRequestPath(basePath, '/iridis/'), '/');
   assert.equal(VisualizationProfileStaticFile.mountedRequestPath(basePath, '/iridis/_nuxt/app.js?cache=1'), '/_nuxt/app.js');
@@ -98,59 +143,152 @@ await test('profile samples the owned visual targets after graph teardown and dr
 
 
 class ProfileFixture {
-  static within(name: string): Record<string, unknown> {
-    const budget = VisualizationProfileBudget;
+  static readonly classes = [
+    [
+      'mermaid',
+      VisualizationProfileBudget.mermaid
+    ],
+    [
+      'graph',
+      VisualizationProfileBudget.graph
+    ]
+  ] as const;
+
+  static within(name: string, limits: VisualizationProfileLimitsInterface): Record<string, unknown> {
     const result = {
-      'avgMs': budget.maximumAverageFrameMs,
-      'canvasElementCount': budget.maximumCanvasElements,
-      'domElementCount': budget.maximumDomElements,
-      'frameCount': budget.minimumFrameCount,
-      'longCount': budget.maximumLongTaskCount,
-      'longTotalMs': budget.maximumLongTaskTotalMs,
-      'maxMs': budget.maximumFrameMs,
+      'avgMs': limits.maximumAverageFrameMs,
+      'canvasElementCount': limits.maximumCanvasElements,
+      'domElementCount': limits.maximumDomElements,
+      'frameCount': VisualizationProfileBudget.minimumFrameCount,
+      'longCount': limits.maximumLongTaskCount,
+      'longTotalMs': limits.maximumLongTaskTotalMs,
+      'maxMs': limits.maximumFrameMs,
       'name': name,
       'ok': true,
-      'p90Ms': budget.maximumP90FrameMs
+      'p90Ms': limits.maximumP90FrameMs
     };
+
+    return result;
+  }
+
+  static assertRejectsEachMetric(name: string, limits: VisualizationProfileLimitsInterface): void {
+    const cases = ProfileFixture.beyond(limits);
+
+    for (let index = 0; index < cases.length; index += 1) {
+      const entry = cases[index];
+
+      if (entry !== undefined) {
+        const target = { ...ProfileFixture.within(name, limits), ...entry[0] };
+
+        assert.deepEqual(VisualizationProfileBudget.failures([target]), [`target=${name} ${entry[1]}`]);
+      }
+    }
+  }
+
+  static beyond(limits: VisualizationProfileLimitsInterface): readonly (readonly [Record<string, number>, string])[] {
+    const result = [
+      [
+        { 'avgMs': limits.maximumAverageFrameMs + 1 },
+        `avgMs=${String(limits.maximumAverageFrameMs + 1)} must be at most ${String(limits.maximumAverageFrameMs)}`
+      ],
+      [
+        { 'p90Ms': limits.maximumP90FrameMs + 1 },
+        `p90Ms=${String(limits.maximumP90FrameMs + 1)} must be at most ${String(limits.maximumP90FrameMs)}`
+      ],
+      [
+        { 'maxMs': limits.maximumFrameMs + 1 },
+        `maxMs=${String(limits.maximumFrameMs + 1)} must be at most ${String(limits.maximumFrameMs)}`
+      ],
+      [
+        { 'longCount': limits.maximumLongTaskCount + 1 },
+        `longCount=${String(limits.maximumLongTaskCount + 1)} must be at most ${String(limits.maximumLongTaskCount)}`
+      ],
+      [
+        { 'longTotalMs': limits.maximumLongTaskTotalMs + 1 },
+        `longTotalMs=${String(limits.maximumLongTaskTotalMs + 1)} must be at most ${String(limits.maximumLongTaskTotalMs)}`
+      ],
+      [
+        { 'domElementCount': limits.maximumDomElements + 1 },
+        `domElementCount=${String(limits.maximumDomElements + 1)} must be at most ${String(limits.maximumDomElements)}`
+      ],
+      [
+        { 'canvasElementCount': limits.maximumCanvasElements + 1 },
+        `canvasElementCount=${String(limits.maximumCanvasElements + 1)} must be at most ${String(limits.maximumCanvasElements)}`
+      ],
+      [
+        { 'frameCount': VisualizationProfileBudget.minimumFrameCount - 1 },
+        `frameCount=${String(VisualizationProfileBudget.minimumFrameCount - 1)} must be at least ${String(VisualizationProfileBudget.minimumFrameCount)}`
+      ]
+    ] as const;
 
     return result;
   }
 }
 
-await test('profile budget accepts targets exactly at every limit', () => {
-  const report = [ProfileFixture.within('graph'), ProfileFixture.within('mermaid')];
+await test('profile budget accepts every target class exactly at its limits', () => {
+  const report = [
+    ProfileFixture.within('mermaid', VisualizationProfileBudget.mermaid),
+    ProfileFixture.within('mermaidDpad', VisualizationProfileBudget.mermaid),
+    ProfileFixture.within('graph', VisualizationProfileBudget.graph),
+    ProfileFixture.within('graphDpad', VisualizationProfileBudget.graph)
+  ];
 
   assert.deepEqual(VisualizationProfileBudget.failures(report), []);
 });
 
-await test('profile budget rejects each metric one step beyond its limit', () => {
-  const budget = VisualizationProfileBudget;
-  const overrides = [
-    [{ 'avgMs': budget.maximumAverageFrameMs + 1 }, `avgMs=${String(budget.maximumAverageFrameMs + 1)} must be at most ${String(budget.maximumAverageFrameMs)}`],
-    [{ 'p90Ms': budget.maximumP90FrameMs + 1 }, `p90Ms=${String(budget.maximumP90FrameMs + 1)} must be at most ${String(budget.maximumP90FrameMs)}`],
-    [{ 'maxMs': budget.maximumFrameMs + 1 }, `maxMs=${String(budget.maximumFrameMs + 1)} must be at most ${String(budget.maximumFrameMs)}`],
-    [{ 'longCount': budget.maximumLongTaskCount + 1 }, `longCount=${String(budget.maximumLongTaskCount + 1)} must be at most ${String(budget.maximumLongTaskCount)}`],
-    [{ 'longTotalMs': budget.maximumLongTaskTotalMs + 1 }, `longTotalMs=${String(budget.maximumLongTaskTotalMs + 1)} must be at most ${String(budget.maximumLongTaskTotalMs)}`],
-    [{ 'domElementCount': budget.maximumDomElements + 1 }, `domElementCount=${String(budget.maximumDomElements + 1)} must be at most ${String(budget.maximumDomElements)}`],
-    [{ 'canvasElementCount': budget.maximumCanvasElements + 1 }, `canvasElementCount=${String(budget.maximumCanvasElements + 1)} must be at most ${String(budget.maximumCanvasElements)}`],
-    [{ 'frameCount': budget.minimumFrameCount - 1 }, `frameCount=${String(budget.minimumFrameCount - 1)} must be at least ${String(budget.minimumFrameCount)}`]
-  ] as const;
-
-  overrides.forEach(([override, message]) => {
-    const target = { ...ProfileFixture.within('graph'), ...override };
-
-    assert.deepEqual(VisualizationProfileBudget.failures([target]), [`target=graph ${message}`]);
+await test('profile budget rejects each metric one step beyond its limit for each class', () => {
+  ProfileFixture.classes.forEach(([name, limits]) => {
+    ProfileFixture.assertRejectsEachMetric(name, limits);
   });
 });
 
-await test('profile budget rejects a target whose metric is not a finite number', () => {
-  const report = [{ ...ProfileFixture.within('graph'), 'avgMs': Number.NaN }];
+await test('a target is judged against its own class', () => {
+  const graphLoad = { ...ProfileFixture.within('graph', VisualizationProfileBudget.graph) };
+  const mermaidLoad = {
+    ...graphLoad,
+    'name': 'mermaid'
+  };
 
-  assert.deepEqual(VisualizationProfileBudget.failures(report), [`target=graph avgMs=NaN must be at most ${String(VisualizationProfileBudget.maximumAverageFrameMs)}`]);
+  assert.deepEqual(VisualizationProfileBudget.failures([graphLoad]), []);
+  assert.equal(VisualizationProfileBudget.failures([mermaidLoad]).length > 0, true);
+  assert.equal(VisualizationProfileBudget.limitsFor('graphDpad'), VisualizationProfileBudget.graph);
+  assert.equal(VisualizationProfileBudget.limitsFor('mermaidDpad'), VisualizationProfileBudget.mermaid);
+});
+
+await test('the graph class is never stricter than the mermaid class and keeps the structure limits', () => {
+  const strict = VisualizationProfileBudget.mermaid;
+  const live = VisualizationProfileBudget.graph;
+
+  assert.equal(live.maximumDomElements, strict.maximumDomElements);
+  assert.equal(live.maximumCanvasElements, strict.maximumCanvasElements);
+  assert.equal(live.maximumFrameMs, strict.maximumFrameMs);
+  assert.ok(live.maximumAverageFrameMs >= strict.maximumAverageFrameMs);
+  assert.ok(live.maximumP90FrameMs >= strict.maximumP90FrameMs);
+});
+
+await test('an unknown target class is an error', () => {
+  const report = [ProfileFixture.within('unknownTarget', VisualizationProfileBudget.mermaid)];
+
+  assert.throws(() => {
+    VisualizationProfileBudget.failures(report);
+  }, { 'name': 'RangeError' });
+});
+
+await test('profile budget rejects a target whose metric is not a finite number', () => {
+  const report = [{
+    ...ProfileFixture.within('graph', VisualizationProfileBudget.graph),
+    'avgMs': Number.NaN
+  }];
+
+  assert.deepEqual(VisualizationProfileBudget.failures(report), [`target=graph avgMs=NaN must be at most ${String(VisualizationProfileBudget.graph.maximumAverageFrameMs)}`]);
 });
 
 await test('profile budget skips targets that did not run', () => {
-  const report = [{ 'name': 'graph', 'ok': false, 'reason': 'selector not found' }];
+  const report = [{
+    'name': 'graph',
+    'ok': false,
+    'reason': 'selector not found'
+  }];
 
   assert.deepEqual(VisualizationProfileBudget.failures(report), []);
 });
@@ -165,19 +303,38 @@ await test('profile CLI runs only when Node invokes its resolved entry module', 
   const modulePath = resolve(import.meta.dirname, '../visualization-profile.mjs');
   const moduleUrl = new URL('../visualization-profile.mjs', import.meta.url).href;
 
-  assert.equal(VisualizationProfileOperation.isEntrypoint(['/usr/local/bin/node', modulePath], moduleUrl), true);
-  assert.equal(VisualizationProfileOperation.isEntrypoint(['/usr/local/bin/node', 'site/other-script.mjs'], moduleUrl), false);
+  assert.equal(VisualizationProfileOperation.isEntrypoint([
+    '/usr/local/bin/node',
+    modulePath
+  ], moduleUrl), true);
+  assert.equal(VisualizationProfileOperation.isEntrypoint([
+    '/usr/local/bin/node',
+    'site/other-script.mjs'
+  ], moduleUrl), false);
   assert.equal(VisualizationProfileOperation.isEntrypoint(['/usr/local/bin/node'], moduleUrl), false);
 });
 
 await test('profile CLI entrypoint is recognised through a symlinked path', (context) => {
   const linkRoot = mkdtempSync(join(tmpdir(), 'iridis-profile-link-'));
-  context.after(() => { rmSync(linkRoot, { 'force': true, 'recursive': true }); });
+
+  context.after(() => {
+    rmSync(linkRoot, {
+      'force': true,
+      'recursive': true
+    });
+  });
   const modulePath = resolve(import.meta.dirname, '../visualization-profile.mjs');
   const linkedPath = join(linkRoot, 'linked-profile.mjs');
+
   symlinkSync(modulePath, linkedPath);
   const moduleUrl = new URL('../visualization-profile.mjs', import.meta.url).href;
 
-  assert.equal(VisualizationProfileOperation.isEntrypoint(['/usr/local/bin/node', linkedPath], moduleUrl), true);
-  assert.equal(VisualizationProfileOperation.isEntrypoint(['/usr/local/bin/node', join(linkRoot, 'missing.mjs')], moduleUrl), false);
+  assert.equal(VisualizationProfileOperation.isEntrypoint([
+    '/usr/local/bin/node',
+    linkedPath
+  ], moduleUrl), true);
+  assert.equal(VisualizationProfileOperation.isEntrypoint([
+    '/usr/local/bin/node',
+    join(linkRoot, 'missing.mjs')
+  ], moduleUrl), false);
 });
