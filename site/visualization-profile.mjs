@@ -75,6 +75,8 @@ async function activateReadyGraph(page) {
   await graph.locator('.cg-overlay').waitFor({ 'state': 'detached', 'timeout': 60000 });
   await graph.locator('.cg-cosmos canvas').waitFor({ 'state': 'visible', 'timeout': 60000 });
   await explore.locator('.cg-wrap[data-graph-state="settled"]').waitFor({ 'state': 'attached', 'timeout': 60000 });
+  // Pointer input on the graph restarts its idle countdown, so a slow machine cannot suspend it before the sample.
+  await graph.locator('.cg-cosmos').hover();
 }
 
 async function deactivateGraph(page) {
