@@ -693,6 +693,12 @@ void test('graph hue offsets compose across source relationships', () => {
   assert.ok(derived !== undefined && chained !== undefined);
   assert.ok(Math.abs(derived.oklch.h - 320) < 0.001);
   assert.ok(Math.abs(chained.oklch.h - 10) < 0.001);
+  assert.strictEqual(state.roles.root, state.colors[0]);
+  assert.deepStrictEqual(state.metadata['core:roleProvenance'], {
+    'chained': { 'adjustments': [], 'origin': 'derived' },
+    'derived': { 'adjustments': [], 'origin': 'derived' },
+    'root': { 'adjustments': [], 'origin': 'stated' }
+  });
 });
 
 void test('oklch-delta applies source-relative lightness and chroma inside target ranges', () => {
