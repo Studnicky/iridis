@@ -90,6 +90,12 @@ async function deactivateGraph(page) {
   }));
 }
 
+// Pointer input restarts the idle countdown and mounts a suspended graph again.
+async function wakeGraph(page) {
+  await page.locator('#explore .cg-wrap .cg-cosmos').first().hover();
+  await page.locator('#explore .cg-wrap[data-graph-state="settled"] .cg-cosmos canvas').waitFor({ 'state': 'visible', 'timeout': 60000 });
+}
+
 async function awaitIdleSuspension(page) {
   await page.locator('#explore .cg-wrap[data-graph-state="suspended"]').waitFor({ 'state': 'attached', 'timeout': IDLE_SUSPENSION_TIMEOUT_MS });
 }
@@ -224,8 +230,10 @@ async function stopTargetProfile(page, sessionId) {
   }, sessionId);
 }
 
-async function runTarget(page, { interaction, name, selector, durationMs = PROFILE_MS }) {
+async function runTarget(page, { wake, interaction, name, selector, durationMs = PROFILE_MS }) {
+  if (wake !== undefined) await wake();
   await waitForSettledTarget(page, selector);
+  if (wake !== undefined) await wake();
   const sessionId = `__iridisVisualizationProfile${globalThis.crypto.randomUUID()}`;
   const started = await startTargetProfile(page, selector, sessionId);
   if (!started.ok) return { name, selector, ...started };
@@ -603,6 +611,7 @@ export class VisualizationProfileOperation {
           const graphSurface = '.cg-cosmos canvas';
           const graphDpad = '.cg-wrap .dagonizer-dpad-wrap';
           report.push(await runTarget(page, {
+            'wake': () => wakeGraph(page),
             'interaction': () => driveSurface(page, graphSurface),
             'name': 'graph',
             'selector': graphSurface,
