@@ -392,12 +392,12 @@ export class VisualizationProfileBudget {
     ['mermaidDpad', 'mermaid'],
   ]);
 
-  /** The scale that stretches the frame-time limits to the machine: its CPU-bound calibration frame time in vsync steps, never below one. */
-  static environmentScale(floorAverageFrameMs) {
-    if (!Number.isFinite(floorAverageFrameMs) || floorAverageFrameMs <= 0) {
-      throw new RangeError('Visualization profile calibration is not a positive finite frame time: ' + floorAverageFrameMs);
+  /** The scale that stretches the frame-time limits to the machine: its median calibration workload time over the reference time, never below one. */
+  static environmentScale(medianWorkloadMs) {
+    if (!Number.isFinite(medianWorkloadMs) || medianWorkloadMs <= 0) {
+      throw new RangeError('Visualization profile calibration is not a positive finite duration: ' + medianWorkloadMs);
     }
-    return Math.max(1, floorAverageFrameMs / this.vsyncStepMs);
+    return Math.max(1, medianWorkloadMs / VisualizationProfileCalibration.referenceWorkloadMs);
   }
 
   /**
@@ -461,36 +461,39 @@ export class VisualizationProfileBudget {
 }
 
 export class VisualizationProfileCalibration {
-  /** Canvas fills per calibration frame; sized to occupy most of one vsync on a developer machine. */
-  static fillsPerFrame = 24000;
+  /** Canvas fills per calibration frame; about a third of one vsync on the reference machine. */
+  static fillsPerFrame = 8000;
 
-  /** Average frame time of a fixed CPU-bound page (canvas fills plus one forced layout read per frame) in the same browser and viewport. */
+  /** Median duration, in milliseconds, of the calibration workload on the reference machine. */
+  static referenceWorkloadMs = 5;
+
+  /** Median duration of a fixed CPU-bound workload (canvas fills, readback, one forced layout read) timed inside each frame. */
   static async sample(browser, durationMs) {
     const page = await browser.newPage({ 'viewport': { 'height': 1100, 'width': 1680 } });
     try {
       await page.setContent('<!doctype html><html><body><canvas id="c" width="640" height="480"></canvas><div id="d">x</div></body></html>');
       return await page.evaluate(({ fills, sampleMs }) => new Promise((resolveSample) => {
-        const context = document.getElementById('c').getContext('2d', { willReadFrequently: true });
+        const context = document.getElementById('c').getContext('2d', { 'willReadFrequently': true });
         const probe = document.getElementById('d');
-        const frames = [];
-        let previous = performance.now();
-        const start = previous;
+        const durations = [];
+        const start = performance.now();
         let sink = 0;
         const tick = (timestamp) => {
+          const began = performance.now();
           for (let index = 0; index < fills; index += 1) {
             context.fillStyle = 'rgb(' + (index % 256) + ',' + ((index * 7) % 256) + ',' + ((index * 13) % 256) + ')';
             context.fillRect((index * 17) % 600, (index * 31) % 440, 40, 40);
           }
           sink += context.getImageData(0, 0, 1, 1).data[0];
-          probe.style.width = (100 + (frames.length % 50)) + 'px';
+          probe.style.width = (100 + (durations.length % 50)) + 'px';
           sink += probe.offsetWidth;
-          frames.push(timestamp - previous);
-          previous = timestamp;
+          durations.push(performance.now() - began);
           if (timestamp - start < sampleMs) {
             requestAnimationFrame(tick);
           } else {
-            const measured = frames.slice(1);
-            resolveSample(measured.reduce((total, value) => total + value, 0) / Math.max(1, measured.length) + sink * 0);
+            const ordered = durations.slice(1).sort((left, right) => left - right);
+            const middle = Math.floor(ordered.length / 2);
+            resolveSample((ordered.length % 2 === 0 ? (ordered[middle - 1] + ordered[middle]) / 2 : ordered[middle]) + sink * 0);
           }
         };
         requestAnimationFrame(tick);
@@ -546,7 +549,7 @@ export class VisualizationProfileOperation {
     const steps = {
       'calibrate': () => VisualizationProfileCalibration.sample(browser, PROFILE_MS),
       'report': (report, floorAverageFrameMs, scale) => {
-        console.log(`calibration floorAvgMs=${floorAverageFrameMs.toFixed(2)} environmentScale=${scale.toFixed(2)}`);
+        console.log(`calibration workloadMedianMs=${floorAverageFrameMs.toFixed(2)} referenceMs=${VisualizationProfileCalibration.referenceWorkloadMs} environmentScale=${scale.toFixed(2)}`);
         VisualizationProfileOperation.print(report);
       },
       'scenes': async () => {
