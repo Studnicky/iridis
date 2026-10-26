@@ -97,35 +97,69 @@ await test('profile samples the owned visual targets after graph teardown and dr
 });
 
 
-await test('profile budget accepts the frame series a software-rendered headless browser sustains', () => {
-  const report = [
-    { 'avgMs': 143.25, 'frameCount': 83, 'maxMs': 350.1, 'name': 'graph', 'ok': true, 'p90Ms': 183.4 },
-    { 'avgMs': 154.54, 'frameCount': 23, 'maxMs': 250, 'name': 'graphDpad', 'ok': true, 'p90Ms': 183.3 },
-    { 'avgMs': 104.12, 'frameCount': 88, 'maxMs': 150.1, 'name': 'mermaid', 'ok': true, 'p90Ms': 150 }
-  ];
+class ProfileFixture {
+  static within(name: string): Record<string, unknown> {
+    const budget = VisualizationProfileBudget;
+    const result = {
+      'avgMs': budget.maximumAverageFrameMs,
+      'canvasElementCount': budget.maximumCanvasElements,
+      'domElementCount': budget.maximumDomElements,
+      'frameCount': budget.minimumFrameCount,
+      'longCount': budget.maximumLongTaskCount,
+      'longTotalMs': budget.maximumLongTaskTotalMs,
+      'maxMs': budget.maximumFrameMs,
+      'name': name,
+      'ok': true,
+      'p90Ms': budget.maximumP90FrameMs
+    };
+
+    return result;
+  }
+}
+
+await test('profile budget accepts targets exactly at every limit', () => {
+  const report = [ProfileFixture.within('graph'), ProfileFixture.within('mermaid')];
 
   assert.deepEqual(VisualizationProfileBudget.failures(report), []);
 });
 
-await test('profile budget rejects a frozen or barely sampled target', () => {
-  const report = [{
-    'avgMs': 900,
-    'frameCount': 3,
-    'maxMs': 4000,
-    'name': 'graph',
-    'ok': true,
-    'p90Ms': 1200
-  }];
+await test('profile budget rejects each metric one step beyond its limit', () => {
+  const budget = VisualizationProfileBudget;
+  const overrides = [
+    [{ 'avgMs': budget.maximumAverageFrameMs + 1 }, `avgMs=${String(budget.maximumAverageFrameMs + 1)} must be at most ${String(budget.maximumAverageFrameMs)}`],
+    [{ 'p90Ms': budget.maximumP90FrameMs + 1 }, `p90Ms=${String(budget.maximumP90FrameMs + 1)} must be at most ${String(budget.maximumP90FrameMs)}`],
+    [{ 'maxMs': budget.maximumFrameMs + 1 }, `maxMs=${String(budget.maximumFrameMs + 1)} must be at most ${String(budget.maximumFrameMs)}`],
+    [{ 'longCount': budget.maximumLongTaskCount + 1 }, `longCount=${String(budget.maximumLongTaskCount + 1)} must be at most ${String(budget.maximumLongTaskCount)}`],
+    [{ 'longTotalMs': budget.maximumLongTaskTotalMs + 1 }, `longTotalMs=${String(budget.maximumLongTaskTotalMs + 1)} must be at most ${String(budget.maximumLongTaskTotalMs)}`],
+    [{ 'domElementCount': budget.maximumDomElements + 1 }, `domElementCount=${String(budget.maximumDomElements + 1)} must be at most ${String(budget.maximumDomElements)}`],
+    [{ 'canvasElementCount': budget.maximumCanvasElements + 1 }, `canvasElementCount=${String(budget.maximumCanvasElements + 1)} must be at most ${String(budget.maximumCanvasElements)}`],
+    [{ 'frameCount': budget.minimumFrameCount - 1 }, `frameCount=${String(budget.minimumFrameCount - 1)} must be at least ${String(budget.minimumFrameCount)}`]
+  ] as const;
 
-  assert.deepEqual(VisualizationProfileBudget.failures(report), [
-    'target=graph frameCount=3 must be at least 5',
-    'target=graph fps=1.1111111111111112 must be at least 2',
-    'target=graph avgMs=900 must be at most 600',
-    'target=graph maxMs=4000 must be at most 2000',
-    'target=graph p90Ms=1200 must be at most 800'
-  ]);
+  overrides.forEach(([override, message]) => {
+    const target = { ...ProfileFixture.within('graph'), ...override };
+
+    assert.deepEqual(VisualizationProfileBudget.failures([target]), [`target=graph ${message}`]);
+  });
 });
 
+await test('profile budget rejects a target whose metric is not a finite number', () => {
+  const report = [{ ...ProfileFixture.within('graph'), 'avgMs': Number.NaN }];
+
+  assert.deepEqual(VisualizationProfileBudget.failures(report), [`target=graph avgMs=NaN must be at most ${String(VisualizationProfileBudget.maximumAverageFrameMs)}`]);
+});
+
+await test('profile budget skips targets that did not run', () => {
+  const report = [{ 'name': 'graph', 'ok': false, 'reason': 'selector not found' }];
+
+  assert.deepEqual(VisualizationProfileBudget.failures(report), []);
+});
+
+await test('profile waits for the settled graph state before sampling', () => {
+  const profileSource = readFileSync(resolve(import.meta.dirname, '../visualization-profile.mjs'), 'utf8');
+
+  assert.equal(profileSource.includes('data-graph-state="settled"'), true);
+});
 
 await test('profile CLI runs only when Node invokes its resolved entry module', () => {
   const modulePath = resolve(import.meta.dirname, '../visualization-profile.mjs');

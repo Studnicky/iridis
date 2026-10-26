@@ -46,9 +46,13 @@ The manifest shape itself, along with the `TaskInterface` every task implements:
 The demo site drives its interaction state through `@studnicky/fsm` machines. Each machine owns a transition protocol; events carry their own transition behavior, so a new event adds a class rather than a branch.
 
 - **`IridisUiMachine`** owns carousel interaction: idle and dragging states for the picker and image modes, an active index that can never go negative, and effects that the composable applies to palette parameters such as the contrast standard, CVD mode, and strict compliance.
-- **`ColorGraphLifecycleMachine`** owns the color graph runtime: construct, device ready, fit, settle, and zoom.
+- **`ColorGraphLifecycleMachine`** owns the color graph runtime: construct, device ready, fit, settle, zoom, and suspend. `ColorGraphMountController` drives it from the carousel: the active face holds one live graph, and a face that becomes inactive disposes the graph behind a snapshot of its last frame. Fit and zoom-idle timers live on the controller and are cancelled with the graph.
 - **`TocBarMachine`** owns the table-of-contents bar presentation, from the top of the page to past the hero.
 
 ## Worker Lanes
 
 Palette resolution and the schema reachability check run in one engine worker, each as its own request lane. The reachability lane uses latest-wins sequencing in the request client, so a stale reply is dropped instead of overwriting newer state. The worker is single-threaded; lanes run in arrival order.
+
+## Visualization Budget
+
+`pnpm run profile:viz` drives the colour graph and the Mermaid diagrams in a production build and fails when a target exceeds `VisualizationProfileBudget` in `site/visualization-profile.mjs`: average, p90 and maximum frame time, long-task count and total, DOM element count, and canvas element count. Sampling starts once the graph lifecycle reports `settled`. Collapsed code blocks tokenize and mount only their preview lines, which keeps the document inside the DOM element limit.

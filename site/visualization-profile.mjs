@@ -73,6 +73,7 @@ async function activateReadyGraph(page) {
   await graph.waitFor({ 'state': 'visible', 'timeout': 60000 });
   await graph.locator('.cg-overlay').waitFor({ 'state': 'detached', 'timeout': 60000 });
   await graph.locator('.cg-cosmos canvas').waitFor({ 'state': 'visible', 'timeout': 60000 });
+  await explore.locator('.cg-wrap[data-graph-state="settled"]').waitFor({ 'state': 'attached', 'timeout': 60000 });
 }
 
 async function deactivateGraph(page) {
@@ -180,9 +181,10 @@ async function startTargetProfile(page, selector, sessionId) {
       const memorySamples = profile.mem;
       const result = {
         'avgMs': average,
+        'canvasElementCount': document.getElementsByTagName('canvas').length,
+        'domElementCount': document.getElementsByTagName('*').length,
         'frameCount': frames.length,
         'jsPeakMB': memorySamples.reduce((accumulator, item) => Math.max(accumulator, item.js), 0) / 1048576,
-        'long10MsOrMore': profile.longTasks.filter((item) => item.duration >= 10).length,
         'longCount': profile.longTasks.length,
         'longTotalMs': profile.longTasks.reduce((accumulator, item) => accumulator + item.duration, 0),
         'maxMs': sorted.at(-1) ?? 0,
@@ -337,23 +339,28 @@ export class VisualizationProfileStaticFile {
 }
 
 export class VisualizationProfileBudget {
-  static #minimumFrameCount = 5;
-  static #minimumFramesPerSecond = 2;
-  static #maximumAverageFrameMs = 600;
-  static #maximumFrameMs = 2000;
-  static #maximumP90FrameMs = 800;
+  static maximumAverageFrameMs = 30;
+  static maximumCanvasElements = 4;
+  static maximumDomElements = 7000;
+  static maximumFrameMs = 150;
+  static maximumLongTaskCount = 1;
+  static maximumLongTaskTotalMs = 75;
+  static maximumP90FrameMs = 40;
+  static minimumFrameCount = 5;
 
   static failures(report) {
     const failures = [];
     for (const item of report) {
       if (!item.ok) continue;
-      const framesPerSecond = item.avgMs > 0 ? 1000 / item.avgMs : 0;
       const checks = [
-        ['frameCount', item.frameCount, this.#minimumFrameCount, 'at least'],
-        ['fps', framesPerSecond, this.#minimumFramesPerSecond, 'at least'],
-        ['avgMs', item.avgMs, this.#maximumAverageFrameMs, 'at most'],
-        ['maxMs', item.maxMs, this.#maximumFrameMs, 'at most'],
-        ['p90Ms', item.p90Ms, this.#maximumP90FrameMs, 'at most'],
+        ['frameCount', item.frameCount, this.minimumFrameCount, 'at least'],
+        ['avgMs', item.avgMs, this.maximumAverageFrameMs, 'at most'],
+        ['p90Ms', item.p90Ms, this.maximumP90FrameMs, 'at most'],
+        ['maxMs', item.maxMs, this.maximumFrameMs, 'at most'],
+        ['longCount', item.longCount, this.maximumLongTaskCount, 'at most'],
+        ['longTotalMs', item.longTotalMs, this.maximumLongTaskTotalMs, 'at most'],
+        ['domElementCount', item.domElementCount, this.maximumDomElements, 'at most'],
+        ['canvasElementCount', item.canvasElementCount, this.maximumCanvasElements, 'at most'],
       ];
       for (const [metric, value, limit, direction] of checks) {
         const passes = Number.isFinite(value) && (direction === 'at least' ? value >= limit : value <= limit);
@@ -470,7 +477,7 @@ export class VisualizationProfileOperation {
 
       const fps = item.avgMs ? (1000 / item.avgMs) : 0;
       console.log(
-        `target=${item.name} frameCount=${item.frameCount} avgMs=${item.avgMs.toFixed(2)} fps=${fps.toFixed(1)} max=${item.maxMs.toFixed(2)} p90=${item.p90Ms.toFixed(2)} p95=${item.p95Ms.toFixed(2)} p99=${item.p99Ms.toFixed(2)} long=${item.longCount}/${item.long10MsOrMore} mem=${item.memStartMB.toFixed(1)}=>${item.memEndMB.toFixed(1)} peak=${item.memPeakMB.toFixed(1)} jsPeak=${item.jsPeakMB.toFixed(1)} overlay=${item.overlayText ?? 'n/a'}`,
+        `target=${item.name} frameCount=${item.frameCount} avgMs=${item.avgMs.toFixed(2)} fps=${fps.toFixed(1)} max=${item.maxMs.toFixed(2)} p90=${item.p90Ms.toFixed(2)} p95=${item.p95Ms.toFixed(2)} p99=${item.p99Ms.toFixed(2)} long=${item.longCount}/${item.longTotalMs.toFixed(0)}ms dom=${item.domElementCount} canvases=${item.canvasElementCount} mem=${item.memStartMB.toFixed(1)}=>${item.memEndMB.toFixed(1)} peak=${item.memPeakMB.toFixed(1)} jsPeak=${item.jsPeakMB.toFixed(1)} overlay=${item.overlayText ?? 'n/a'}`,
       );
     }
     if (missingTargets.length > 0) {
