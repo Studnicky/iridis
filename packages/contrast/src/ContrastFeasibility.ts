@@ -1085,7 +1085,10 @@ export class ContrastFeasibility {
     return result;
   }
 
-  static proveRun(state: PaletteStateInterface): ContrastFeasibilityReportEntity.Type {
+  static proveRun(
+    state: PaletteStateInterface,
+    pairKeys?: ReadonlySet<string>
+  ): ContrastFeasibilityReportEntity.Type {
     const schema = state.input.roles;
     if (schema === undefined) {
       const result = ContrastFeasibilityReportEntity.create({ 'pairs': [] });
@@ -1098,7 +1101,7 @@ export class ContrastFeasibility {
       'provenance': provenance,
       'roles': state.roles
     });
-    const result = ContrastFeasibility.report(domains, state.input, state.roles);
+    const result = ContrastFeasibility.report(domains, state.input, state.roles, pairKeys);
     return result;
   }
 
@@ -1433,13 +1436,17 @@ export class ContrastFeasibility {
   private static report(
     domains: ReadonlyMap<string, RoleDomainInterface>,
     input: PaletteStateInterface['input'],
-    roles: Record<string, ColorRecordEntity.Type>
+    roles: Record<string, ColorRecordEntity.Type>,
+    pairKeys?: ReadonlySet<string>
   ): ContrastFeasibilityReportEntity.Type {
     const requirements = ContrastPolicy.normalize(input, PaletteRoleState.admit(roles));
     const pairs: ContrastPairFeasibilityEntity.Type[] = [];
     for (let index = 0; index < requirements.length; index += 1) {
       const requirement = requirements[index];
       if (requirement === undefined) {
+        continue;
+      }
+      if (pairKeys !== undefined && !pairKeys.has(ContrastFeasibility.pairKey(requirement.foreground, requirement.background))) {
         continue;
       }
       const foreground = domains.get(requirement.foreground);
@@ -1452,6 +1459,11 @@ export class ContrastFeasibility {
       }
     }
     const result = ContrastFeasibilityReportEntity.create({ 'pairs': pairs });
+    return result;
+  }
+
+  private static pairKey(foreground: string, background: string): string {
+    const result = foreground + String.fromCharCode(0) + background;
     return result;
   }
 

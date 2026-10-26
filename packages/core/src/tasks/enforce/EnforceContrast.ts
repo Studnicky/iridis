@@ -509,6 +509,9 @@ class ContrastExecution {
     const roleNames = ContrastExecution.componentRoleNames(component);
     const initial = ContrastExecution.componentRecords(roles, roleNames);
     const preferenceCoordinates = ContrastExecution.preferenceCoordinates(preferences, roleNames);
+    const relationshipDomain = state.input.roles?.relationshipGraph === undefined
+      ? RelationshipCandidateDomain.unconstrained()
+      : RelationshipCandidateDomain.constrained(state, roleNames, initial);
     const unconstrained = ContrastExecution.optimizeComponentCoordinates(
       state,
       preferenceCoordinates,
@@ -518,10 +521,9 @@ class ContrastExecution {
       RelationshipCandidateDomain.unconstrained()
     );
     const bestCoordinates = ContrastExecution.allowsRelationshipCoordinates(
-      state,
       roleNames,
-      initial,
-      unconstrained
+      unconstrained,
+      relationshipDomain
     )
       ? unconstrained
       : ContrastExecution.optimizeComponentCoordinates(
@@ -530,9 +532,16 @@ class ContrastExecution {
         component,
         roleNames,
         initial,
-        RelationshipCandidateDomain.constrained(state, roleNames, initial)
+        relationshipDomain
       );
-    ContrastExecution.restoreComponent(roles, state, roleNames, initial, bestCoordinates);
+    ContrastExecution.restoreComponent(
+      roles,
+      state,
+      roleNames,
+      initial,
+      bestCoordinates,
+      relationshipDomain
+    );
   }
 
   private static optimizeComponentCoordinates(
@@ -676,26 +685,17 @@ class ContrastExecution {
   }
 
   private static allowsRelationshipCoordinates(
-    state: PaletteStateInterface,
     roleNames: readonly string[],
-    initial: ReadonlyMap<string, ColorRecordEntity.Type>,
-    coordinates: ReadonlyMap<string, ColorCoordinate>
+    coordinates: ReadonlyMap<string, ColorCoordinate>,
+    candidateDomain: RelationshipCandidateDomain
   ): boolean {
-    if (state.input.roles?.relationshipGraph === undefined) {
-      return true;
-    }
     for (let index = 0; index < roleNames.length; index += 1) {
       const roleName = roleNames[index];
-      if (roleName === undefined) {
+      const coordinate = roleName === undefined ? undefined : coordinates.get(roleName);
+      if (roleName === undefined || coordinate === undefined) {
         continue;
       }
-      const original = initial.get(roleName);
-      const coordinate = coordinates.get(roleName);
-      if (original === undefined || coordinate === undefined) {
-        continue;
-      }
-      const candidate = ContrastExecution.recordAtCoordinate(original, coordinate);
-      if (!RelationshipConstraint.allows(state.input, state.metadata, roleName, candidate)) {
+      if (!candidateDomain.allows(roleName, coordinate)) {
         return false;
       }
     }
@@ -707,7 +707,8 @@ class ContrastExecution {
     state: PaletteStateInterface,
     roleNames: readonly string[],
     initial: ReadonlyMap<string, ColorRecordEntity.Type>,
-    bestCoordinates: ReadonlyMap<string, ColorCoordinate>
+    bestCoordinates: ReadonlyMap<string, ColorCoordinate>,
+    candidateDomain: RelationshipCandidateDomain
   ): void {
     for (let index = 0; index < roleNames.length; index += 1) {
       const roleName = roleNames[index];
@@ -719,10 +720,10 @@ class ContrastExecution {
       if (original === undefined || coordinate === undefined) {
         continue;
       }
-      const resolved = ContrastExecution.recordAtCoordinate(original, coordinate);
-      if (!RelationshipConstraint.allows(state.input, state.metadata, roleName, resolved)) {
+      if (!candidateDomain.allows(roleName, coordinate)) {
         continue;
       }
+      const resolved = ContrastExecution.recordAtCoordinate(original, coordinate);
       roles.set(roleName, resolved);
       if (!ContrastMeasurement.sameRecord(original, resolved)) {
         ContrastProvenance.recordAdjustment(state, roleName, original.hex, resolved.hex);
@@ -1318,7 +1319,6 @@ class ContrastExecution {
     }
     const relationIds = RelationshipConstraint.relationIds(
       state.input,
-      state.metadata,
       [entry.pair.foreground, entry.pair.background]
     );
     const result = relationIds.length === 0

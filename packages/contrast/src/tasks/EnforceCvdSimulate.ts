@@ -76,6 +76,7 @@ class CvdMoverGroup {
   readonly original: ColorRecordEntity.Type;
   readonly roleRange: ContrastPolicy.RoleRangeInterface;
 
+  private readonly relationshipDomain: ReturnType<typeof RelationshipConstraint.domain>;
   private relationshipCandidateRejections = 0;
   private readonly state: PaletteStateInterface;
 
@@ -92,6 +93,11 @@ class CvdMoverGroup {
     this.original = original;
     this.roleRange = roleRange;
     this.state = state;
+    this.relationshipDomain = RelationshipConstraint.domain(
+      state.input,
+      state.metadata,
+      mover
+    );
   }
 
   get relationshipCandidateRejectionCount(): number {
@@ -100,11 +106,10 @@ class CvdMoverGroup {
   }
 
   allows(record: ColorRecordEntity.Type): boolean {
-    const result = RelationshipConstraint.allows(
-      this.state.input,
-      this.state.metadata,
-      this.mover,
-      record
+    const result = RelationshipConstraint.allowsDomain(
+      this.relationshipDomain,
+      record.alpha,
+      record.oklch
     );
     return result;
   }
@@ -160,22 +165,20 @@ class CvdMoverGroup {
   }
 
   private relationshipSignature(): string {
-    const domain = RelationshipConstraint.domain(
-      this.state.input,
-      this.state.metadata,
-      this.mover
-    );
-    const tolerance = domain?.tolerance;
-    const result = domain?.baseline === undefined
-      ? ''
-      : [
-        domain.relationId,
-        domain.baseline.hex,
-        tolerance?.alpha ?? '',
-        tolerance?.chroma ?? '',
-        tolerance?.hue ?? '',
-        tolerance?.lightness ?? ''
-      ].join('\u0000');
+    const domain = this.relationshipDomain;
+    const baseline = domain?.baseline;
+    if (domain === undefined || baseline === undefined) {
+      return '';
+    }
+    const tolerance = domain.tolerance;
+    const result = [
+      domain.relationId,
+      baseline.hex,
+      tolerance?.alpha ?? '',
+      tolerance?.chroma ?? '',
+      tolerance?.hue ?? '',
+      tolerance?.lightness ?? ''
+    ].join('\u0000');
     return result;
   }
 

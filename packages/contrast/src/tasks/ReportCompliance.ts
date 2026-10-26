@@ -102,7 +102,14 @@ class ComplianceSerialization {
       const result = [...pairs];
       return result;
     }
-    const feasibility = ContrastFeasibility.proveRun(state);
+    const problemKeys = new Set<string>();
+    for (let index = 0; index < pairs.length; index += 1) {
+      const pair = pairs[index];
+      if (pair !== undefined && !pair.passed) {
+        problemKeys.add(ComplianceSerialization.key(pair.foreground, pair.background));
+      }
+    }
+    const feasibility = ContrastFeasibility.proveRun(state, problemKeys);
     const proofs = new Map<string, NonNullable<typeof feasibility.pairs[number]['proof']>>();
     for (let index = 0; index < feasibility.pairs.length; index += 1) {
       const pair = feasibility.pairs[index];

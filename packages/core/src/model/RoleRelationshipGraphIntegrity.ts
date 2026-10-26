@@ -22,12 +22,24 @@ class GraphIntegrityContext {
 
 /** Validates graph references that JSON Schema cannot express. */
 export class RoleRelationshipGraphIntegrity {
+  static readonly #results = new WeakMap<object, Map<string, readonly ValidationErrorEntity.Type[]>>();
   static validate(schema: NonNullable<InputEntity.Type['roles']>): ValidationErrorEntity.Type[] {
     const graph = schema.relationshipGraph === undefined
       ? undefined
       : RoleRelationshipGraphEntity.intake(schema.relationshipGraph);
     if (graph === undefined) {
       return [];
+    }
+    const rolesKey = schema.roles
+      .map((role) => { return role.name; })
+      .toSorted((left, right) => {
+        const result = left.localeCompare(right);
+        return result;
+      })
+      .join('\u0000');
+    const cached = this.#results.get(graph)?.get(rolesKey);
+    if (cached !== undefined) {
+      return [...cached];
     }
 
     const context = new GraphIntegrityContext(schema);
@@ -38,7 +50,10 @@ export class RoleRelationshipGraphIntegrity {
         this.#validateGroup(context, admittedGroup, groupIndex);
       }
     }
-    return context.errors;
+    const entries = this.#results.get(graph) ?? new Map<string, readonly ValidationErrorEntity.Type[]>();
+    entries.set(rolesKey, context.errors);
+    this.#results.set(graph, entries);
+    return [...context.errors];
   }
 
   static #validateGroup(

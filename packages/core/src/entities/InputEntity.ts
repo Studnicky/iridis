@@ -42,17 +42,27 @@ export namespace InputEntity {
 
   class ProgrammaticInput {
     static create(value: CanonicalShapeType<typeof Schema>): Type {
+      const roleSchema = value.roles === undefined
+        ? undefined
+        : RoleSchemaEntity.intake(value.roles);
       const { maximumColorCount, ...finiteValue } = value;
-      if (maximumColorCount !== Infinity) {
-        const result = schemaCreate({
+      const admitted = maximumColorCount === Infinity
+        ? schemaCreate(finiteValue)
+        : schemaCreate({
           ...finiteValue,
           ...(maximumColorCount === undefined ? {} : { 'maximumColorCount': maximumColorCount })
         });
+      if (roleSchema === undefined || admitted.roles === undefined) {
+        const result = maximumColorCount === Infinity
+          ? { ...admitted, 'maximumColorCount': Infinity }
+          : admitted;
         return result;
       }
-
-      const admitted = schemaCreate(finiteValue);
-      const result = { ...admitted, 'maximumColorCount': Infinity };
+      const result = {
+        ...admitted,
+        'roles': roleSchema,
+        ...(maximumColorCount === Infinity ? { 'maximumColorCount': Infinity } : {})
+      };
       return result;
     }
   }

@@ -2,7 +2,6 @@ import type { JSONSchema7Type } from 'json-schema';
 
 import type { InputEntity } from '../entities/InputEntity.ts';
 import type { ColorCoordinate } from '../math/ColorCoordinate.ts';
-import type { RelationshipGraphShape } from './RelationshipGraphShape.ts';
 
 import { ColorRecordEntity } from '../entities/ColorRecordEntity.ts';
 import { RelationshipResolutionEntity } from '../entities/RelationshipResolutionEntity.ts';
@@ -15,26 +14,115 @@ import { RelationshipConstraintDomain } from './RelationshipConstraintDomain.ts'
 import { RelationshipHueDegrees } from './RelationshipHueDegrees.ts';
 import { RelationshipSources } from './RelationshipSources.ts';
 
-class RelationshipConstraintContext {
-  readonly domains = new Map<string, RelationshipConstraintDomain | undefined>();
-  readonly graph: RoleRelationshipGraphEntity.Type;
-  readonly resolutions: ReturnType<typeof Metadata.relationshipResolution>;
+class RelationshipResolutionSource {
+  static create(
+    metadata: Record<string, JSONSchema7Type>
+  ): ReadonlyMap<string, object> | undefined {
+    const source = metadata['core:relationshipResolution'];
+    if (typeof source !== 'object' || source === null || Array.isArray(source)) {
+      return undefined;
+    }
+    const entries = new Map<string, object>();
+    const sourceEntries = Object.entries(source);
+    for (let index = 0; index < sourceEntries.length; index += 1) {
+      const sourceEntry = sourceEntries[index];
+      if (sourceEntry === undefined) {
+        continue;
+      }
+      const [roleName, entry] = sourceEntry;
+      if (typeof entry === 'object' && entry !== null && !Array.isArray(entry)) {
+        entries.set(roleName, entry);
+      }
+    }
+    return entries;
+  }
+}
+
+class RelationshipSelection {
+  readonly group: RoleRelationshipGroupEntity.Type;
+  readonly relationship: RoleRelationshipEntity.Type;
 
   constructor(
-    graph: RoleRelationshipGraphEntity.Type,
-    resolutions: ReturnType<typeof Metadata.relationshipResolution>
+    group: RoleRelationshipGroupEntity.Type,
+    relationship: RoleRelationshipEntity.Type
   ) {
-    this.graph = graph;
-    this.resolutions = resolutions;
+    this.group = group;
+    this.relationship = relationship;
+  }
+}
+
+class RelationshipConstraintContext {
+  readonly domains = new Map<string, RelationshipConstraintDomain | undefined>();
+  readonly graphContext: RelationshipConstraintGraphContext;
+  readonly metadata: Record<string, JSONSchema7Type>;
+  readonly resolutionSource: ReadonlyMap<string, object> | undefined;
+
+  constructor(
+    graphContext: RelationshipConstraintGraphContext,
+    metadata: Record<string, JSONSchema7Type>
+  ) {
+    this.graphContext = graphContext;
+    this.metadata = metadata;
+    this.resolutionSource = RelationshipResolutionSource.create(metadata);
   }
 }
 
 class RelationshipConstraintGraphContext {
   readonly graph: RoleRelationshipGraphEntity.Type;
+  readonly relationIds = new Map<string, string | undefined>();
   readonly resolutions = new WeakMap<object, RelationshipConstraintContext>();
+  readonly selectionsByIdentifier = new Map<string, RelationshipSelection>();
+  readonly selectionsByTarget = new Map<string, RelationshipSelection>();
+  latest: RelationshipConstraintContext | undefined;
 
   constructor(graph: RoleRelationshipGraphEntity.Type) {
     this.graph = graph;
+    for (let groupIndex = 0; groupIndex < graph.groups.length; groupIndex += 1) {
+      const rawGroup = graph.groups[groupIndex];
+      if (rawGroup === undefined) {
+        continue;
+      }
+      const group = RoleRelationshipGroupEntity.intake(rawGroup);
+      for (let relationshipIndex = 0; relationshipIndex < group.relationships.length; relationshipIndex += 1) {
+        const rawRelationship = group.relationships[relationshipIndex];
+        if (rawRelationship === undefined) {
+          continue;
+        }
+        const relationship = RoleRelationshipEntity.intake(rawRelationship);
+        const selection = new RelationshipSelection(group, relationship);
+        this.selectionsByIdentifier.set(
+          RelationshipConstraintGraphContext.key(group.id, relationship.id),
+          selection
+        );
+        this.selectionsByTarget.set(relationship.target, selection);
+      }
+    }
+  }
+
+  relationId(roleName: string): string | undefined {
+    let result = this.relationIds.get(roleName);
+    if (result === undefined && !this.relationIds.has(roleName)) {
+      result = this.selectionsByTarget.get(roleName)?.relationship.id;
+      this.relationIds.set(roleName, result);
+    }
+    return result;
+  }
+
+  selection(
+    resolution: RelationshipResolutionEntity.Type | undefined,
+    roleName: string
+  ): RelationshipSelection | undefined {
+    const result = resolution === undefined
+      ? this.selectionsByTarget.get(roleName)
+      : this.selectionsByIdentifier.get(
+        RelationshipConstraintGraphContext.key(resolution.groupId, resolution.relationshipId)
+      );
+    return result;
+  }
+
+  private static key(groupId: string, relationshipId: string): string {
+    const result = groupId + String.fromCharCode(0) + relationshipId;
+    return result;
   }
 }
 
@@ -104,14 +192,14 @@ export class RelationshipConstraint {
       const result = context.domains.get(roleName);
       return result;
     }
-    const resolution = context.resolutions.get(roleName);
-    const selected = RelationshipConstraint.selectedRelation(context.graph.groups, resolution, roleName);
+    const resolution = Metadata.relationshipResolutionForRole(context.metadata, roleName);
+    const selected = context.graphContext.selection(resolution, roleName);
     if (selected === undefined) {
       context.domains.set(roleName, undefined);
       return undefined;
     }
-    const group = RoleRelationshipGroupEntity.intake(selected.group);
-    const relationship = RoleRelationshipEntity.intake(selected.relationship);
+    const group = selected.group;
+    const relationship = selected.relationship;
     const baseline = resolution?.after === undefined
       ? undefined
       : ColorRecordEntity.intake(resolution.after);
@@ -141,13 +229,7 @@ export class RelationshipConstraint {
     metadata: Record<string, JSONSchema7Type>,
     graphSource: object
   ): RelationshipConstraintContext {
-    let graphContext = RelationshipConstraint.#contexts.get(graphSource);
-    if (graphContext === undefined) {
-      graphContext = new RelationshipConstraintGraphContext(
-        RoleRelationshipGraphEntity.intake(graphSource)
-      );
-      RelationshipConstraint.#contexts.set(graphSource, graphContext);
-    }
+    const graphContext = RelationshipConstraint.graphContext(graphSource);
     const resolutionSource = metadata['core:relationshipResolution'];
     if (
       resolutionSource === undefined ||
@@ -155,36 +237,59 @@ export class RelationshipConstraint {
       resolutionSource === null ||
       Array.isArray(resolutionSource)
     ) {
-      return new RelationshipConstraintContext(
-        graphContext.graph,
-        Metadata.relationshipResolution(metadata)
-      );
+      return new RelationshipConstraintContext(graphContext, metadata);
     }
     let result = graphContext.resolutions.get(resolutionSource);
     if (result === undefined) {
-      result = new RelationshipConstraintContext(
-        graphContext.graph,
-        Metadata.relationshipResolution(metadata)
-      );
+      result = new RelationshipConstraintContext(graphContext, metadata);
+      const previous = graphContext.latest;
+      if (previous !== undefined) {
+        for (const [roleName, domain] of previous.domains) {
+          if (RelationshipConstraint.sameResolutionEntry(roleName, {
+            'nextSource': result.resolutionSource,
+            'previousSource': previous.resolutionSource
+          })) {
+            result.domains.set(roleName, domain);
+          }
+        }
+      }
       graphContext.resolutions.set(resolutionSource, result);
+      graphContext.latest = result;
     }
+    return result;
+  }
+
+  private static sameResolutionEntry(
+    roleName: string,
+    options: Readonly<{
+      'nextSource': ReadonlyMap<string, object> | undefined;
+      'previousSource': ReadonlyMap<string, object> | undefined;
+    }>
+  ): boolean {
+    const previous = options.previousSource?.get(roleName);
+    const next = options.nextSource?.get(roleName);
+    const result = previous !== undefined && previous === next;
     return result;
   }
 
   static relationIds(
     input: InputEntity.Type,
-    metadata: Record<string, JSONSchema7Type>,
     roleNames: readonly string[]
   ): string[] {
+    const graphSource = input.roles?.relationshipGraph;
+    if (graphSource === undefined) {
+      return [];
+    }
+    const context = RelationshipConstraint.graphContext(graphSource);
     const relationIds = new Set<string>();
     for (let index = 0; index < roleNames.length; index += 1) {
       const roleName = roleNames[index];
       if (roleName === undefined) {
         continue;
       }
-      const state = RelationshipConstraint.domain(input, metadata, roleName);
-      if (state?.baseline !== undefined) {
-        relationIds.add(state.relationId);
+      const relationId = context.relationId(roleName);
+      if (relationId !== undefined) {
+        relationIds.add(relationId);
       }
     }
     const result = Array.from(relationIds);
@@ -233,42 +338,17 @@ export class RelationshipConstraint {
     return result;
   }
 
-  private static selectedRelation(
-    groups: RelationshipGraphShape.GraphInterface['groups'],
-    resolution: ReturnType<typeof Metadata.relationshipResolution> extends Map<string, infer Value> ? Value | undefined : never,
-    roleName: string
-  ): Readonly<{
-    'group': RelationshipGraphShape.GroupInterface;
-    'relationship': RelationshipGraphShape.GroupInterface['relationships'][number];
-  }> | undefined {
-    if (resolution !== undefined) {
-      const group = groups.find((candidate) => {
-        const result = candidate.id === resolution.groupId;
-        return result;
-      });
-      const relationship = group?.relationships.find((candidate) => {
-        const result = candidate.id === resolution.relationshipId;
-        return result;
-      });
-      if (group !== undefined && relationship !== undefined) {
-        return { 'group': group, 'relationship': relationship };
-      }
-      return undefined;
+  private static graphContext(
+    graphSource: object
+  ): RelationshipConstraintGraphContext {
+    let result = RelationshipConstraint.#contexts.get(graphSource);
+    if (result === undefined) {
+      result = new RelationshipConstraintGraphContext(
+        RoleRelationshipGraphEntity.intake(graphSource)
+      );
+      RelationshipConstraint.#contexts.set(graphSource, result);
     }
-    for (let groupIndex = 0; groupIndex < groups.length; groupIndex += 1) {
-      const group = groups[groupIndex];
-      if (group === undefined) {
-        continue;
-      }
-      const relationship = group.relationships.find((candidate) => {
-        const result = candidate.target === roleName;
-        return result;
-      });
-      if (relationship !== undefined) {
-        return { 'group': group, 'relationship': relationship };
-      }
-    }
-    return undefined;
+    return result;
   }
 
   private static allowsState(

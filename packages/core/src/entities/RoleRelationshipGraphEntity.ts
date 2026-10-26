@@ -22,7 +22,26 @@ export namespace RoleRelationshipGraphEntity {
 
   export type Type = NominalSchemaType<typeof Schema>;
 
+  class GraphIntake {
+    static readonly #cache = new WeakMap<object, Type>();
+    static readonly #intake = EntityCompiler.compileIntake<Type>(Schema);
+
+    static intake(value: object): Type {
+      if (Array.isArray(value)) {
+        const result = GraphIntake.#intake(value);
+        return result;
+      }
+      const cached = GraphIntake.#cache.get(value);
+      if (cached !== undefined) {
+        return cached;
+      }
+      const result = GraphIntake.#intake(value);
+      GraphIntake.#cache.set(value, result);
+      return result;
+    }
+  }
+
   export const validate = EntityCompiler.compile<Type>(Schema);
-  export const intake = EntityCompiler.compileIntake<Type>(Schema);
+  export const intake = GraphIntake.intake;
   export const create = EntityCompiler.compileCreate<Type, CanonicalShapeType<typeof Schema>>(Schema);
 }

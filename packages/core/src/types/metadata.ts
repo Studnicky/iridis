@@ -7,6 +7,7 @@ import { RoleProvenanceEntity } from '../entities/RoleProvenanceEntity.ts';
 
 /** Validates known metadata slots at intake and serializes dynamic runtime Maps at the metadata boundary. */
 export class Metadata {
+  static readonly #relationshipResolutionEntries = new WeakMap<object, RelationshipResolutionEntity.Type>();
   static #recordFromEntries<ValueType>(
     entries: Iterable<readonly [string, ValueType]>
   ): Record<string, ValueType> {
@@ -102,6 +103,34 @@ export class Metadata {
     return result;
   }
 
+  static relationshipResolutionForRole(
+    metadataRecord: Record<string, JSONSchema7Type>,
+    roleName: string
+  ): RelationshipResolutionEntity.Type | undefined {
+    const value = metadataRecord['core:relationshipResolution'];
+    if (value === undefined) {
+      return undefined;
+    }
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+      throw new TypeError('core:relationshipResolution must be an object');
+    }
+    const entry = value[roleName];
+    if (entry === undefined) {
+      return undefined;
+    }
+    if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) {
+      const result = RelationshipResolutionEntity.intake(entry);
+      return result;
+    }
+    const cached = Metadata.#relationshipResolutionEntries.get(entry);
+    if (cached !== undefined) {
+      return cached;
+    }
+    const result = RelationshipResolutionEntity.intake(entry);
+    Metadata.#relationshipResolutionEntries.set(entry, result);
+    return result;
+  }
+
   static contrastReport(
     metadataRecord: Record<string, JSONSchema7Type>
   ): ContrastReportEntity.Type | undefined {
@@ -160,10 +189,6 @@ export class Metadata {
     metadataRecord: Record<string, JSONSchema7Type>,
     resolution: Map<string, RelationshipResolutionEntity.Type>
   ): void {
-    const serialized = new Map<string, RelationshipResolutionEntity.Type>();
-    for (const [roleName, entry] of resolution) {
-      serialized.set(roleName, RelationshipResolutionEntity.intake(entry));
-    }
-    metadataRecord['core:relationshipResolution'] = Metadata.#recordFromEntries(serialized);
+    metadataRecord['core:relationshipResolution'] = Metadata.#recordFromEntries(resolution);
   }
 }
