@@ -365,7 +365,7 @@ class ScaleScenario {
       'canvasElementCount': limits.maximumCanvasElements,
       'domElementCount': limits.maximumDomElements,
       'frameCount': VisualizationProfileBudget.minimumFrameCount,
-      'longCount': limits.maximumLongTaskCount,
+      'longCount': limits.maximumLongTaskCount * ScaleScenario.scale,
       'longTotalMs': limits.maximumLongTaskTotalMs * ScaleScenario.scale,
       'maxMs': limits.maximumFrameMs * ScaleScenario.scale,
       'name': name,
@@ -389,6 +389,7 @@ await test('a scaled budget accepts frame metrics exactly at the scaled limit an
     { 'avgMs': limits.maximumAverageFrameMs * ScaleScenario.scale + 1 },
     { 'p90Ms': limits.maximumP90FrameMs * ScaleScenario.scale + 1 },
     { 'maxMs': limits.maximumFrameMs * ScaleScenario.scale + 1 },
+    { 'longCount': limits.maximumLongTaskCount * ScaleScenario.scale + 1 },
     { 'longTotalMs': limits.maximumLongTaskTotalMs * ScaleScenario.scale + 1 }
   ];
 
@@ -402,11 +403,13 @@ await test('a scaled budget accepts frame metrics exactly at the scaled limit an
   assert.equal(VisualizationProfileBudget.failures([accepted]).length > 0, true);
 });
 
-await test('counts, DOM and canvases ignore the scale', () => {
+await test('long-task counts scale up to a whole number while DOM and canvases ignore the scale', () => {
   const limits = VisualizationProfileBudget.graphLive;
   const scaled: VisualizationProfileLimitsInterface = VisualizationProfileBudget.limitsFor('graph', ScaleScenario.scale);
+  const fractional: VisualizationProfileLimitsInterface = VisualizationProfileBudget.limitsFor('graph', 1.01);
 
-  assert.equal(scaled.maximumLongTaskCount, limits.maximumLongTaskCount);
+  assert.equal(scaled.maximumLongTaskCount, limits.maximumLongTaskCount * ScaleScenario.scale);
+  assert.equal(fractional.maximumLongTaskCount, limits.maximumLongTaskCount + 1);
   assert.equal(scaled.maximumDomElements, limits.maximumDomElements);
   assert.equal(scaled.maximumCanvasElements, limits.maximumCanvasElements);
   assert.equal(scaled.maximumAverageFrameMs, limits.maximumAverageFrameMs * ScaleScenario.scale);

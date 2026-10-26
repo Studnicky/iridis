@@ -422,7 +422,7 @@ export class VisualizationProfileBudget {
     return this.scaledLimits(this[className], scale);
   }
 
-  /** Average, p90, max frame and long-task total scale with the machine; counts, DOM and canvases do not. */
+  /** Average, p90, max frame, long-task count and long-task total scale with the machine; DOM and canvases do not. */
   static scaledLimits(limits, scale) {
     if (!Number.isFinite(scale)) {
       throw new RangeError('Visualization profile scale is not finite: ' + scale);
@@ -435,6 +435,7 @@ export class VisualizationProfileBudget {
       ...limits,
       'maximumAverageFrameMs': limits.maximumAverageFrameMs * effective,
       'maximumFrameMs': limits.maximumFrameMs * effective,
+      'maximumLongTaskCount': Math.ceil(limits.maximumLongTaskCount * effective),
       'maximumLongTaskTotalMs': limits.maximumLongTaskTotalMs * effective,
       'maximumP90FrameMs': limits.maximumP90FrameMs * effective,
     });
