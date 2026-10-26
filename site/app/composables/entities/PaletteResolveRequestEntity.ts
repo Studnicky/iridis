@@ -1,9 +1,9 @@
+import type { RoleRelationshipGraphEntity } from '@studnicky/iridis';
 import type {
   CanonicalShapeType, NominalSchemaType
 } from '@studnicky/json-tology/types';
 
 import { EntityCompiler } from '@studnicky/entity/browser';
-import { RoleRelationshipGraphEntity } from '@studnicky/iridis';
 
 import { CvdModeEntity } from './CvdModeEntity.ts';
 import { FramingEntity } from './FramingEntity.ts';
@@ -37,7 +37,7 @@ export namespace PaletteResolveRequestEntity {
       'enableStrictCompliance': { 'type': 'boolean' },
       'framing': FramingEntity.Schema,
       'nonMandatoryLevel': NonMandatoryLevelEntity.Schema,
-      'relationshipGraph': RoleRelationshipGraphEntity.Schema,
+      'relationshipGraph': { 'type': 'object' },
       'schemaName': SchemaNameEntity.Schema,
       'seeds': {
         'items': seedSchema,

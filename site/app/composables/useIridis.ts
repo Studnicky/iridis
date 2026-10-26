@@ -11,6 +11,7 @@ import type { ClusterStrategyInterface, GalleryCandidateOutputEntity } from '@st
 import type { GalleryHistogramSlotInterface } from '@studnicky/iridis-image/types';
 import type { ViteHotContext } from 'vite/types/hot.d.ts';
 
+import { RoleRelationshipGraphEntity } from '@studnicky/iridis';
 import { ClusterDispatcher } from '@studnicky/iridis-image';
 import * as VueModule from 'vue';
 
@@ -172,6 +173,53 @@ class IridisContextFactory {
     const enableStrictCompliance = VueModule.ref<boolean>(false);
     const nonMandatoryLevel = VueModule.ref<NonMandatoryLevelEntity.Type>(NonMandatoryLevelEntity.defaultValue);
     const colorSpace = VueModule.ref<'srgb' | 'displayP3'>('srgb');
+
+    class RelationshipGraphSelection {
+      static fromCurrentSchema(): RoleRelationshipGraphEntity.Type | undefined {
+        const pair = roleSchemaByName[schemaName.value];
+        const definition = framing.value === 'dark' ? pair.dark : pair.light;
+        const graph = definition.relationshipGraph;
+        const result = graph === undefined ? undefined : RoleRelationshipGraphEntity.intake(structuredClone(graph));
+        return result;
+      }
+
+      static reset(): void {
+        relationshipGraph.value = RelationshipGraphSelection.fromCurrentSchema();
+      }
+
+      static selectMode(groupId: string, modeId: string): void {
+        const graph = relationshipGraph.value;
+        if (graph === undefined) {
+          throw new RangeError('The selected schema has no relationship graph');
+        }
+        const selectedGroup = graph.groups.find((group) => {
+          const result = group.id === groupId;
+          return result;
+        });
+        if (selectedGroup === undefined) {
+          throw new RangeError(`Relationship graph has no group "${groupId}"`);
+        }
+        const selectedMode = selectedGroup.modes.find((mode) => {
+          const result = mode.id === modeId;
+          return result;
+        });
+        if (selectedMode === undefined) {
+          throw new RangeError(`Relationship group "${groupId}" has no mode "${modeId}"`);
+        }
+        const groups = graph.groups.map((group) => {
+          const result = group.id === groupId ? { ...group, 'defaultMode': selectedMode.id } : group;
+          return result;
+        });
+        relationshipGraph.value = RoleRelationshipGraphEntity.intake({ 'groups': groups });
+        schedule();
+        scheduleSchemaFeasibility();
+      }
+    }
+
+    const relationshipGraph = VueModule.ref<RoleRelationshipGraphEntity.Type | undefined>(
+      RelationshipGraphSelection.fromCurrentSchema()
+    );
+    const selectRelationshipMode = RelationshipGraphSelection.selectMode;
 
     /**
  * Visual CVD preview — purely a display-time filter over whatever the engine
@@ -482,6 +530,7 @@ class IridisContextFactory {
           'enableStrictCompliance': enableStrictCompliance.value,
           'framing': pendingFraming ?? framing.value,
           'nonMandatoryLevel': nonMandatoryLevel.value,
+          ...(relationshipGraph.value === undefined ? {} : { 'relationshipGraph': relationshipGraph.value }),
           'schemaName': schemaName.value,
           'seeds': PaletteResolve.seeds(seeds),
           'strictness': contrastStrictness.value
@@ -908,6 +957,7 @@ class IridisContextFactory {
           'hexes': combinedHexes,
           'kind': 'combine',
           'nonMandatoryLevel': nonMandatoryLevel.value,
+          ...(relationshipGraph.value === undefined ? {} : { 'relationshipGraph': relationshipGraph.value }),
           'schemaName': schemaName.value,
           'settings': ExtractionSettingsOperation.from(defaultEntrySettings()),
           'strictness': contrastStrictness.value
@@ -1146,7 +1196,10 @@ class IridisContextFactory {
       static setContrastStrictness(strictness: number): void { contrastStrictness.value = strictness; schedule(); }
       static setCvdMode(nextCvdMode: string): void { cvdMode.value = CvdModeEntity.intake(nextCvdMode); schedule(); }
       static setNonMandatoryLevel(nextLevel: string): void { nonMandatoryLevel.value = NonMandatoryLevelEntity.intake(nextLevel); schedule(); }
-      static setDarkFraming(): void { pendingFraming = FramingEntity.intake('dark'); run(); }
+      static setDarkFraming(): void {
+        pendingFraming = FramingEntity.intake('dark');
+        run();
+      }
       static setDeltaEImageAlgorithm(): void { imgStrategy.value = ClusterDispatcher.resolve('delta-e'); scheduleCombine(); }
       static setDisplayP3ColorSpace(): void { colorSpace.value = 'displayP3'; schedule(); }
       static setImageChromaRange(range: [number, number][]): void { imgChromaRange.value = range; scheduleCombine(); }
@@ -1156,10 +1209,18 @@ class IridisContextFactory {
       static setImageK(k: number): void { imgK.value = k; scheduleCombine(); }
       static setImageLightnessRange(range: [number, number][]): void { imgLightnessRange.value = range; scheduleCombine(); }
       static setKMeansImageAlgorithm(): void { imgStrategy.value = ClusterDispatcher.resolve('k-means'); scheduleCombine(); }
-      static setLightFraming(): void { pendingFraming = FramingEntity.intake('light'); run(); }
+      static setLightFraming(): void {
+        pendingFraming = FramingEntity.intake('light');
+        run();
+      }
       static setMedianCutImageAlgorithm(): void { imgStrategy.value = ClusterDispatcher.resolve('median-cut'); scheduleCombine(); }
       static setRoleSort(keys: RoleSortKeyType[]): void { roleSortKeys.value = keys; }
-      static setSchema(nextSchemaName: string): void { schemaName.value = SchemaNameEntity.intake(nextSchemaName); schedule(); scheduleCombine(); }
+      static setSchema(nextSchemaName: string): void {
+        schemaName.value = SchemaNameEntity.intake(nextSchemaName);
+        RelationshipGraphSelection.reset();
+        schedule();
+        scheduleCombine();
+      }
       static setSrgbColorSpace(): void { colorSpace.value = 'srgb'; schedule(); }
       static setWuQuantizeImageAlgorithm(): void { imgStrategy.value = ClusterDispatcher.resolve('wu-quantize'); scheduleCombine(); }
     }
@@ -1344,8 +1405,8 @@ class IridisContextFactory {
         void addUploadedImages([logoUrl()], ['Sample']);
         // framing is intentionally absent here — its swap is dispatched directly by
         // the framing setters via run(), not through this debounce.
-        stopWatches.push(VueModule.watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, cvdMode, enableStrictCompliance, nonMandatoryLevel, colorSpace, mode], schedule, { 'deep': true }));
-        stopWatches.push(VueModule.watch([schemaName, contrastStrictness, cvdMode, enableStrictCompliance, nonMandatoryLevel], scheduleSchemaFeasibility, { 'deep': true }));
+        stopWatches.push(VueModule.watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, cvdMode, enableStrictCompliance, nonMandatoryLevel, colorSpace, mode, relationshipGraph], schedule, { 'deep': true }));
+        stopWatches.push(VueModule.watch([schemaName, contrastStrictness, cvdMode, enableStrictCompliance, nonMandatoryLevel, relationshipGraph], scheduleSchemaFeasibility, { 'deep': true }));
         scheduleSchemaFeasibility();
         stopWatches.push(VueModule.watch([schemaName, imgStrategy, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange], scheduleCombine, { 'deep': true }));
       }
@@ -1365,7 +1426,7 @@ class IridisContextFactory {
           'histogram': histogram,
           'imageSeeds': imageSeeds, 'imgChromaRange': imgChromaRange, 'imgDeltaECap': imgDeltaECap,
           'imgHarmonize': imgHarmonize, 'imgHistogramBits': imgHistogramBits, 'imgK': imgK, 'imgLightnessRange': imgLightnessRange, 'imgStrategy': imgStrategy, 'mode': mode, 'nonMandatoryLevel': nonMandatoryLevel, 'paletteRevision': paletteRevision, 'pickerSeeds': pickerSeeds,
-          'pinnableRoles': pinnableRoles, 'rejectedPinRoles': rejectedPinRoles, 'removeUploadedImage': removeUploadedImage, 'reRunCombine': reRunCombine, 'resolving': resolving, 'roleClamps': roleClamps, 'roleDistances': roleDistances,
+          'pinnableRoles': pinnableRoles, 'rejectedPinRoles': rejectedPinRoles, 'relationshipGraph': relationshipGraph, 'removeUploadedImage': removeUploadedImage, 'reRunCombine': reRunCombine, 'resolving': resolving, 'roleClamps': roleClamps, 'roleDistances': roleDistances,
           'roles': roles, 'rolesDerived': rolesDerived,
           'roleSortKeys': roleSortKeys, 'rolesPinned': rolesPinned, 'rolesSynthesized': rolesSynthesized,
           'roleViews': roleViews,
@@ -1374,7 +1435,7 @@ class IridisContextFactory {
           'schemaFeasibilityChecking': schemaFeasibilityChecking, 'schemaFeasibilityReport': schemaFeasibilityReport,
           'schemaName': schemaName,
           'selectedCandidateLabel': selectedCandidateLabel,
-          'selectEntryCandidate': selectEntryCandidate, 'send': sendUiEvent, 'sortedRoleContrastRows': sortedRoleContrastRows,
+          'selectEntryCandidate': selectEntryCandidate, 'selectRelationshipMode': selectRelationshipMode, 'send': sendUiEvent, 'sortedRoleContrastRows': sortedRoleContrastRows,
           'updateUploadedImageSetting': uploadedImageSettingUpdate, 'uploadedImages': uploadedImages
         };
         return result;

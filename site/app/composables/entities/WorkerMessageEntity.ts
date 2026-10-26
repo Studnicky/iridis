@@ -1,7 +1,7 @@
+import type { RoleRelationshipGraphEntity } from '@studnicky/iridis';
 import type { CanonicalShapeType, NominalSchemaType } from '@studnicky/json-tology/types';
 
 import { EntityCompiler } from '@studnicky/entity/browser';
-import { RoleRelationshipGraphEntity } from '@studnicky/iridis';
 
 import { CvdModeEntity } from './CvdModeEntity.ts';
 import { ExtractionSettingsEntity } from './ExtractionSettingsEntity.ts';
@@ -53,7 +53,7 @@ export namespace WorkerMessageEntity {
           'hexes': { 'items': { 'type': 'string' }, 'type': 'array' },
           'kind': { 'const': 'combine', 'type': 'string' },
           'nonMandatoryLevel': NonMandatoryLevelEntity.Schema,
-          'relationshipGraph': RoleRelationshipGraphEntity.Schema,
+          'relationshipGraph': { 'type': 'object' },
           'schemaName': SchemaNameEntity.Schema,
           'settings': ExtractionSettingsEntity.Schema,
           'strictness': { 'type': 'integer' }

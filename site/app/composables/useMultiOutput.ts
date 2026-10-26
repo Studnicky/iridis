@@ -88,7 +88,7 @@ class ActivateOperation {
   static run(): void {
     if (activated) {return;}
     activated = true;
-    const { activeSeeds, colorSpace, contrastStrictness, cvdMode, enableStrictCompliance, framing, nonMandatoryLevel, schemaName } = useIridis();
+    const { activeSeeds, colorSpace, contrastStrictness, cvdMode, enableStrictCompliance, framing, nonMandatoryLevel, relationshipGraph, schemaName } = useIridis();
     function generate(): void {
       try {
         const input = PaletteResolve.input(PaletteResolveRequestEntity.create({
@@ -97,6 +97,7 @@ class ActivateOperation {
           'enableStrictCompliance': enableStrictCompliance.value,
           'framing': framing.value,
           'nonMandatoryLevel': nonMandatoryLevel.value,
+          ...(relationshipGraph.value === undefined ? {} : { 'relationshipGraph': relationshipGraph.value }),
           'schemaName': schemaName.value,
           'seeds': PaletteResolve.seeds(activeSeeds.value),
           'strictness': contrastStrictness.value
@@ -116,7 +117,7 @@ class ActivateOperation {
     }
     const schedule = debounce(generate, 120);
     generate();
-    VueModule.watch([activeSeeds, framing, schemaName, contrastStrictness, cvdMode, enableStrictCompliance, nonMandatoryLevel, colorSpace], schedule, { 'deep': true });
+    VueModule.watch([activeSeeds, framing, schemaName, contrastStrictness, cvdMode, enableStrictCompliance, nonMandatoryLevel, relationshipGraph, colorSpace], schedule, { 'deep': true });
   }
 }
 
