@@ -1,5 +1,3 @@
-import type { RoleRelationshipEntity } from '@studnicky/iridis';
-
 import {
   colorRecordFactory,
   ContrastOptionsEntity,
@@ -9,6 +7,7 @@ import {
   RelationshipResolutionEntity,
   RoleDefinitionEntity,
   RoleProvenanceEntity,
+  RoleRelationshipEntity,
   RoleSchemaEntity,
   RuntimeOptionsEntity
 } from '@studnicky/iridis';
@@ -668,22 +667,22 @@ await test('ContrastFeasibility matches midpoint and clamped graph coordinate en
     return result;
   };
   const midpointGraph = schemaFor(
-    { 'id': 'target-alias', 'operation': 'alias', 'priority': 2, 'relaxability': 'fixed', 'source': 'source', 'target': 'target' },
+    RoleRelationshipEntity.intake({ 'id': 'target-alias', 'operation': 'alias', 'priority': 2, 'relaxability': 'fixed', 'source': 'source', 'target': 'target' }),
     RoleDefinitionEntity.intake({ 'chromaRange': [0.01, 0.05], 'lightnessRange': [0.7, 0.9], 'name': 'target' }),
     [0.3, 0.7]
   );
   const midpointLegacyEquivalent = schemaFor(
-    { 'clamp': 180, 'hue': 0, 'id': 'target-hue', 'operation': 'hue-target', 'priority': 2, 'relaxability': 'fixed', 'target': 'target' },
+    RoleRelationshipEntity.intake({ 'clamp': 180, 'hue': 0, 'id': 'target-hue', 'operation': 'hue-target', 'priority': 2, 'relaxability': 'fixed', 'target': 'target' }),
     fixedTarget(0.8),
     [0.3, 0.7]
   );
   const clampedGraph = schemaFor(
-    { 'id': 'target-delta', 'lightnessOffset': 0.1, 'operation': 'oklch-delta', 'priority': 2, 'relaxability': 'fixed', 'source': 'source', 'target': 'target' },
+    RoleRelationshipEntity.intake({ 'id': 'target-delta', 'lightnessOffset': 0.1, 'operation': 'oklch-delta', 'priority': 2, 'relaxability': 'fixed', 'source': 'source', 'target': 'target' }),
     RoleDefinitionEntity.intake({ 'chromaRange': [0.01, 0.05], 'lightnessRange': [0.7, 0.9], 'name': 'target' }),
     [0.1, 0.2]
   );
   const clampedLegacyEquivalent = schemaFor(
-    { 'clamp': 180, 'hue': 0, 'id': 'target-hue', 'operation': 'hue-target', 'priority': 2, 'relaxability': 'fixed', 'target': 'target' },
+    RoleRelationshipEntity.intake({ 'clamp': 180, 'hue': 0, 'id': 'target-hue', 'operation': 'hue-target', 'priority': 2, 'relaxability': 'fixed', 'target': 'target' }),
     fixedTarget(0.7),
     [0.1, 0.2]
   );
