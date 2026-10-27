@@ -25,7 +25,18 @@ export class PaletteSessionCommandFixture {
       { 'interaction': 'palette.cvd-mode.select', 'payload': { 'cvdMode': 'enforce' } },
       { 'interaction': 'palette.non-mandatory-level.select', 'payload': { 'nonMandatoryLevel': 'AAA' } },
       { 'interaction': 'palette.image.tuning.set', 'payload': { 'settings': tuning } },
-      { 'interaction': 'palette.image.combine.request', 'payload': { 'hexes': ['#112233'] } }
+      { 'interaction': 'palette.mode.select', 'payload': { 'mode': 'image' } },
+      { 'interaction': 'palette.image.entry.add', 'payload': { 'imageId': 'img-1', 'name': 'a.png', 'source': 'blob:a' } },
+      { 'interaction': 'palette.image.entry.remove', 'payload': { 'imageId': 'img-1' } },
+      { 'interaction': 'palette.image.entry.settings.set', 'payload': { 'imageId': 'img-1', 'settings': tuning } },
+      { 'interaction': 'palette.image.entry.candidate.select', 'payload': { 'imageId': 'img-1', 'label': 'k-means' } },
+      { 'interaction': 'palette.image.entry.candidate.select', 'payload': { 'imageId': 'img-1' } },
+      { 'interaction': 'palette.image.entry.extracted', 'payload': { 'imageId': 'img-1', 'result': { 'candidates': [], 'dominantColorRecords': [], 'histogram': [] } } },
+      { 'interaction': 'palette.image.entry.failed', 'payload': { 'imageId': 'img-1', 'message': 'decode failed' } },
+      { 'interaction': 'palette.image.combine.request', 'payload': {} },
+      { 'interaction': 'palette.image.combine.lock.select', 'payload': { 'enableCombineLock': true } },
+      { 'interaction': 'palette.image.combine.applied', 'payload': { 'result': { 'candidates': [], 'extracted': ['#112233'], 'histogram': [] } } },
+      { 'interaction': 'palette.image.combine.failed', 'payload': { 'message': 'combine failed' } }
     ];
     return result;
   }
@@ -46,6 +57,13 @@ export class PaletteSessionCommandFixture {
       { 'label': 'empty replacement', 'value': { 'interaction': 'palette.seeds.replace', 'payload': { 'hexes': [] } } },
       { 'label': 'extra payload property', 'value': { 'interaction': 'palette.seed.remove', 'payload': { 'extra': true, 'index': 0 } } },
       { 'label': 'semantic hue command', 'value': { 'interaction': 'palette.semantic-hues.select', 'payload': { 'hues': {} } } },
+      { 'label': 'unknown mode', 'value': { 'interaction': 'palette.mode.select', 'payload': { 'mode': 'camera' } } },
+      { 'label': 'empty image id', 'value': { 'interaction': 'palette.image.entry.remove', 'payload': { 'imageId': '' } } },
+      { 'label': 'combine request carrying hexes', 'value': { 'interaction': 'palette.image.combine.request', 'payload': { 'hexes': ['#112233'] } } },
+      { 'label': 'empty candidate label', 'value': { 'interaction': 'palette.image.entry.candidate.select', 'payload': { 'imageId': 'img-1', 'label': '' } } },
+      { 'label': 'non-boolean combine lock', 'value': { 'interaction': 'palette.image.combine.lock.select', 'payload': { 'enableCombineLock': 1 } } },
+      { 'label': 'malformed extraction result', 'value': { 'interaction': 'palette.image.entry.extracted', 'payload': { 'imageId': 'img-1', 'result': { 'candidates': [] } } } },
+      { 'label': 'incomplete entry add', 'value': { 'interaction': 'palette.image.entry.add', 'payload': { 'imageId': 'img-1' } } },
       { 'label': 'incomplete tuning', 'value': { 'interaction': 'palette.image.tuning.set', 'payload': { 'settings': { 'k': 8 } } } }
     ];
     return result;

@@ -3,7 +3,6 @@ import type { PaletteSessionInputEntity } from '../entities/PaletteSessionInputE
 
 /** Receives the resolution outcomes the runtime settles; only the current revision's outcome arrives. */
 export interface PaletteSessionOutcomeInterface {
-  'combineFailed': (message: string) => void;
   'failed': (revision: number, correlationId: string, message: string) => void;
   'published': (
     revision: number,

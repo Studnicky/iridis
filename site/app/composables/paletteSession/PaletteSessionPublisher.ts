@@ -2,6 +2,7 @@ import { EventBus } from '@studnicky/event-bus/browser';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/browser';
 
 import type { PaletteSnapshotEntity } from '../entities/PaletteSnapshotEntity.ts';
+import type { PaletteSessionImageEntity } from './entities/PaletteSessionImageEntity.ts';
 import type { PaletteSessionInputEntity } from './entities/PaletteSessionInputEntity.ts';
 import type { PaletteSessionReadModelEntity } from './entities/PaletteSessionReadModelEntity.ts';
 import type { PaletteSessionTopicsEntity } from './entities/PaletteSessionTopicsEntity.ts';
@@ -17,18 +18,14 @@ export class PaletteSessionPublisher implements PaletteSessionOutcomeInterface {
   #model: PaletteSessionReadModelEntity.Type;
   readonly #waiters: (() => void)[] = [];
 
-  public constructor(input: PaletteSessionInputEntity.Type) {
-    this.#model = PaletteSessionReadModel.initial(input);
+  public constructor(input: PaletteSessionInputEntity.Type, image: PaletteSessionImageEntity.Type) {
+    this.#model = PaletteSessionReadModel.initial(input, image);
   }
 
   public async close(): Promise<void> {
     this.#release();
     await this.#chain;
     await this.#bus.close();
-  }
-
-  public combineFailed(message: string): void {
-    this.#publish(PaletteSessionReadModel.withError(this.#model, message));
   }
 
   public current(): PaletteSessionReadModelEntity.Type {
@@ -50,12 +47,12 @@ export class PaletteSessionPublisher implements PaletteSessionOutcomeInterface {
     this.#release();
   }
 
-  public revised(revision: number, correlationId: string, input: PaletteSessionInputEntity.Type): void {
-    this.#publish(PaletteSessionReadModel.revised(this.#model, revision, correlationId, input));
+  public revised(revision: number, correlationId: string, input: PaletteSessionInputEntity.Type, image: PaletteSessionImageEntity.Type): void {
+    this.#publish(PaletteSessionReadModel.revised(this.#model, revision, correlationId, input, image));
   }
 
-  public resolving(revision: number, correlationId: string, input: PaletteSessionInputEntity.Type): void {
-    this.#publish(PaletteSessionReadModel.resolving(this.#model, revision, correlationId, input));
+  public resolving(revision: number, correlationId: string, input: PaletteSessionInputEntity.Type, image: PaletteSessionImageEntity.Type): void {
+    this.#publish(PaletteSessionReadModel.resolving(this.#model, revision, correlationId, input, image));
   }
 
   /** Resolves once no resolution is outstanding and every subscriber has received the latest read model. */
