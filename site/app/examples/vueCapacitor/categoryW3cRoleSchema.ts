@@ -3,10 +3,10 @@ import { RoleSchemaEntity } from '@studnicky/iridis';
 /** W3C-conformant role schema for per-category palettes. */
 export const categoryW3cRoleSchema = RoleSchemaEntity.create({
   'contrastPairs': [
-    { 'algorithm': 'wcag21', 'background': 'canvas', 'foreground': 'text', 'minimumContrastRatio': 7 },
-    { 'algorithm': 'wcag21', 'background': 'surface', 'foreground': 'text', 'minimumContrastRatio': 7 },
-    { 'algorithm': 'wcag21', 'background': 'accent', 'foreground': 'onAccent', 'minimumContrastRatio': 7 },
-    { 'algorithm': 'wcag21', 'background': 'canvas', 'foreground': 'border', 'minimumContrastRatio': 3 }
+    { 'algorithm': 'wcag21', 'background': 'canvas', 'contrastClass': 'text', 'foreground': 'text', 'minimumContrastRatio': 7 },
+    { 'algorithm': 'wcag21', 'background': 'surface', 'contrastClass': 'text', 'foreground': 'text', 'minimumContrastRatio': 7 },
+    { 'algorithm': 'wcag21', 'background': 'accent', 'contrastClass': 'text', 'foreground': 'onAccent', 'minimumContrastRatio': 7 },
+    { 'algorithm': 'wcag21', 'background': 'canvas', 'contrastClass': 'non-text', 'foreground': 'border', 'minimumContrastRatio': 3 }
   ],
   'description': 'WCAG 2.1 AAA-strength role schema for category colour palettes',
   'name': 'category-w3c',

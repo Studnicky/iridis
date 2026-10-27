@@ -89,10 +89,10 @@ const VSCODE_ROLE_SCHEMA_64_EXPECTATIONS = {
     'string', 'number', 'constant', 'comment', 'error', 'warning', 'info', 'success'
   ],
   'extensionContrastPairs': [
-    { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'accent', 'maximumContrastRatio': 4.5, 'minimumContrastRatio': 3.0 },
-    { 'algorithm': 'wcag21', 'background': 'accent', 'foreground': 'onAccent', 'minimumContrastRatio': 4.5 },
-    { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'link', 'minimumContrastRatio': 4.5 },
-    { 'algorithm': 'wcag21', 'background': 'chrome', 'foreground': 'chromeForeground', 'minimumContrastRatio': 4.5 }
+    { 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'non-text', 'foreground': 'accent', 'maximumContrastRatio': 4.5, 'minimumContrastRatio': 3.0 },
+    { 'algorithm': 'wcag21', 'background': 'accent', 'contrastClass': 'text', 'foreground': 'onAccent', 'minimumContrastRatio': 4.5 },
+    { 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'text', 'foreground': 'link', 'minimumContrastRatio': 4.5 },
+    { 'algorithm': 'wcag21', 'background': 'chrome', 'contrastClass': 'text', 'foreground': 'chromeForeground', 'minimumContrastRatio': 4.5 }
   ],
   'extensionNames': [
     'accent', 'onAccent', 'accentHover', 'link', 'selection', 'selectionList', 'buttonSecondary',

@@ -265,6 +265,7 @@ void test('enforce:contrast reduces an excessive ratio into the declared upper b
   const state = ContrastBandFixture.run(
     ContrastPairEntity.intake({
       'background': 'background',
+      'contrastClass': 'non-text',
       'foreground': 'accent',
       'maximumContrastRatio': 4.5,
       'minimumContrastRatio': 3
@@ -302,6 +303,7 @@ void test('enforce:contrast retains lower-bound adjustment when no upper bound i
   const state = ContrastBandFixture.run(
     ContrastPairEntity.intake({
       'background': 'background',
+      'contrastClass': 'text',
       'foreground': 'text',
       'minimumContrastRatio': 4.5
     }),
@@ -352,11 +354,13 @@ void test('enforce:contrast produces deterministic joint component output', () =
   const pairs = [
     ContrastPairEntity.intake({
       'background': 'surface',
+      'contrastClass': 'text',
       'foreground': 'text',
       'minimumContrastRatio': 4.5
     }),
     ContrastPairEntity.intake({
       'background': 'background',
+      'contrastClass': 'text',
       'foreground': 'text',
       'minimumContrastRatio': 4.5
     })
@@ -403,11 +407,13 @@ void test('enforce:contrast exposes deterministic coordinate work counters', () 
   const pairs = [
     ContrastPairEntity.intake({
       'background': 'surface',
+      'contrastClass': 'text',
       'foreground': 'text',
       'minimumContrastRatio': 4.5
     }),
     ContrastPairEntity.intake({
       'background': 'background',
+      'contrastClass': 'text',
       'foreground': 'text',
       'minimumContrastRatio': 4.5
     })
@@ -454,6 +460,7 @@ void test('enforce:contrast moves the derived background around a stated foregro
   const state = ContrastBandFixture.run(
     ContrastPairEntity.intake({
       'background': 'background',
+      'contrastClass': 'text',
       'foreground': 'text',
       'minimumContrastRatio': 4.5
     }),
@@ -508,6 +515,7 @@ void test('enforce:contrast moves the derived foreground around a stated backgro
   const state = ContrastBandFixture.run(
     ContrastPairEntity.intake({
       'background': 'background',
+      'contrastClass': 'text',
       'foreground': 'text',
       'minimumContrastRatio': 4.5
     }),
@@ -552,6 +560,7 @@ void test('enforce:contrast moves the derived foreground around a stated backgro
 void test('enforce:contrast preserves a derived mover when its role range cannot meet the selected floor', () => {
   const pair = ContrastPairEntity.intake({
     'background': 'background',
+    'contrastClass': 'text',
     'foreground': 'text',
     'minimumContrastRatio': 4.5
   });
@@ -587,6 +596,7 @@ void test('enforce:contrast reports an infeasible pair when both roles are state
   const state = ContrastBandFixture.run(
     ContrastPairEntity.intake({
       'background': 'background',
+      'contrastClass': 'text',
       'foreground': 'text',
       'minimumContrastRatio': 4.5
     }),
@@ -635,11 +645,13 @@ void test('enforce:contrast remeasures every connected pair after adjusting a sh
   const pairs = [
     ContrastPairEntity.intake({
       'background': 'surface',
+      'contrastClass': 'text',
       'foreground': 'text',
       'minimumContrastRatio': 4.5
     }),
     ContrastPairEntity.intake({
       'background': 'background',
+      'contrastClass': 'text',
       'foreground': 'text',
       'minimumContrastRatio': 4.5
     })
@@ -691,11 +703,13 @@ void test('enforce:contrast keeps a stated middle role exact while moving both d
   const pairs = [
     ContrastPairEntity.intake({
       'background': 'middle',
+      'contrastClass': 'text',
       'foreground': 'left',
       'minimumContrastRatio': 4.5
     }),
     ContrastPairEntity.intake({
       'background': 'right',
+      'contrastClass': 'text',
       'foreground': 'middle',
       'minimumContrastRatio': 4.5
     })
@@ -749,6 +763,7 @@ void test('enforce:contrast installs a gamut-mapped bounded solver result even w
   const state = ContrastBandFixture.run(
     ContrastPairEntity.intake({
       'background': 'background',
+      'contrastClass': 'non-text',
       'foreground': 'accent',
       'maximumContrastRatio': 4.5,
       'minimumContrastRatio': 3
@@ -790,6 +805,7 @@ void test('enforce:contrast installs a gamut-mapped bounded solver result even w
 void test('enforce:contrast reports an incompatible selected AAA band as terminal noncompliance', () => {
   const pair = ContrastPairEntity.intake({
     'background': 'background',
+    'contrastClass': 'text',
     'foreground': 'text',
     'maximumContrastRatio': 4.5,
     'minimumContrastRatio': 4.5
@@ -842,6 +858,7 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
       'contrastPairs': [
         {
           'background': 'background',
+          'contrastClass': 'non-text',
           'foreground': 'divider',
           'minimumContrastRatio': 3
         }
@@ -858,6 +875,7 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
         'extra': [
           {
             'background': 'background',
+            'contrastClass': 'non-text',
             'foreground': 'control',
             'minimumContrastRatio': 3
           }
@@ -893,6 +911,7 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
         'contrastPairs': [
           {
             'background': 'background',
+            'contrastClass': 'text',
             'foreground': 'text',
             'minimumContrastRatio': 4.5
           }
@@ -911,6 +930,7 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
         'contrastPairs': [
           {
             'background': 'background',
+            'contrastClass': 'text',
             'foreground': 'text',
             'minimumContrastRatio': 7
           }
@@ -929,6 +949,7 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
         'contrastPairs': [
           {
             'background': 'background',
+            'contrastClass': 'text',
             'foreground': 'text'
           }
         ],
@@ -946,6 +967,7 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
         'contrastPairs': [
           {
             'background': 'background',
+            'contrastClass': 'non-text',
             'foreground': 'text',
             'maximumContrastRatio': 4.5,
             'minimumContrastRatio': 3
@@ -973,7 +995,7 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
       ...base,
       'contrast': {
         'algorithm': 'apca',
-        'extra': [{ 'background': 'background', 'foreground': 'control' }],
+        'extra': [{ 'background': 'background', 'contrastClass': 'text', 'foreground': 'control' }],
         'level': 'Lc'
       }
     }),
@@ -1069,6 +1091,7 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
         'contrastPairs': [
           {
             'background': 'background',
+            'contrastClass': 'text',
             'foreground': 'text',
             'minimumContrastRatio': 108
           }

@@ -1298,6 +1298,7 @@ class ContrastExecution {
       'pair': ContrastPairEntity.create({
         'algorithm': requirement.algorithm,
         'background': requirement.background,
+        'contrastClass': requirement.contrastClass,
         'foreground': requirement.foreground,
         ...(requirement.maximumContrastRatio === undefined
           ? {}

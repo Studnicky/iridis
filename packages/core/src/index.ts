@@ -7,6 +7,7 @@ export { ColorInputEntity } from './entities/ColorInputEntity.ts';
 export { ColorRecordEntity } from './entities/ColorRecordEntity.ts';
 export { ContrastAlgorithmTypeEntity } from './entities/ContrastAlgorithmTypeEntity.ts';
 export { ContrastOptionsEntity } from './entities/ContrastOptionsEntity.ts';
+export { ContrastPairClassEntity } from './entities/ContrastPairClassEntity.ts';
 export { ContrastPairEntity } from './entities/ContrastPairEntity.ts';
 export { ContrastReportEntity } from './entities/ContrastReportEntity.ts';
 export { ContrastReportEntryEntity } from './entities/ContrastReportEntryEntity.ts';

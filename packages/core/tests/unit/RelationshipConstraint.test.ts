@@ -41,6 +41,7 @@ class RelationshipConstraintFixture {
     const roles = RoleSchemaEntity.intake({
       'contrastPairs': [ContrastPairEntity.create({
         'background': 'background',
+        'contrastClass': minimumContrastRatio < 4.5 ? 'non-text' : 'text',
         'foreground': 'text',
         'minimumContrastRatio': minimumContrastRatio
       })],

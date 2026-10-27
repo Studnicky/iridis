@@ -8,6 +8,7 @@ const SCHEMA = RoleSchemaEntity.create({
   'contrastPairs': [
     {
       'background': 'background',
+      'contrastClass': 'non-text',
       'foreground': 'divider',
       'minimumContrastRatio':   3
     }
@@ -30,6 +31,7 @@ await test('minimumRatioForRole falls back when the matching pair has no numeric
     'contrastPairs': [
       {
         'background': 'background',
+        'contrastClass': 'text',
         'foreground': 'divider'
       }
     ],

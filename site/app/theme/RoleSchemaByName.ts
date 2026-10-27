@@ -102,9 +102,9 @@ namespace RoleSchemas {
   ];
   const iridis4Dark = RoleSchemaEntity.create({
     'contrastPairs': [
-      { 'algorithm': 'wcag21',  'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'brand', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'muted', 'minimumContrastRatio': 4.5 }
+      { 'algorithm': 'wcag21',  'background': 'background', 'contrastClass': 'text', 'foreground': 'text', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'text', 'foreground': 'brand', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'text', 'foreground': 'muted', 'minimumContrastRatio': 4.5 }
     ],
     'description': 'Minimal four-role schema (dark framing). Background, text, brand, muted.',
     'name':        'iridis-4-dark',
@@ -118,9 +118,9 @@ namespace RoleSchemas {
 
   const iridis4Light = RoleSchemaEntity.create({
     'contrastPairs': [
-      { 'algorithm': 'wcag21',  'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'brand', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'muted', 'minimumContrastRatio': 4.5 }
+      { 'algorithm': 'wcag21',  'background': 'background', 'contrastClass': 'text', 'foreground': 'text', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'text', 'foreground': 'brand', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'text', 'foreground': 'muted', 'minimumContrastRatio': 4.5 }
     ],
     'description': 'Minimal four-role schema (light framing). Background, text, brand, muted.',
     'name':        'iridis-4-light',
@@ -137,10 +137,10 @@ namespace RoleSchemas {
   const iridis8Dark = RoleSchemaEntity.create({
     'contrastPairs': [
       ...(iridis4Dark.contrastPairs ?? []),
-      { 'algorithm': 'wcag21',     'background': 'surface',    'foreground': 'text', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21',     'background': 'bg-soft',    'foreground': 'text', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'brand',      'foreground': 'on-brand', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21',  'background': 'background', 'foreground': 'divider', 'minimumContrastRatio': 3.0 }
+      { 'algorithm': 'wcag21',     'background': 'surface',    'contrastClass': 'text', 'foreground': 'text', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21',     'background': 'bg-soft',    'contrastClass': 'text', 'foreground': 'text', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21', 'background': 'brand',      'contrastClass': 'text', 'foreground': 'on-brand', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21',  'background': 'background', 'contrastClass': 'non-text', 'foreground': 'divider', 'minimumContrastRatio': 3.0 }
     ],
     'description': 'Eight-role schema (dark framing). Adds surface, bgSoft, divider, onBrand.',
     'name':        'iridis-8-dark',
@@ -157,10 +157,10 @@ namespace RoleSchemas {
   const iridis8Light = RoleSchemaEntity.create({
     'contrastPairs': [
       ...(iridis4Light.contrastPairs ?? []),
-      { 'algorithm': 'wcag21',     'background': 'surface',    'foreground': 'text', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21',     'background': 'bg-soft',    'foreground': 'text', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'brand',      'foreground': 'on-brand', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21',  'background': 'background', 'foreground': 'divider', 'minimumContrastRatio': 3.0 }
+      { 'algorithm': 'wcag21',     'background': 'surface',    'contrastClass': 'text', 'foreground': 'text', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21',     'background': 'bg-soft',    'contrastClass': 'text', 'foreground': 'text', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21', 'background': 'brand',      'contrastClass': 'text', 'foreground': 'on-brand', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21',  'background': 'background', 'contrastClass': 'non-text', 'foreground': 'divider', 'minimumContrastRatio': 3.0 }
     ],
     'description': 'Eight-role schema (light framing). Adds surface, bg-soft, divider, on-brand.',
     'name':        'iridis-8-light',
@@ -179,10 +179,10 @@ namespace RoleSchemas {
   const iridis12Dark = RoleSchemaEntity.create({
     'contrastPairs': [
       ...(iridis8Dark.contrastPairs ?? []),
-      { 'algorithm': 'wcag21',       'background': 'background', 'foreground': 'success', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21',       'background': 'background', 'foreground': 'warning', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21',         'background': 'background', 'foreground': 'error', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'bg-soft',     'foreground': 'syntax-keyword', 'minimumContrastRatio': 4.5 }
+      { 'algorithm': 'wcag21',       'background': 'background', 'contrastClass': 'text', 'foreground': 'success', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21',       'background': 'background', 'contrastClass': 'text', 'foreground': 'warning', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21',         'background': 'background', 'contrastClass': 'text', 'foreground': 'error', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21', 'background': 'bg-soft',     'contrastClass': 'text', 'foreground': 'syntax-keyword', 'minimumContrastRatio': 4.5 }
     ],
     'description': 'Twelve-role schema (dark framing). Adds success, warning, error, syntaxKeyword.',
     'name':        'iridis-12-dark',
@@ -199,10 +199,10 @@ namespace RoleSchemas {
   const iridis12Light = RoleSchemaEntity.create({
     'contrastPairs': [
       ...(iridis8Light.contrastPairs ?? []),
-      { 'algorithm': 'wcag21',       'background': 'background', 'foreground': 'success', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21',       'background': 'background', 'foreground': 'warning', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21',         'background': 'background', 'foreground': 'error', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'bg-soft',     'foreground': 'syntax-keyword', 'minimumContrastRatio': 4.5 }
+      { 'algorithm': 'wcag21',       'background': 'background', 'contrastClass': 'text', 'foreground': 'success', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21',       'background': 'background', 'contrastClass': 'text', 'foreground': 'warning', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21',         'background': 'background', 'contrastClass': 'text', 'foreground': 'error', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21', 'background': 'bg-soft',     'contrastClass': 'text', 'foreground': 'syntax-keyword', 'minimumContrastRatio': 4.5 }
     ],
     'description': 'Twelve-role schema (light framing). Adds success, warning, error, syntaxKeyword.',
     'name':        'iridis-12-light',
@@ -221,10 +221,10 @@ namespace RoleSchemas {
   const iridis16Dark = RoleSchemaEntity.create({
     'contrastPairs': [
       ...(iridis12Dark.contrastPairs ?? []),
-      { 'algorithm': 'wcag21',   'background': 'bg-soft', 'foreground': 'syntax-string', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21',   'background': 'bg-soft', 'foreground': 'syntax-number', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'bg-soft', 'foreground': 'syntax-function', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21',     'background': 'bg-soft', 'foreground': 'syntax-type', 'minimumContrastRatio': 4.5 }
+      { 'algorithm': 'wcag21',   'background': 'bg-soft', 'contrastClass': 'text', 'foreground': 'syntax-string', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21',   'background': 'bg-soft', 'contrastClass': 'text', 'foreground': 'syntax-number', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21', 'background': 'bg-soft', 'contrastClass': 'text', 'foreground': 'syntax-function', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21',     'background': 'bg-soft', 'contrastClass': 'text', 'foreground': 'syntax-type', 'minimumContrastRatio': 4.5 }
     ],
     'description': 'Full sixteen-role schema (dark framing). Complete chrome + status + syntax theme.',
     'name':        'iridis-16-dark',
@@ -241,10 +241,10 @@ namespace RoleSchemas {
   const iridis16Light = RoleSchemaEntity.create({
     'contrastPairs': [
       ...(iridis12Light.contrastPairs ?? []),
-      { 'algorithm': 'wcag21',   'background': 'bg-soft', 'foreground': 'syntax-string', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21',   'background': 'bg-soft', 'foreground': 'syntax-number', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'bg-soft', 'foreground': 'syntax-function', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21',     'background': 'bg-soft', 'foreground': 'syntax-type', 'minimumContrastRatio': 4.5 }
+      { 'algorithm': 'wcag21',   'background': 'bg-soft', 'contrastClass': 'text', 'foreground': 'syntax-string', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21',   'background': 'bg-soft', 'contrastClass': 'text', 'foreground': 'syntax-number', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21', 'background': 'bg-soft', 'contrastClass': 'text', 'foreground': 'syntax-function', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21',     'background': 'bg-soft', 'contrastClass': 'text', 'foreground': 'syntax-type', 'minimumContrastRatio': 4.5 }
     ],
     'description': 'Full sixteen-role schema (light framing). Complete chrome + status + syntax theme.',
     'name':        'iridis-16-light',
@@ -268,18 +268,18 @@ namespace RoleSchemas {
   const iridis32Dark = RoleSchemaEntity.create({
     'contrastPairs': [
       ...(iridis16Dark.contrastPairs ?? []),
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'text-strong', 'minimumContrastRatio': 7.0 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'text-subtle', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21',        'background': 'background', 'foreground': 'link', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21',  'background': 'background', 'foreground': 'link-hover', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21',        'background': 'background', 'foreground': 'info', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21',  'background': 'background', 'foreground': 'accent-alt', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21',         'background': 'code-bg', 'foreground': 'syntax-tag', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21',   'background': 'code-bg', 'foreground': 'syntax-attribute', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21',    'background': 'code-bg', 'foreground': 'syntax-operator', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21',       'background': 'code-bg', 'foreground': 'syntax-class', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21',     'background': 'code-bg', 'foreground': 'syntax-comment', 'minimumContrastRatio': 3.0 },
-      { 'algorithm': 'wcag21', 'background': 'code-bg', 'foreground': 'syntax-punctuation', 'minimumContrastRatio': 3.0 }
+      { 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'text', 'foreground': 'text-strong', 'minimumContrastRatio': 7.0 },
+      { 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'text', 'foreground': 'text-subtle', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21',        'background': 'background', 'contrastClass': 'text', 'foreground': 'link', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21',  'background': 'background', 'contrastClass': 'text', 'foreground': 'link-hover', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21',        'background': 'background', 'contrastClass': 'text', 'foreground': 'info', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21',  'background': 'background', 'contrastClass': 'text', 'foreground': 'accent-alt', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21',         'background': 'code-bg', 'contrastClass': 'text', 'foreground': 'syntax-tag', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21',   'background': 'code-bg', 'contrastClass': 'text', 'foreground': 'syntax-attribute', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21',    'background': 'code-bg', 'contrastClass': 'text', 'foreground': 'syntax-operator', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21',       'background': 'code-bg', 'contrastClass': 'text', 'foreground': 'syntax-class', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21',     'background': 'code-bg', 'contrastClass': 'non-text', 'foreground': 'syntax-comment', 'minimumContrastRatio': 3.0 },
+      { 'algorithm': 'wcag21', 'background': 'code-bg', 'contrastClass': 'non-text', 'foreground': 'syntax-punctuation', 'minimumContrastRatio': 3.0 }
     ],
     'description': 'Thirty-two-role schema (dark framing). Adds emphasis tiers, interaction colors, chrome variants, and extended syntax tokens.',
     'name':        'iridis-32-dark',
@@ -315,18 +315,18 @@ namespace RoleSchemas {
   const iridis32Light = RoleSchemaEntity.create({
     'contrastPairs': [
       ...(iridis16Light.contrastPairs ?? []),
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'text-strong', 'minimumContrastRatio': 7.0 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'text-subtle', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21',        'background': 'background', 'foreground': 'link', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21',  'background': 'background', 'foreground': 'link-hover', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21',        'background': 'background', 'foreground': 'info', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21',  'background': 'background', 'foreground': 'accent-alt', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21',         'background': 'code-bg', 'foreground': 'syntax-tag', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21',   'background': 'code-bg', 'foreground': 'syntax-attribute', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21',    'background': 'code-bg', 'foreground': 'syntax-operator', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21',       'background': 'code-bg', 'foreground': 'syntax-class', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21',     'background': 'code-bg', 'foreground': 'syntax-comment', 'minimumContrastRatio': 3.0 },
-      { 'algorithm': 'wcag21', 'background': 'code-bg', 'foreground': 'syntax-punctuation', 'minimumContrastRatio': 3.0 }
+      { 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'text', 'foreground': 'text-strong', 'minimumContrastRatio': 7.0 },
+      { 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'text', 'foreground': 'text-subtle', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21',        'background': 'background', 'contrastClass': 'text', 'foreground': 'link', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21',  'background': 'background', 'contrastClass': 'text', 'foreground': 'link-hover', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21',        'background': 'background', 'contrastClass': 'text', 'foreground': 'info', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21',  'background': 'background', 'contrastClass': 'text', 'foreground': 'accent-alt', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21',         'background': 'code-bg', 'contrastClass': 'text', 'foreground': 'syntax-tag', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21',   'background': 'code-bg', 'contrastClass': 'text', 'foreground': 'syntax-attribute', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21',    'background': 'code-bg', 'contrastClass': 'text', 'foreground': 'syntax-operator', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21',       'background': 'code-bg', 'contrastClass': 'text', 'foreground': 'syntax-class', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21',     'background': 'code-bg', 'contrastClass': 'non-text', 'foreground': 'syntax-comment', 'minimumContrastRatio': 3.0 },
+      { 'algorithm': 'wcag21', 'background': 'code-bg', 'contrastClass': 'non-text', 'foreground': 'syntax-punctuation', 'minimumContrastRatio': 3.0 }
     ],
     'description': 'Thirty-two-role schema (light framing). Adds emphasis tiers, interaction colors, chrome variants, and extended syntax tokens.',
     'name':        'iridis-32-light',

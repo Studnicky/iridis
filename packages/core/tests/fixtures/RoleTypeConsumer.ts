@@ -11,6 +11,7 @@ export const roleTypeConsumer = {
   'contrastOptions': ContrastOptionsEntity.create({}),
   'pair': ContrastPairEntity.create({
     'background': 'surface',
+    'contrastClass': 'text',
     'foreground':           'text',
     'minimumContrastRatio': 4.5
   }),

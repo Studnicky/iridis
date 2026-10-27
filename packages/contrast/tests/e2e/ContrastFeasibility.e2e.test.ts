@@ -62,6 +62,7 @@ class ContrastFeasibilityFixture {
     const result = RoleSchemaEntity.intake({
       'contrastPairs': [{
         'background': background.name,
+        'contrastClass': minimumContrastRatio < 4.5 ? 'non-text' : 'text',
         'foreground': foreground.name,
         'minimumContrastRatio': minimumContrastRatio
       }],
@@ -306,7 +307,7 @@ await test('ContrastFeasibility uses resolved run hues without unanchored sampli
 await test('ContrastFeasibility proves a fixed relationship against its resolved baseline', () => {
   const baseline = colorRecordFactory.fromHex('#777777');
   const schema = RoleSchemaEntity.intake({
-    'contrastPairs': [{ 'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 7 }],
+    'contrastPairs': [{ 'background': 'background', 'contrastClass': 'text', 'foreground': 'text', 'minimumContrastRatio': 7 }],
     'name': 'fixed-relationship-feasibility',
     'relationshipGraph': {
       'groups': [{
@@ -362,7 +363,7 @@ await test('ContrastFeasibility proves a fixed relationship against its resolved
 await test('ContrastFeasibility bounds tolerant relationships by their baseline-centred tolerance', () => {
   const baseline = colorRecordFactory.fromHex('#777777');
   const schema = RoleSchemaEntity.intake({
-    'contrastPairs': [{ 'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 7 }],
+    'contrastPairs': [{ 'background': 'background', 'contrastClass': 'text', 'foreground': 'text', 'minimumContrastRatio': 7 }],
     'name': 'tolerant-relationship-feasibility',
     'relationshipGraph': {
       'groups': [{
@@ -422,7 +423,7 @@ await test('ContrastFeasibility bounds tolerant relationships by their baseline-
 await test('ContrastFeasibility treats a full-circle relationship hue tolerance as a bounded domain', () => {
   const baseline = colorRecordFactory.fromOklch(0.5, 0.1, 10);
   const schema = RoleSchemaEntity.intake({
-    'contrastPairs': [{ 'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 7 }],
+    'contrastPairs': [{ 'background': 'background', 'contrastClass': 'text', 'foreground': 'text', 'minimumContrastRatio': 7 }],
     'name': 'full-circle-hue-tolerance',
     'relationshipGraph': {
       'groups': [{
@@ -475,7 +476,7 @@ await test('ContrastFeasibility treats a full-circle relationship hue tolerance 
 await test('ContrastFeasibility proves source-less hue targets from their runtime tolerance', () => {
   const baseline = colorRecordFactory.fromOklch(0.5, 0.1, 170);
   const schema = RoleSchemaEntity.intake({
-    'contrastPairs': [{ 'background': 'background', 'foreground': 'target', 'minimumContrastRatio': 4.5 }],
+    'contrastPairs': [{ 'background': 'background', 'contrastClass': 'text', 'foreground': 'target', 'minimumContrastRatio': 4.5 }],
     'name': 'runtime-hue-target-tolerance',
     'relationshipGraph': {
       'groups': [{
@@ -528,7 +529,7 @@ await test('ContrastFeasibility proves source-less hue targets from their runtim
 
 await test('ContrastFeasibility leaves alpha-overlay schema targets indeterminate with sampled evidence', () => {
   const schema = RoleSchemaEntity.intake({
-    'contrastPairs': [{ 'background': 'background', 'foreground': 'overlay-target', 'minimumContrastRatio': 4.5 }],
+    'contrastPairs': [{ 'background': 'background', 'contrastClass': 'text', 'foreground': 'overlay-target', 'minimumContrastRatio': 4.5 }],
     'name': 'alpha-overlay-feasibility',
     'relationshipGraph': {
       'groups': [{
@@ -566,7 +567,7 @@ await test('ContrastFeasibility leaves alpha-overlay schema targets indeterminat
 
 await test('ContrastFeasibility leaves OKLCH interpolation schema targets indeterminate with sampled evidence', () => {
   const schema = RoleSchemaEntity.intake({
-    'contrastPairs': [{ 'background': 'background', 'foreground': 'interpolated', 'minimumContrastRatio': 4.5 }],
+    'contrastPairs': [{ 'background': 'background', 'contrastClass': 'text', 'foreground': 'interpolated', 'minimumContrastRatio': 4.5 }],
     'name': 'oklch-interpolate-feasibility',
     'relationshipGraph': {
       'groups': [{
@@ -619,8 +620,8 @@ await test('ContrastFeasibility projects hue-target relationships through the au
   ];
   const schema = RoleSchemaEntity.intake({
     'contrastPairs': [
-      { 'background': 'background', 'foreground': 'fixed-target', 'minimumContrastRatio': 4.5 },
-      { 'background': 'background', 'foreground': 'bounded-target', 'minimumContrastRatio': 4.5 }
+      { 'background': 'background', 'contrastClass': 'text', 'foreground': 'fixed-target', 'minimumContrastRatio': 4.5 },
+      { 'background': 'background', 'contrastClass': 'text', 'foreground': 'bounded-target', 'minimumContrastRatio': 4.5 }
     ],
     'name': 'hue-target-feasibility',
     'relationshipGraph': {
@@ -694,7 +695,7 @@ await test('ContrastFeasibility projects hue-target relationships through the au
 
 await test('ContrastFeasibility keeps a wrapped hue-target segment in its certificate domain', () => {
   const schema = RoleSchemaEntity.intake({
-    'contrastPairs': [{ 'background': 'background', 'foreground': 'semantic', 'minimumContrastRatio': 4.5 }],
+    'contrastPairs': [{ 'background': 'background', 'contrastClass': 'text', 'foreground': 'semantic', 'minimumContrastRatio': 4.5 }],
     'name': 'wrapped-hue-target-feasibility',
     'relationshipGraph': {
       'groups': [{
@@ -743,7 +744,7 @@ await test('ContrastFeasibility keeps a wrapped hue-target segment in its certif
 
 await test('ContrastFeasibility splits a hue-target arc crossing its antipode into sound witness domains', () => {
   const schema = RoleSchemaEntity.intake({
-    'contrastPairs': [{ 'background': 'background', 'foreground': 'target', 'minimumContrastRatio': 1 }],
+    'contrastPairs': [{ 'background': 'background', 'contrastClass': 'non-text', 'foreground': 'target', 'minimumContrastRatio': 1 }],
     'name': 'hue-target-antipode',
     'relationshipGraph': {
       'groups': [{
@@ -780,7 +781,7 @@ await test('ContrastFeasibility splits a hue-target arc crossing its antipode in
 
 await test('ContrastFeasibility bounds a source-less hue-target by its authored clamp image', () => {
   const schema = RoleSchemaEntity.intake({
-    'contrastPairs': [{ 'background': 'background', 'foreground': 'target', 'minimumContrastRatio': 4.5 }],
+    'contrastPairs': [{ 'background': 'background', 'contrastClass': 'text', 'foreground': 'target', 'minimumContrastRatio': 4.5 }],
     'name': 'source-less-hue-target',
     'relationshipGraph': {
       'groups': [{
@@ -816,7 +817,7 @@ await test('ContrastFeasibility applies midpoint and clamp coordinate modes to m
     sourceLightness: readonly [number, number]
   ): RoleSchemaEntity.Type => {
     const result = RoleSchemaEntity.intake({
-      'contrastPairs': [{ 'background': 'background', 'foreground': 'target', 'minimumContrastRatio': 4.5 }],
+      'contrastPairs': [{ 'background': 'background', 'contrastClass': 'text', 'foreground': 'target', 'minimumContrastRatio': 4.5 }],
       'name': 'graph-coordinate-domain',
       'relationshipGraph': {
         'groups': [{
@@ -909,7 +910,7 @@ await test('ContrastFeasibility applies midpoint and clamp coordinate modes to m
 
 await test('ContrastFeasibility preserves source-less hue-target coordinate domains', () => {
   const schema = RoleSchemaEntity.intake({
-    'contrastPairs': [{ 'background': 'background', 'foreground': 'target', 'minimumContrastRatio': 7 }],
+    'contrastPairs': [{ 'background': 'background', 'contrastClass': 'text', 'foreground': 'target', 'minimumContrastRatio': 7 }],
     'name': 'source-less-hue-target-domain',
     'relationshipGraph': {
       'groups': [{
@@ -939,9 +940,9 @@ await test('ContrastFeasibility preserves source-less hue-target coordinate doma
 await test('ContrastFeasibility certifies graph alias, hue-offset, and OKLCH delta targets', () => {
   const schema = RoleSchemaEntity.intake({
     'contrastPairs': [
-      { 'background': 'background', 'foreground': 'alias-target', 'minimumContrastRatio': 4.5 },
-      { 'background': 'background', 'foreground': 'offset-target', 'minimumContrastRatio': 4.5 },
-      { 'background': 'background', 'foreground': 'delta-target', 'minimumContrastRatio': 4.5 }
+      { 'background': 'background', 'contrastClass': 'text', 'foreground': 'alias-target', 'minimumContrastRatio': 4.5 },
+      { 'background': 'background', 'contrastClass': 'text', 'foreground': 'offset-target', 'minimumContrastRatio': 4.5 },
+      { 'background': 'background', 'contrastClass': 'text', 'foreground': 'delta-target', 'minimumContrastRatio': 4.5 }
     ],
     'name': 'graph-derived-feasibility',
     'relationshipGraph': {

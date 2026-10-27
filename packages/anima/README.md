@@ -73,7 +73,7 @@ const frame = evaluateStops(stops, 0.5);
 const enforcedFrame = evaluateStopsEnforced(stops, 0.5, {
   chromaticDetourRoles: undefined,
   contrastPairs: [
-    { algorithm: 'wcag21', background: 'background', foreground: 'accent', minRatio: 4.5 },
+    { algorithm: 'wcag21', background: 'background', contrastClass: 'text', foreground: 'accent', minimumContrastRatio: 4.5 },
   ],
   easing:           undefined,
   enforcer:         undefined,

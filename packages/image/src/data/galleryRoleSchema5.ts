@@ -19,18 +19,21 @@ export const galleryRoleSchema5 = RoleSchemaEntity.create({
     {
       'algorithm':  'wcag21',
       'background': 'canvas',
+      'contrastClass': 'text',
       'foreground': 'text',
       'minimumContrastRatio':   7.0
     },
     {
       'algorithm':  'wcag21',
       'background': 'frame',
+      'contrastClass': 'text',
       'foreground': 'text',
       'minimumContrastRatio':   4.5
     },
     {
       'algorithm':  'wcag21',
       'background': 'canvas',
+      'contrastClass': 'non-text',
       'foreground': 'accent',
       'minimumContrastRatio':   3.0
     }

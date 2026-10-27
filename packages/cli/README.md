@@ -51,7 +51,7 @@ The config is validated against `CliConfigSchema`. Required top-level keys:
       { "name": "text",       "intent": "text",       "required": true, "lightnessRange": [0.10, 0.25] },
       { "name": "accent",     "intent": "accent",     "required": true }
     ], "contrastPairs": [
-      { "foreground": "text", "background": "background", "minRatio": 4.5, "algorithm": "wcag21" }
+      { "foreground": "text", "background": "background", "contrastClass": "text", "minimumContrastRatio": 4.5, "algorithm": "wcag21" }
     ] },
     "metadata": { "cssVarPrefix": "--c-" }
   },

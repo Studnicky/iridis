@@ -42,6 +42,7 @@ class EngineE2eFixture {
       'contrastPairs': [
         ContrastPairEntity.intake({
           'background': 'secondary',
+          'contrastClass': 'non-text',
           'foreground': 'primary',
           'minimumContrastRatio': 1
         })
@@ -68,6 +69,7 @@ class EngineE2eFixture {
       'contrastPairs': [
         ContrastPairEntity.intake({
           'background': 'background',
+          'contrastClass': 'non-text',
           'foreground': 'text',
           'minimumContrastRatio': 3
         })

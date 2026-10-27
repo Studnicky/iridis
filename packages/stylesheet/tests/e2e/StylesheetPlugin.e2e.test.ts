@@ -98,7 +98,7 @@ const CSS_VARS_GOLDEN = new URL(
 
 const GOLDEN_ROLES = RoleSchemaEntity.intake({
   'contrastPairs': [
-    { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'foreground', 'minimumContrastRatio': 4.5 }
+    { 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'text', 'foreground': 'foreground', 'minimumContrastRatio': 4.5 }
   ],
   'description': undefined,
   'name':  'golden-cssvars',

@@ -5,8 +5,9 @@ import { EntityCompiler } from '@studnicky/entity/node';
 
 import { ContrastRatioSchema } from '../model/ContrastRatioSchema.ts';
 import { ContrastAlgorithmTypeEntity } from './ContrastAlgorithmTypeEntity.ts';
+import { ContrastPairClassEntity } from './ContrastPairClassEntity.ts';
 
-/** One foreground/background contrast requirement, with an optional algorithm override. */
+/** One classified foreground/background contrast requirement, with an optional algorithm override. */
 export namespace ContrastPairEntity {
   export const Schema = {
     '$id': 'https://iridis.dev/schema/core/contrast-pair',
@@ -34,11 +35,12 @@ export namespace ContrastPairEntity {
     'properties': {
       'algorithm': ContrastAlgorithmTypeEntity.Schema,
       'background': { 'type': 'string' },
+      'contrastClass': ContrastPairClassEntity.Schema,
       'foreground': { 'type': 'string' },
       'maximumContrastRatio': ContrastRatioSchema.permissive,
       'minimumContrastRatio': ContrastRatioSchema.permissive
     },
-    'required': ['background', 'foreground'],
+    'required': ['background', 'contrastClass', 'foreground'],
     'type': 'object'
   } as const;
 

@@ -271,7 +271,7 @@ const relationshipFixture = (tolerance: number | undefined): RelationshipFixture
       'tolerance': { 'chroma': 0, 'lightness': tolerance }
     };
   const schema = RoleSchemaEntity.intake({
-    'contrastPairs': [{ 'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 7 }],
+    'contrastPairs': [{ 'background': 'background', 'contrastClass': 'text', 'foreground': 'text', 'minimumContrastRatio': 7 }],
     'name': 'relationship-certificate-fixture',
     'relationshipGraph': {
       'groups': [{
@@ -349,7 +349,7 @@ const verifyRelationshipCertificates = (): { readonly 'certificates': number; re
   }
 
   const alphaSchema = RoleSchemaEntity.intake({
-    'contrastPairs': [{ 'background': 'background', 'foreground': 'target', 'minimumContrastRatio': 4.5 }],
+    'contrastPairs': [{ 'background': 'background', 'contrastClass': 'text', 'foreground': 'target', 'minimumContrastRatio': 4.5 }],
     'name': 'alpha-overlay-certificate-fixture',
     'relationshipGraph': {
       'groups': [{
@@ -387,10 +387,10 @@ const verifyRelationshipCertificates = (): { readonly 'certificates': number; re
 
   const graphSchema = RoleSchemaEntity.intake({
     'contrastPairs': [
-      { 'background': 'background', 'foreground': 'alias-target', 'minimumContrastRatio': 4.5 },
-      { 'background': 'background', 'foreground': 'offset-target', 'minimumContrastRatio': 4.5 },
-      { 'background': 'background', 'foreground': 'delta-target', 'minimumContrastRatio': 4.5 },
-      { 'background': 'background', 'foreground': 'target-hue', 'minimumContrastRatio': 4.5 }
+      { 'background': 'background', 'contrastClass': 'text', 'foreground': 'alias-target', 'minimumContrastRatio': 4.5 },
+      { 'background': 'background', 'contrastClass': 'text', 'foreground': 'offset-target', 'minimumContrastRatio': 4.5 },
+      { 'background': 'background', 'contrastClass': 'text', 'foreground': 'delta-target', 'minimumContrastRatio': 4.5 },
+      { 'background': 'background', 'contrastClass': 'text', 'foreground': 'target-hue', 'minimumContrastRatio': 4.5 }
     ],
     'name': 'graph-domain-certificate-fixture',
     'relationshipGraph': {
