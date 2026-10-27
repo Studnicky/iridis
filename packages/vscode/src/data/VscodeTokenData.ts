@@ -1,7 +1,5 @@
 // Lifted from vscode-arcade-blaster/dev/themes/tools/tokenDerivation.ts:35-124
 
-import type { DerivationParametersEntity } from '../entities/DerivationParametersEntity.ts';
-
 /**
  * Namespaced data bag for VS Code token derivation constants.
  *
@@ -17,42 +15,10 @@ import type { DerivationParametersEntity } from '../entities/DerivationParameter
  *   muted    → operator (mix with foreground)
  */
 export const VscodeTokenData: {
-  readonly 'DERIVATION_PARAMETERS': Readonly<Record<string, DerivationParametersEntity.Type>>;
   readonly 'TOKEN_FAMILY': Readonly<Record<string, string>>;
   readonly 'TOKEN_MODIFIERS': readonly string[];
   readonly 'TOKEN_TYPES': readonly string[];
 } = {
-  /** Derivation parameters for each VS Code token type relative to its family root. */
-  'DERIVATION_PARAMETERS': {
-    'boolean':       {},
-    'class':         { 'light': 5, 'sat': 5 },
-    'comment':       {},
-    'constant':      {},
-    'decorator':     { 'hue': -35, 'sat': 10 },
-    'enum':          { 'hue': -25, 'sat': 5 },
-    'enumMember':    {},
-    'event':         { 'hue': 25, 'sat': 8 },
-    'function':      {},
-    'interface':     { 'hue': 20, 'sat': -8 },
-    'jsonKey':       { 'light': -5, 'sat': -5 },
-    'keyword':       {},
-    'label':         { 'hue': 15, 'light': 5 },
-    'macro':         { 'hue': -20, 'sat': 5 },
-    'method':        { 'light': 8, 'sat': 5 },
-    'namespace':     { 'light': -5, 'sat': -20 },
-    'number':        {},
-    'operator':      {},
-    'parameter':     { 'hue': 12, 'light': 3 },
-    'property':      { 'light': -5, 'sat': -5 },
-    'punctuation':   {},
-    'regexp':        { 'hue': -45, 'sat': 15 },
-    'string':        {},
-    'struct':        { 'hue': -10, 'light': -3 },
-    'type':          {},
-    'typeParameter': { 'hue': 35, 'sat': -5 },
-    'variable':      {}
-  },
-
   /**
    * Family root mapping: which role supplies the base hue for each token type.
    * Keys match the entries in TOKEN_TYPES: the 23 standard VS Code semantic
