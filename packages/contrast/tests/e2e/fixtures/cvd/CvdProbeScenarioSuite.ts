@@ -806,11 +806,13 @@ export class CvdProbeScenarioSuite {
         'contrastPairs': [
           ContrastPairEntity.create({
             'background': 'brand',
+            'contrastClass': 'text',
             'foreground': 'on-brand',
             'minimumContrastRatio': 7
           }),
           ContrastPairEntity.create({
             'background': 'bg-soft',
+            'contrastClass': 'text',
             'foreground': 'syntax-keyword',
             'minimumContrastRatio': 7
           })
@@ -949,6 +951,7 @@ export class CvdProbeScenarioSuite {
     const result = RoleSchemaEntity.intake({
       'contrastPairs': [ContrastPairEntity.create({
         'background': 'background',
+        'contrastClass': 'non-text',
         'foreground': 'text',
         'minimumContrastRatio': 1
       })],
@@ -1195,12 +1198,12 @@ export class CvdProbeScenarioSuite {
   }
 
   private static pair(foreground: string, background: string): JSONSchema7Type {
-    const result = ContrastPairEntity.intake({ 'algorithm': 'wcag21', 'background': background, 'foreground': foreground, 'minimumContrastRatio': 1 });
+    const result = ContrastPairEntity.intake({ 'algorithm': 'wcag21', 'background': background, 'contrastClass': 'non-text', 'foreground': foreground, 'minimumContrastRatio': 1 });
     return result;
   }
 
   private static pairAtMinimum(foreground: string, background: string, minimumContrastRatio: number): JSONSchema7Type {
-    const result = ContrastPairEntity.intake({ 'algorithm': 'wcag21', 'background': background, 'foreground': foreground, 'minimumContrastRatio': minimumContrastRatio });
+    const result = ContrastPairEntity.intake({ 'algorithm': 'wcag21', 'background': background, 'contrastClass': minimumContrastRatio < 4.5 ? 'non-text' : 'text', 'foreground': foreground, 'minimumContrastRatio': minimumContrastRatio });
     return result;
   }
 

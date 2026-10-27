@@ -7,7 +7,7 @@ import { ContrastTestPort } from '../../contrast-plugin/ContrastTestPort.ts';
 /** Canonical CVD test inputs and engine boundary used by the CVD scenario suite. */
 export class CvdScenarioFixture {
   static readonly redGreenRoles = RoleSchemaEntity.intake({
-    'contrastPairs': [{ 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 1 }],
+    'contrastPairs': [{ 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'non-text', 'foreground': 'text', 'minimumContrastRatio': 1 }],
     'name': 'cvd-red-green',
     'roles': [
       { 'chromaRange': [0.10, 0.40], 'hue': 29, 'lightnessRange': [0.40, 0.70], 'name': 'text', 'required': true },
@@ -16,7 +16,7 @@ export class CvdScenarioFixture {
   });
 
   static readonly blueYellowRoles = RoleSchemaEntity.intake({
-    'contrastPairs': [{ 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 1 }],
+    'contrastPairs': [{ 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'non-text', 'foreground': 'text', 'minimumContrastRatio': 1 }],
     'name': 'cvd-blue-yellow',
     'roles': [
       { 'chromaRange': [0.10, 0.40], 'hue': 264, 'lightnessRange': [0.30, 0.60], 'name': 'text', 'required': true },
@@ -25,7 +25,7 @@ export class CvdScenarioFixture {
   });
 
   static readonly isoluminantRoles = RoleSchemaEntity.intake({
-    'contrastPairs': [{ 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 1 }],
+    'contrastPairs': [{ 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'non-text', 'foreground': 'text', 'minimumContrastRatio': 1 }],
     'name': 'cvd-isolum',
     'roles': [
       { 'chromaRange': [0.20, 0.30], 'hue': 29, 'lightnessRange': [0.55, 0.70], 'name': 'text', 'required': true },
@@ -34,7 +34,7 @@ export class CvdScenarioFixture {
   });
 
   static readonly blackWhiteRoles = RoleSchemaEntity.intake({
-    'contrastPairs': [{ 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 1 }],
+    'contrastPairs': [{ 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'non-text', 'foreground': 'text', 'minimumContrastRatio': 1 }],
     'name': 'cvd-black-white',
     'roles': [
       { 'chromaRange': [0, 0.05], 'lightnessRange': [0, 0.20], 'name': 'text', 'required': true },
@@ -43,7 +43,7 @@ export class CvdScenarioFixture {
   });
 
   static readonly darkAccentRoles = RoleSchemaEntity.intake({
-    'contrastPairs': [{ 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 1 }],
+    'contrastPairs': [{ 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'non-text', 'foreground': 'text', 'minimumContrastRatio': 1 }],
     'name': 'cvd-dark-accent',
     'roles': [
       { 'chromaRange': [0.10, 0.12], 'intent': 'link', 'lightnessRange': [0.60, 0.75], 'name': 'text', 'required': true },
@@ -52,7 +52,7 @@ export class CvdScenarioFixture {
   });
 
   static readonly darkOnAccentRoles = RoleSchemaEntity.intake({
-    'contrastPairs': [{ 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 1 }],
+    'contrastPairs': [{ 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'non-text', 'foreground': 'text', 'minimumContrastRatio': 1 }],
     'name': 'cvd-dark-on-accent',
     'roles': [
       { 'chromaRange': [0, 0.03], 'intent': 'text', 'lightnessRange': [0.08, 0.20], 'name': 'text', 'required': true },
@@ -62,8 +62,8 @@ export class CvdScenarioFixture {
 
   static readonly sharedForegroundRoles = RoleSchemaEntity.intake({
     'contrastPairs': [
-      { 'algorithm': 'wcag21', 'background': 'backgroundLow', 'foreground': 'text', 'minimumContrastRatio': 1 },
-      { 'algorithm': 'wcag21', 'background': 'backgroundHigh', 'foreground': 'text', 'minimumContrastRatio': 1 }
+      { 'algorithm': 'wcag21', 'background': 'backgroundLow', 'contrastClass': 'non-text', 'foreground': 'text', 'minimumContrastRatio': 1 },
+      { 'algorithm': 'wcag21', 'background': 'backgroundHigh', 'contrastClass': 'non-text', 'foreground': 'text', 'minimumContrastRatio': 1 }
     ],
     'name': 'cvd-shared-foreground',
     'roles': [
@@ -74,7 +74,7 @@ export class CvdScenarioFixture {
   });
 
   static readonly achromaticCorrectionRoles = RoleSchemaEntity.intake({
-    'contrastPairs': [{ 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 1 }],
+    'contrastPairs': [{ 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'non-text', 'foreground': 'text', 'minimumContrastRatio': 1 }],
     'name': 'cvd-achromatic-correction',
     'roles': [
       { 'chromaRange': [0, 0.01], 'lightnessRange': [0.45, 0.55], 'name': 'text', 'required': true },
@@ -83,7 +83,7 @@ export class CvdScenarioFixture {
   });
 
   static readonly extremumRoles = RoleSchemaEntity.intake({
-    'contrastPairs': [{ 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 1 }],
+    'contrastPairs': [{ 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'non-text', 'foreground': 'text', 'minimumContrastRatio': 1 }],
     'name': 'cvd-extremum',
     'roles': [
       { 'chromaRange': [0.04, 0.08], 'hue': 19, 'lightnessRange': [0.15, 0.23], 'name': 'text', 'required': true },
@@ -92,7 +92,7 @@ export class CvdScenarioFixture {
   });
 
   static readonly partialCorrectionRoles = RoleSchemaEntity.intake({
-    'contrastPairs': [{ 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 1 }],
+    'contrastPairs': [{ 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'non-text', 'foreground': 'text', 'minimumContrastRatio': 1 }],
     'name': 'cvd-partial-correction',
     'roles': [
       { 'chromaRange': [0.13, 0.17], 'hue': 255.34034740179777, 'lightnessRange': [0.65, 0.72], 'name': 'text', 'required': true },

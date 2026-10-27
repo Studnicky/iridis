@@ -3,15 +3,19 @@ import type { InputEntity } from '../../entities/InputEntity.ts';
 import type { PaletteRoleState } from '../../interfaces/PaletteStateInterface.ts';
 
 import { ContrastAlgorithmTypeEntity } from '../../entities/ContrastAlgorithmTypeEntity.ts';
+import { ContrastPairClassEntity } from '../../entities/ContrastPairClassEntity.ts';
 import { ContrastPairEntity } from '../../entities/ContrastPairEntity.ts';
 
 interface WcagMinimumOptionsInterface {
+  readonly 'contrastClass': ContrastPairClassEntity.Type;
   readonly 'declaredMinimum': number | undefined;
   readonly 'level': string | undefined;
   readonly 'nonMandatoryLevel': string | undefined;
 }
 
 class ContrastStandard {
+  static readonly #NON_TEXT_RATIO = 3;
+
   static algorithm(
     input: InputEntity.Type
   ): ContrastAlgorithmTypeEntity.Type {
@@ -21,27 +25,25 @@ class ContrastStandard {
     return result;
   }
 
+  static selectedLevel(options: WcagMinimumOptionsInterface): string | undefined {
+    const result = options.contrastClass === 'text' ? options.level : options.nonMandatoryLevel;
+    return result;
+  }
+
   static wcagMinimum(options: WcagMinimumOptionsInterface): number {
     const declaredMinimum = options.declaredMinimum;
-    let result: number;
-    if (declaredMinimum === undefined) {
-      result = options.level === 'AAA' ? 7 : 4.5;
-    } else if (declaredMinimum < 4.5) {
-      result = options.nonMandatoryLevel === 'AAA' ? 4.5 : declaredMinimum;
-    } else if (options.level !== 'AAA' || declaredMinimum >= 7) {
-      result = declaredMinimum;
-    } else {
-      result = 7;
+    if (options.contrastClass === 'text') {
+      const floor = options.level === 'AAA' ? 7 : 4.5;
+      const result = Math.max(declaredMinimum ?? 0, floor);
+      return result;
     }
+    const floor = options.nonMandatoryLevel === 'AAA' ? 4.5 : 0;
+    const result = Math.max(declaredMinimum ?? ContrastStandard.#NON_TEXT_RATIO, floor);
     return result;
   }
 
   static wcagTarget(options: WcagMinimumOptionsInterface): string {
-    if (options.declaredMinimum !== undefined && options.declaredMinimum < 4.5) {
-      const result = options.nonMandatoryLevel === 'AAA' ? 'AAA' : 'AA';
-      return result;
-    }
-    const result = options.level === 'AAA' ? 'AAA' : 'AA';
+    const result = ContrastStandard.selectedLevel(options) === 'AAA' ? 'AAA' : 'AA';
     return result;
   }
 
@@ -77,15 +79,15 @@ class ApcaTarget {
     ) {
       return ApcaTarget.#BODY_READING;
     }
-    if (requirement.minimumContrastRatio !== undefined && requirement.minimumContrastRatio < 4.5) {
+    if (requirement.contrastClass === 'text') {
       const result = nonMandatoryLevel === 'AAA'
-        ? ApcaTarget.MEANINGFUL_TEXT
-        : ApcaTarget.#NON_TEXT;
+        ? ApcaTarget.#BODY_READING
+        : ApcaTarget.MEANINGFUL_TEXT;
       return result;
     }
     const result = nonMandatoryLevel === 'AAA'
-      ? ApcaTarget.#BODY_READING
-      : ApcaTarget.MEANINGFUL_TEXT;
+      ? ApcaTarget.MEANINGFUL_TEXT
+      : ApcaTarget.#NON_TEXT;
     return result;
   }
 }
@@ -169,8 +171,10 @@ export class ContrastPolicy {
         continue;
       }
       const pair = ContrastPairEntity.intake(sourcePair);
+      const contrastClass = ContrastPairClassEntity.intake(pair.contrastClass);
       const nonMandatoryLevel = input.contrast?.nonMandatoryLevel;
       const wcagOptions: WcagMinimumOptionsInterface = {
+        'contrastClass': contrastClass,
         'declaredMinimum': pair.minimumContrastRatio,
         'level': input.contrast?.level,
         'nonMandatoryLevel': nonMandatoryLevel
@@ -179,6 +183,7 @@ export class ContrastPolicy {
         ? ApcaTarget.forPair(pair, roles, nonMandatoryLevel)
         : ContrastStandard.wcagMinimum(wcagOptions);
       const cvdMinimumContrastRatio = ContrastStandard.wcagMinimum({
+        'contrastClass': contrastClass,
         'declaredMinimum': pair.minimumContrastRatio,
         'level': algorithm === 'apca' ? 'AA' : input.contrast?.level,
         'nonMandatoryLevel': nonMandatoryLevel
@@ -188,6 +193,7 @@ export class ContrastPolicy {
       requirements.push({
         'algorithm': algorithm,
         'background': pair.background,
+        'contrastClass': contrastClass,
         'cvdMinimumContrastRatio': cvdMinimumContrastRatio,
         'foreground': pair.foreground,
         ...(maximumContrastRatio === undefined
@@ -218,6 +224,7 @@ export namespace ContrastPolicy {
   export interface RequirementInterface {
     readonly 'algorithm': ContrastAlgorithmTypeEntity.Type;
     readonly 'background': string;
+    readonly 'contrastClass': ContrastPairClassEntity.Type;
     /** WCAG ratio floor used by CVD simulation regardless of selected standard units. */
     readonly 'cvdMinimumContrastRatio': number;
     readonly 'foreground': string;

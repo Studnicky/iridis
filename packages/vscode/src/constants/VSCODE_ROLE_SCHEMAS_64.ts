@@ -42,25 +42,25 @@ class VscodeRoleSchemas64 {
 
   static contrastPairs(): ContrastPairEntity.Type[] {
     const rawPairs = [
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'foreground', 'minimumContrastRatio': 7.0 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'comment', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'muted', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'surface', 'maximumContrastRatio': 2.0, 'minimumContrastRatio': 1.1 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'keyword', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'accent', 'maximumContrastRatio': 4.5, 'minimumContrastRatio': 3.0 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'type', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'function', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'variable', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'string', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'number', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'constant', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'error', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'warning', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'info', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'success', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'accent', 'foreground': 'onAccent', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'link', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'chrome', 'foreground': 'chromeForeground', 'minimumContrastRatio': 4.5 }
+      { 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'text', 'foreground': 'foreground', 'minimumContrastRatio': 7.0 },
+      { 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'text', 'foreground': 'comment', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'text', 'foreground': 'muted', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'non-text', 'foreground': 'surface', 'maximumContrastRatio': 2.0, 'minimumContrastRatio': 1.1 },
+      { 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'text', 'foreground': 'keyword', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'non-text', 'foreground': 'accent', 'maximumContrastRatio': 4.5, 'minimumContrastRatio': 3.0 },
+      { 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'text', 'foreground': 'type', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'text', 'foreground': 'function', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'text', 'foreground': 'variable', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'text', 'foreground': 'string', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'text', 'foreground': 'number', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'text', 'foreground': 'constant', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'text', 'foreground': 'error', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'text', 'foreground': 'warning', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'text', 'foreground': 'info', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'text', 'foreground': 'success', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21', 'background': 'accent', 'contrastClass': 'text', 'foreground': 'onAccent', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21', 'background': 'background', 'contrastClass': 'text', 'foreground': 'link', 'minimumContrastRatio': 4.5 },
+      { 'algorithm': 'wcag21', 'background': 'chrome', 'contrastClass': 'text', 'foreground': 'chromeForeground', 'minimumContrastRatio': 4.5 }
     ];
     const result = rawPairs.map(ContrastPairEntity.create);
     return result;

@@ -131,6 +131,7 @@ await test('Pipeline composition records enforced contrast', () => {
       'contrastPairs': [
         ContrastPairEntity.intake({
           'background': 'surface',
+          'contrastClass': 'non-text',
           'foreground': 'text',
           'minimumContrastRatio': 3
         })
@@ -173,6 +174,7 @@ await test('Pipeline composition makes a second contrast enforcement a no-op', (
       'contrastPairs': [
         ContrastPairEntity.intake({
           'background': 'surface',
+          'contrastClass': 'text',
           'foreground': 'text',
           'minimumContrastRatio': 4.5
         })

@@ -25,6 +25,7 @@ class StrictComplianceScenario {
         'contrastPairs': [
           {
             'background': 'background',
+            'contrastClass': 'text',
             'foreground': 'text',
             'minimumContrastRatio': 4.5
           }
@@ -64,6 +65,7 @@ class StrictComplianceScenario {
         'contrastPairs': [
           {
             'background': 'background',
+            'contrastClass': 'text',
             'foreground': 'text',
             'minimumContrastRatio': 4.5
           }
@@ -259,6 +261,7 @@ await test('canonical compliance records an already compliant pair as resolved',
         'contrastPairs': [
           {
             'background': 'background',
+            'contrastClass': 'text',
             'foreground': 'text',
             'minimumContrastRatio': 4.5
           }
@@ -311,6 +314,7 @@ await test('canonical compliance corrects a failing AAA pair to seven to one', (
       'contrastPairs': [
         {
           'background': 'background',
+          'contrastClass': 'text',
           'foreground': 'text',
           'minimumContrastRatio': 4.5
         }
@@ -380,6 +384,7 @@ await test('canonical compliance solves a non-background APCA pair at Lc sixty',
         'contrastPairs': [
           {
             'background': 'surface',
+            'contrastClass': 'text',
             'foreground': 'link',
             'minimumContrastRatio': 4.5
           }
@@ -443,6 +448,7 @@ await test('canonical compliance preserves its terminal report through variant d
         'contrastPairs': [
           {
             'background': 'background',
+            'contrastClass': 'text',
             'foreground': 'text',
             'minimumContrastRatio': 4.5
           }
@@ -532,6 +538,7 @@ await test('canonical compliance applies AAA and APCA targets to every declared 
           'contrastPairs': [
             {
               'background': 'background',
+              'contrastClass': 'text',
               'foreground': 'text',
               'minimumContrastRatio': 4.5
             }
@@ -621,6 +628,7 @@ await test('terminal problem pairs carry an exact feasibility proof when schema 
       'roles': {
         'contrastPairs': [{
           'background': 'background',
+          'contrastClass': 'text',
           'foreground': 'text',
           'minimumContrastRatio': 4.5
         }],
@@ -715,6 +723,7 @@ await test('strict true retains a compliant palette', () => {
         'contrastPairs': [
           {
             'background': 'background',
+            'contrastClass': 'text',
             'foreground': 'text',
             'minimumContrastRatio': 4.5
           }

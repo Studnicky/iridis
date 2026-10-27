@@ -1,4 +1,5 @@
 export type { ContrastAlgorithmTypeEntity } from '../entities/ContrastAlgorithmTypeEntity.ts';
+export type { ContrastPairClassEntity } from '../entities/ContrastPairClassEntity.ts';
 export type { ContrastPairEntity } from '../entities/ContrastPairEntity.ts';
 export type { RoleDefinitionEntity } from '../entities/RoleDefinitionEntity.ts';
 export type { RoleSchemaEntity } from '../entities/RoleSchemaEntity.ts';

@@ -11,6 +11,7 @@ export const EnforcedPaletteFixture: EnforcedPaletteFixtureInterface = Object.fr
   'contrastPairs': Object.freeze([
     ContrastPairEntity.create({
       'background': 'background',
+      'contrastClass': 'text',
       'foreground': 'text',
       'minimumContrastRatio': 4.5
     })

@@ -29,12 +29,14 @@ await test('role definitions reject undeclared controls', () => {
 await test('contrast-pair bands require bounded ratios and a non-inverted range', () => {
   assert.strictEqual(ContrastPairEntity.validate({
     'background': 'background',
+    'contrastClass': 'non-text',
     'foreground': 'accent',
     'maximumContrastRatio': 4.5,
     'minimumContrastRatio': 3
   }), true);
   assert.strictEqual(ContrastPairEntity.validate({
     'background': 'background',
+    'contrastClass': 'non-text',
     'foreground': 'accent',
     'maximumContrastRatio': 2.99,
     'minimumContrastRatio': 3
@@ -42,6 +44,7 @@ await test('contrast-pair bands require bounded ratios and a non-inverted range'
   assert.strictEqual(ContrastPairEntity.validate({
     'algorithm': 'wcag21',
     'background': 'background',
+    'contrastClass': 'non-text',
     'foreground': 'accent',
     'maximumContrastRatio': 21.01,
     'minimumContrastRatio': 3
@@ -52,12 +55,14 @@ await test('contrast-pair admission uses WCAG and APCA ratio domains', () => {
   assert.strictEqual(ContrastPairEntity.validate({
     'algorithm': 'apca',
     'background': 'background',
+    'contrastClass': 'text',
     'foreground': 'bodyText',
     'minimumContrastRatio': 75
   }), true);
   assert.strictEqual(ContrastPairEntity.validate({
     'algorithm': 'apca',
     'background': 'background',
+    'contrastClass': 'non-text',
     'foreground': 'bodyText',
     'maximumContrastRatio': 108,
     'minimumContrastRatio': 0
@@ -65,12 +70,14 @@ await test('contrast-pair admission uses WCAG and APCA ratio domains', () => {
   assert.strictEqual(ContrastPairEntity.validate({
     'algorithm': 'apca',
     'background': 'background',
+    'contrastClass': 'text',
     'foreground': 'bodyText',
     'minimumContrastRatio': 108.01
   }), false);
   assert.strictEqual(ContrastPairEntity.validate({
     'algorithm': 'wcag21',
     'background': 'background',
+    'contrastClass': 'non-text',
     'foreground': 'bodyText',
     'minimumContrastRatio': 0
   }), false);
@@ -81,6 +88,7 @@ await test('role schemas admit graph relationships and reject undeclared control
   const valid = validator.validate(RoleSchemaSchema, {
     'contrastPairs': [{
       'background': 'background',
+      'contrastClass': 'non-text',
       'foreground': 'accent',
       'maximumContrastRatio': 4.5,
       'minimumContrastRatio': 3
@@ -121,6 +129,7 @@ await test('contrast reports and pending entries carry optional maximum-ratio da
     'minimumContrastRatio': 3,
     'pair': {
       'background': 'background',
+      'contrastClass': 'non-text',
       'foreground': 'accent',
       'maximumContrastRatio': 4.5,
       'minimumContrastRatio': 3
@@ -149,6 +158,7 @@ await test('APCA reports and pending entries retain APCA Lc targets', () => {
     'pair': {
       'algorithm': 'apca',
       'background': 'background',
+      'contrastClass': 'text',
       'foreground': 'headline',
       'minimumContrastRatio': 60
     },
@@ -163,6 +173,7 @@ await test('Engine resolves omitted contrast-pair algorithms from the run defaul
       'algorithm': 'apca',
       'extra': [{
         'background': 'background',
+        'contrastClass': 'text',
         'foreground': 'uiControl',
         'minimumContrastRatio': 45
       }]
@@ -170,6 +181,7 @@ await test('Engine resolves omitted contrast-pair algorithms from the run defaul
     'roles': {
       'contrastPairs': [{
         'background': 'background',
+        'contrastClass': 'text',
         'foreground': 'bodyText',
         'minimumContrastRatio': 75
       }],
@@ -186,6 +198,7 @@ await test('Engine resolves omitted contrast-pair algorithms from the run defaul
         'roles': {
           'contrastPairs': [{
             'background': 'background',
+            'contrastClass': 'text',
             'foreground': 'bodyText',
             'minimumContrastRatio': 75
           }],
@@ -203,6 +216,7 @@ await test('Engine resolves omitted contrast-pair algorithms from the run defaul
         'contrast': {
           'extra': [{
             'background': 'background',
+            'contrastClass': 'text',
             'foreground': 'bodyText',
             'minimumContrastRatio': 75
           }]
@@ -222,6 +236,7 @@ await test('Engine rejects a contrast band whose maximum is below its minimum', 
           'contrastPairs': [
             ContrastPairEntity.intake({
               'background': 'background',
+              'contrastClass': 'text',
               'foreground': 'accent',
               'maximumContrastRatio': 3,
               'minimumContrastRatio': 4.5

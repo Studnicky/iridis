@@ -62,6 +62,7 @@ await test('ConfigLoader admits canonical configuration and preserves optional v
           'extra': [{
             'algorithm': 'wcag21',
             'background': 'canvas',
+            'contrastClass': 'text',
             'foreground': 'text',
             'minimumContrastRatio': 4.5
           }],
@@ -276,6 +277,7 @@ await test('ConfigLoader admits minimumContrastRatio and rejects the retired min
         'contrast': {
           'extra': [{
             'background': 'canvas',
+            'contrastClass': 'text',
             'foreground': 'text',
             'minimumContrastRatio': 4.5
           }]

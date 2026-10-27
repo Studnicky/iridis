@@ -36,8 +36,8 @@ A config requires `input`, `pipeline`, and `output`. Optional `enable*` flags dy
         { "name": "accent", "intent": "accent", "required": true, "lightnessRange": [0.60, 0.80] }
       ],
       "contrastPairs": [
-        { "foreground": "foreground", "background": "background", "minRatio": 7, "algorithm": "wcag21" },
-        { "foreground": "accent", "background": "background", "minRatio": 4.5, "algorithm": "wcag21" }
+        { "foreground": "foreground", "background": "background", "contrastClass": "text", "minimumContrastRatio": 7, "algorithm": "wcag21" },
+        { "foreground": "accent", "background": "background", "contrastClass": "text", "minimumContrastRatio": 4.5, "algorithm": "wcag21" }
       ]
     },
     "metadata": { "cssVarPrefix": "--c-" }

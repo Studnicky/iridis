@@ -80,24 +80,28 @@
   ],
   "contrastPairs": [
     {
+      "contrastClass": "text",
       "foreground": "text",
       "background": "canvas",
       "minimumContrastRatio": 7,
       "algorithm": "wcag21"
     },
     {
+      "contrastClass": "text",
       "foreground": "text",
       "background": "surface",
       "minimumContrastRatio": 7,
       "algorithm": "wcag21"
     },
     {
+      "contrastClass": "text",
       "foreground": "onAccent",
       "background": "accent",
       "minimumContrastRatio": 7,
       "algorithm": "wcag21"
     },
     {
+      "contrastClass": "non-text",
       "foreground": "border",
       "background": "canvas",
       "minimumContrastRatio": 3,
