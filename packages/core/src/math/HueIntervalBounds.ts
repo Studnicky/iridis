@@ -2,6 +2,10 @@ import { apcaLc } from './ApcaLc.ts';
 import { linearToSrgb } from './LinearToSrgb.ts';
 import { srgbToLinear } from './SrgbToLinear.ts';
 
+interface ChannelCurveInterface {
+  channel(value: number): number;
+}
+
 class NumericInterval {
   public readonly maximum: number;
   public readonly minimum: number;
@@ -159,7 +163,7 @@ export class HueIntervalBounds {
     return result;
   }
 
-  private static mapped(encoded: NumericInterval, curve: { channel(value: number): number }): NumericInterval {
+  private static mapped(encoded: NumericInterval, curve: ChannelCurveInterface): NumericInterval {
     const result = new NumericInterval(curve.channel(encoded.minimum), curve.channel(encoded.maximum));
     return result;
   }

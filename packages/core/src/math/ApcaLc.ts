@@ -34,8 +34,12 @@ class ApcaLc {
    *  `Math.abs()` of the result. */
   apply(Ytxt: number, Ybg: number): number {
     const inRange = Ytxt >= 0 && Ytxt <= APCA_COEFFICIENTS.SA98G_Y_MAX && Ybg >= 0 && Ybg <= APCA_COEFFICIENTS.SA98G_Y_MAX;
-    if (inRange === false) {return 0;}
+    const result = inRange ? this.contrast(Ytxt, Ybg) : 0;
+    return result;
+  }
 
+  /** Lc*100 for luminances already inside the reference domain. */
+  private contrast(Ytxt: number, Ybg: number): number {
     const txtClamp = Ytxt < APCA_COEFFICIENTS.SA98G_CLAMP
       ? Ytxt + Math.pow(APCA_COEFFICIENTS.SA98G_CLAMP - Ytxt, APCA_COEFFICIENTS.SA98G_CLAMP_P)
       : Ytxt;
