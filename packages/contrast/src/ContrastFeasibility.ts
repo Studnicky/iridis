@@ -39,10 +39,10 @@ interface HueEvaluationInterface {
 
 interface HueRelationInterface {
   readonly 'affineOffset'?: number;
-  readonly 'discontinuity'?: number;
   resolve(rootHue: number): number;
   readonly 'root': string;
   readonly 'targetClamp'?: number;
+  readonly 'targetHue'?: number;
 }
 
 interface HueArcInterface {
@@ -116,6 +116,7 @@ class ContrastFeasibilityDomain {
   /** Each independent root hue domain is certified in eight conservative 45-degree cells. */
   static readonly #INDEPENDENT_HUE_DIVISIONS = 8;
   static readonly #LIGHTNESS_PRECISION = 1 / 1024;
+  static readonly #FLOATING_POINT = new DataView(new ArrayBuffer(8));
 
   static #isHigher(current: number, candidate: number): boolean {
     const result = candidate > current;
@@ -582,18 +583,8 @@ class ContrastFeasibilityDomain {
       return [{ 'end': domain.hue, 'start': domain.hue }];
     }
     const relation = domain.relation;
-    if (relation?.root === root && relation.affineOffset === undefined) {
-      const sourceArcs = relation.targetClamp === undefined || relation.targetClamp >= 180 || relation.discontinuity === undefined
-        ? [arc]
-        : ContrastFeasibilityDomain.splitAtDiscontinuity(arc, relation.discontinuity);
-      const result: HueArcInterface[] = [];
-      for (let index = 0; index < sourceArcs.length; index += 1) {
-        const sourceArc = sourceArcs[index];
-        if (sourceArc === undefined) { continue; }
-        const start = relation.resolve(sourceArc.start);
-        const end = relation.resolve(sourceArc.end);
-        result.push({ 'end': Math.max(start, end), 'start': Math.min(start, end) });
-      }
+    if (relation?.root === root && relation.targetHue !== undefined && relation.targetClamp !== undefined) {
+      const result = ContrastFeasibilityDomain.hueTowardsArcs(arc, relation.targetHue, relation.targetClamp);
       return result;
     }
     const offset = ContrastFeasibilityDomain.domainAffineOffset(domain, root);
@@ -608,18 +599,105 @@ class ContrastFeasibilityDomain {
     return [{ 'end': end, 'start': start }];
   }
 
-  private static splitAtDiscontinuity(
+  private static hueTowardsArcs(
     arc: HueArcInterface,
-    discontinuity: number
+    target: number,
+    clamp: number
   ): readonly HueArcInterface[] {
-    if (discontinuity <= arc.start || discontinuity >= arc.end) {
+    if (clamp >= 180) {
+      return [{ 'end': target, 'start': target }];
+    }
+    if (clamp <= 0) {
       return [arc];
     }
-    const next = discontinuity + Number.EPSILON * Math.max(1, Math.abs(discontinuity));
-    return [
-      { 'end': discontinuity, 'start': arc.start },
-      { 'end': arc.end, 'start': next }
+    const boundaries = ContrastFeasibilityDomain.hueTowardsBreakpoints(arc, target, clamp);
+    const result: HueArcInterface[] = [];
+    for (let index = 0; index < boundaries.length; index += 1) {
+      const boundary = boundaries[index];
+      if (boundary === undefined) {
+        continue;
+      }
+      const image = RoleGeometry.hueTowards(boundary, target, clamp);
+      result.push({ 'end': image, 'start': image });
+      const next = boundaries[index + 1];
+      if (next === undefined) {
+        continue;
+      }
+      const start = ContrastFeasibilityDomain.nextFloatUp(boundary);
+      const end = ContrastFeasibilityDomain.nextFloatDown(next);
+      if (start > end) {
+        continue;
+      }
+      const startImage = RoleGeometry.hueTowards(start, target, clamp);
+      const endImage = RoleGeometry.hueTowards(end, target, clamp);
+      result.push(...ContrastFeasibilityDomain.wrappedImageArcs(startImage, endImage));
+    }
+    return result;
+  }
+
+  private static hueTowardsBreakpoints(
+    arc: HueArcInterface,
+    target: number,
+    clamp: number
+  ): readonly number[] {
+    const candidates = [
+      arc.start,
+      arc.end,
+      ContrastFeasibilityDomain.normalizeHue(target + 180),
+      ContrastFeasibilityDomain.normalizeHue(target - clamp),
+      ContrastFeasibilityDomain.normalizeHue(target + clamp)
     ];
+    const withinArc = candidates.filter((candidate) => {
+      const result = candidate >= arc.start && candidate <= arc.end;
+      return result;
+    });
+    const result = [...new Set(withinArc)].sort((left, right) => {
+      const difference = left - right;
+      return difference;
+    });
+    return result;
+  }
+
+  private static normalizeHue(value: number): number {
+    const result = ((value % 360) + 360) % 360;
+    return result;
+  }
+
+  private static wrappedImageArcs(start: number, end: number): readonly HueArcInterface[] {
+    if (Math.abs(end - start) <= 180) {
+      return [{ 'end': Math.max(start, end), 'start': Math.min(start, end) }];
+    }
+    const result = [
+      { 'end': Math.min(start, end), 'start': 0 },
+      { 'end': 360, 'start': Math.max(start, end) }
+    ];
+    return result;
+  }
+
+  private static nextFloatUp(value: number): number {
+    if (value === 0) {
+      const result = Number.MIN_VALUE;
+      return result;
+    }
+    ContrastFeasibilityDomain.#FLOATING_POINT.setFloat64(0, value);
+    const bits = ContrastFeasibilityDomain.#FLOATING_POINT.getBigUint64(0);
+    const nextBits = value > 0 ? bits + 1n : bits - 1n;
+    ContrastFeasibilityDomain.#FLOATING_POINT.setBigUint64(0, nextBits);
+    const result = ContrastFeasibilityDomain.#FLOATING_POINT.getFloat64(0);
+    return result;
+  }
+
+  private static nextFloatDown(value: number): number {
+    if (value === 0) {
+      const result = -Number.MIN_VALUE;
+      return result;
+    }
+    ContrastFeasibilityDomain.#FLOATING_POINT.setFloat64(0, value);
+    const bits = ContrastFeasibilityDomain.#FLOATING_POINT.getBigUint64(0);
+    const nextBits = value > 0 ? bits - 1n : bits + 1n;
+    ContrastFeasibilityDomain.#FLOATING_POINT.setBigUint64(0, nextBits);
+    const result = ContrastFeasibilityDomain.#FLOATING_POINT.getFloat64(0);
+    return result;
   }
 
   private static domainAffineOffset(domain: RoleDomainInterface, root: string): number | undefined {
@@ -1399,7 +1477,7 @@ export class ContrastFeasibility {
     const hue = clamp >= 180
       ? { 'resolvedHue': definition.hue }
       : {
-        'hueArcs': ContrastFeasibility.hueArcsFor(definition.hue, clamp),
+        'hueArcs': ContrastFeasibility.hueArcsFor(definition.hue, 180 - clamp),
         'relation': ContrastFeasibility.targetOwnRelation(roleName, definition.hue, clamp)
       };
     const result: RoleDomainOptionsInterface = {
@@ -1422,7 +1500,8 @@ export class ContrastFeasibility {
         return resolved;
       },
       'root': root,
-      'targetClamp': clamp
+      'targetClamp': clamp,
+      'targetHue': hue
     };
     return result;
   }
@@ -1433,22 +1512,15 @@ export class ContrastFeasibility {
     clamp: number
   ): HueRelationInterface {
     const sourceRelation = source.relation;
-    const sourceOffset = sourceRelation?.affineOffset;
-    let discontinuity: number | undefined;
-    if (sourceRelation === undefined) {
-      discontinuity = ContrastFeasibility.normalizeHue(hue + 180);
-    } else if (sourceOffset !== undefined) {
-      discontinuity = ContrastFeasibility.normalizeHue(hue + 180 - sourceOffset);
-    }
     const result: HueRelationInterface = {
-      ...(discontinuity === undefined ? {} : { 'discontinuity': discontinuity }),
       'resolve': (rootHue: number): number => {
         const sourceHue = sourceRelation?.resolve(rootHue) ?? rootHue;
         const resolved = RoleGeometry.hueTowards(sourceHue, hue, clamp);
         return resolved;
       },
       'root': sourceRelation?.root ?? source.name,
-      'targetClamp': clamp
+      'targetClamp': clamp,
+      ...(sourceRelation === undefined ? { 'targetHue': hue } : {})
     };
     return result;
   }
