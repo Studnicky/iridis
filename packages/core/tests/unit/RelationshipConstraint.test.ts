@@ -351,6 +351,26 @@ void test('RelationshipConstraint rebuilds a domain after relationship resolutio
   assert.equal(RelationshipConstraint.allows(input, metadata, 'text', replacement), true);
 });
 
+void test('RelationshipConstraint keeps relationship domains scoped to the current run metadata', () => {
+  const firstBaseline = colorRecordFactory.fromHex('#777777');
+  const secondBaseline = RelationshipConstraintFixture.candidate(firstBaseline, {
+    'lightness': firstBaseline.oklch.l + 0.1
+  });
+  const input = RelationshipConstraintFixture.input();
+  const firstMetadata = RelationshipConstraintFixture.metadata(firstBaseline);
+  const secondMetadata = RelationshipConstraintFixture.metadata(secondBaseline);
+
+  const first = RelationshipConstraint.domain(input, firstMetadata, 'text');
+  const second = RelationshipConstraint.domain(input, secondMetadata, 'text');
+
+  assert.ok(first !== undefined);
+  assert.ok(second !== undefined);
+  assert.equal(first.baseline?.hex, firstBaseline.hex);
+  assert.equal(second.baseline?.hex, secondBaseline.hex);
+  assert.equal(RelationshipConstraint.allows(input, secondMetadata, 'text', firstBaseline), false);
+  assert.equal(RelationshipConstraint.allows(input, secondMetadata, 'text', secondBaseline), true);
+});
+
 void test('RelationshipConstraint resolves authored default hue-offset degrees without a runtime baseline', () => {
   const roles = RoleSchemaEntity.intake({
     'contrastPairs': [],

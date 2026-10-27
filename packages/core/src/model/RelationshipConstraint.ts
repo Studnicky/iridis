@@ -17,30 +17,6 @@ import { RelationshipHueDegrees } from './RelationshipHueDegrees.ts';
 import { RelationshipSources } from './RelationshipSources.ts';
 import { WeakIdentityMemo } from './WeakIdentityMemo.ts';
 
-class RelationshipResolutionSource {
-  static create(
-    metadata: Record<string, JSONSchema7Type>
-  ): ReadonlyMap<string, object> | undefined {
-    const source = metadata['core:relationshipResolution'];
-    if (typeof source !== 'object' || source === null || Array.isArray(source)) {
-      return undefined;
-    }
-    const entries = new Map<string, object>();
-    const sourceEntries = Object.entries(source);
-    for (let index = 0; index < sourceEntries.length; index += 1) {
-      const sourceEntry = sourceEntries[index];
-      if (sourceEntry === undefined) {
-        continue;
-      }
-      const [roleName, entry] = sourceEntry;
-      if (typeof entry === 'object' && entry !== null && !Array.isArray(entry)) {
-        entries.set(roleName, entry);
-      }
-    }
-    return entries;
-  }
-}
-
 class RelationshipSelection {
   readonly group: RoleRelationshipGroupEntity.Type;
   readonly relationship: RoleRelationshipEntity.Type;
@@ -58,7 +34,6 @@ class RelationshipConstraintContext {
   readonly domains = new Map<string, RelationshipConstraintDomain | undefined>();
   readonly graphContext: RelationshipConstraintGraphContext;
   readonly metadata: Record<string, JSONSchema7Type>;
-  readonly resolutionSource: ReadonlyMap<string, object> | undefined;
 
   constructor(
     graphContext: RelationshipConstraintGraphContext,
@@ -66,7 +41,6 @@ class RelationshipConstraintContext {
   ) {
     this.graphContext = graphContext;
     this.metadata = metadata;
-    this.resolutionSource = RelationshipResolutionSource.create(metadata);
   }
 }
 
@@ -74,7 +48,6 @@ class RelationshipConstraintGraphContext {
   readonly graph: RoleRelationshipGraphEntity.Type;
   readonly selectionsByIdentifier = new Map<string, RelationshipSelection>();
   readonly selectionsByTarget = new Map<string, RelationshipSelection>();
-  latest: RelationshipConstraintContext | undefined;
 
   constructor(graph: RoleRelationshipGraphEntity.Type) {
     this.graph = graph;
@@ -227,33 +200,8 @@ export class RelationshipConstraint {
     }
     const result = RelationshipConstraint.#resolutionContexts.get(graphSource, resolutionSource, () => {
       const next = new RelationshipConstraintContext(graphContext, metadata);
-      const previous = graphContext.latest;
-      if (previous !== undefined) {
-        for (const [roleName, domain] of previous.domains) {
-          if (RelationshipConstraint.sameResolutionEntry(roleName, {
-            'nextSource': next.resolutionSource,
-            'previousSource': previous.resolutionSource
-          })) {
-            next.domains.set(roleName, domain);
-          }
-        }
-      }
-      graphContext.latest = next;
       return next;
     });
-    return result;
-  }
-
-  private static sameResolutionEntry(
-    roleName: string,
-    options: Readonly<{
-      'nextSource': ReadonlyMap<string, object> | undefined;
-      'previousSource': ReadonlyMap<string, object> | undefined;
-    }>
-  ): boolean {
-    const previous = options.previousSource?.get(roleName);
-    const next = options.nextSource?.get(roleName);
-    const result = previous !== undefined && previous === next;
     return result;
   }
 
