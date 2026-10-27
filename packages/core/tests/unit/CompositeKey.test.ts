@@ -9,4 +9,8 @@ void test('composite key preserves ordered string boundaries', () => {
   const repeated = CompositeKey.of('a', 'bc');
   assert.notStrictEqual(first, second);
   assert.strictEqual(first, repeated);
+  assert.notStrictEqual(
+    CompositeKey.of('role', 'source\u0000target'),
+    CompositeKey.of('role', 'source', 'target')
+  );
 });
