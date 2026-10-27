@@ -4,11 +4,9 @@ import { ContrastReportEntity } from '../entities/ContrastReportEntity.ts';
 import { EngineMetadataEntity } from '../entities/EngineMetadataEntity.ts';
 import { RelationshipResolutionEntity } from '../entities/RelationshipResolutionEntity.ts';
 import { RoleProvenanceEntity } from '../entities/RoleProvenanceEntity.ts';
-import { WeakIdentityMemo } from '../model/WeakIdentityMemo.ts';
 
 /** Validates known metadata slots at intake and serializes dynamic runtime Maps at the metadata boundary. */
 export class Metadata {
-  static readonly #relationshipResolutionEntries = new WeakIdentityMemo<object, RelationshipResolutionEntity.Type>();
   static #recordFromEntries<ValueType>(
     entries: Iterable<readonly [string, ValueType]>
   ): Record<string, ValueType> {
@@ -119,14 +117,7 @@ export class Metadata {
     if (entry === undefined) {
       return undefined;
     }
-    if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) {
-      const result = RelationshipResolutionEntity.intake(entry);
-      return result;
-    }
-    const result = Metadata.#relationshipResolutionEntries.get(entry, () => {
-      const admitted = RelationshipResolutionEntity.intake(entry);
-      return admitted;
-    });
+    const result = RelationshipResolutionEntity.intake(entry);
     return result;
   }
 
@@ -188,6 +179,10 @@ export class Metadata {
     metadataRecord: Record<string, JSONSchema7Type>,
     resolution: Map<string, RelationshipResolutionEntity.Type>
   ): void {
-    metadataRecord['core:relationshipResolution'] = Metadata.#recordFromEntries(resolution);
+    const admitted = new Map<string, RelationshipResolutionEntity.Type>();
+    for (const [roleName, entry] of resolution) {
+      admitted.set(roleName, RelationshipResolutionEntity.intake(entry));
+    }
+    metadataRecord['core:relationshipResolution'] = Metadata.#recordFromEntries(admitted);
   }
 }

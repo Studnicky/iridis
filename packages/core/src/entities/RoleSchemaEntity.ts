@@ -5,7 +5,6 @@ import { EntityCompiler } from '@studnicky/entity/node';
 import { JsonObject } from '@studnicky/types/node';
 
 import { RoleSchemaSchema } from '../model/RoleSchemaSchema.ts';
-import { WeakIdentityMemo } from '../model/WeakIdentityMemo.ts';
 import { RoleRelationshipGraphEntity } from './RoleRelationshipGraphEntity.ts';
 
 /** Schema-authored palette-role vocabulary and its contrast requirements. */
@@ -17,23 +16,15 @@ export namespace RoleSchemaEntity {
   };
 
   class SchemaIntake {
-    static readonly #cache = new WeakIdentityMemo<object, Type>();
     static readonly #intake = EntityCompiler.compileIntake<Type>(Schema);
 
     static intake(value: JSONSchema7Type | object): Type {
-      if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-        const result = SchemaIntake.freeze(SchemaIntake.#intake(value));
-        return result;
-      }
-      const result = SchemaIntake.#cache.get(value, () => {
-        const admitted = SchemaIntake.#intake(value);
-        const graphSource = admitted.relationshipGraph;
-        const normalized = graphSource === undefined
-          ? admitted
-          : { ...admitted, 'relationshipGraph': RoleRelationshipGraphEntity.intake(graphSource) };
-        const frozen = SchemaIntake.freeze(normalized);
-        return frozen;
-      });
+      const admitted = SchemaIntake.#intake(value);
+      const graphSource = admitted.relationshipGraph;
+      const normalized = graphSource === undefined
+        ? admitted
+        : { ...admitted, 'relationshipGraph': RoleRelationshipGraphEntity.intake(graphSource) };
+      const result = SchemaIntake.freeze(normalized);
       return result;
     }
 

@@ -2,7 +2,6 @@ import type { CanonicalShapeType, NominalSchemaType } from '@studnicky/json-tolo
 
 import { EntityCompiler } from '@studnicky/entity/node';
 
-import { WeakIdentityMemo } from '../model/WeakIdentityMemo.ts';
 import { RoleRelationshipGroupEntity } from './RoleRelationshipGroupEntity.ts';
 
 /** Complete authored graph that defines how palette roles relate and derive. */
@@ -24,18 +23,10 @@ export namespace RoleRelationshipGraphEntity {
   export type Type = NominalSchemaType<typeof Schema>;
 
   class GraphIntake {
-    static readonly #cache = new WeakIdentityMemo<object, Type>();
     static readonly #intake = EntityCompiler.compileIntake<Type>(Schema);
 
     static intake(value: object): Type {
-      if (Array.isArray(value)) {
-        const result = GraphIntake.#intake(value);
-        return result;
-      }
-      const result = GraphIntake.#cache.get(value, () => {
-        const admitted = GraphIntake.#intake(value);
-        return admitted;
-      });
+      const result = GraphIntake.#intake(value);
       return result;
     }
   }

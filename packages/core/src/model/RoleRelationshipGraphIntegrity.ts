@@ -6,8 +6,6 @@ import { RoleRelationshipEntity } from '../entities/RoleRelationshipEntity.ts';
 import { RoleRelationshipGraphEntity } from '../entities/RoleRelationshipGraphEntity.ts';
 import { RoleRelationshipGroupEntity } from '../entities/RoleRelationshipGroupEntity.ts';
 import { ValidationErrorEntity } from '../entities/ValidationErrorEntity.ts';
-import { CompositeKey } from './CompositeKey.ts';
-import { WeakIdentityMemo } from './WeakIdentityMemo.ts';
 
 class GraphIntegrityContext {
   readonly errors: ValidationErrorEntity.Type[] = [];
@@ -24,28 +22,12 @@ class GraphIntegrityContext {
 
 /** Validates graph references that JSON Schema cannot express. */
 export class RoleRelationshipGraphIntegrity {
-  static readonly #results = new WeakIdentityMemo<object, Map<string, readonly ValidationErrorEntity.Type[]>>();
   static validate(schema: NonNullable<InputEntity.Type['roles']>): ValidationErrorEntity.Type[] {
     const graph = schema.relationshipGraph === undefined
       ? undefined
       : RoleRelationshipGraphEntity.intake(schema.relationshipGraph);
     if (graph === undefined) {
       return [];
-    }
-    const roleNames = schema.roles
-      .map((role) => { return role.name; })
-      .toSorted((left, right) => {
-        const result = left.localeCompare(right);
-        return result;
-      });
-    const rolesKey = CompositeKey.of(...roleNames);
-    const entries = this.#results.get(graph, () => {
-      const result = new Map<string, readonly ValidationErrorEntity.Type[]>();
-      return result;
-    });
-    const cached = entries.get(rolesKey);
-    if (cached !== undefined) {
-      return [...cached];
     }
 
     const context = new GraphIntegrityContext(schema);
@@ -56,7 +38,6 @@ export class RoleRelationshipGraphIntegrity {
         this.#validateGroup(context, admittedGroup, groupIndex);
       }
     }
-    entries.set(rolesKey, context.errors);
     return [...context.errors];
   }
 
