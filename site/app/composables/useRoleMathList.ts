@@ -18,20 +18,15 @@ import { minimumRatioForRole } from '~/utils/minimumRatioForRole.ts';
 import { sortRoleRows } from '~/utils/sortRoleRows.ts';
 
 class UseRoleMathListOperation {
-  private static relationshipSourceLabel(
-    roleName: string,
+  private static relationshipSourceName(
     relationship: NonNullable<RoleSchemaEntity.Type['relationshipGraph']>['groups'][number]['relationships'][number] | undefined
   ): string | undefined {
-    if (relationship === undefined) {
-      return undefined;
-    }
-    const sources = RelationshipSources.names(relationship);
-    const result = sources.length === 0 ? roleName : sources.join(' + ');
+    const result = relationship === undefined ? undefined : RelationshipSources.names(relationship)[0];
     return result;
   }
 
   static run() {
-    const { framing, roleClamps, roleDistances, roles, rolesDerived, roleSortKeys, rolesPinned, rolesSynthesized, schemaName } = useIridis();
+    const { framing, roleClamps, roleDistances, roles, roleSortKeys, rolesPinned, rolesSynthesized, schemaName } = useIridis();
 
     const allMathList = computed<RoleMathEntry[]>(() => {
       const pair = roleSchemaByName[schemaName.value];
@@ -50,6 +45,8 @@ class UseRoleMathListOperation {
         }
       }
 
+      const derivedRoleNames = new Set(relationshipsByTarget.keys());
+
       // 'background' is required in every schema tier and resolved synchronously
       // before any component reads this — never a hardcoded placeholder.
       const bg = roles.value.background!;
@@ -64,14 +61,13 @@ class UseRoleMathListOperation {
       }
       const synthesizedRoleNames = new Set(rolesSynthesized.value);
       const pinnedRoleNames = new Set(rolesPinned.value);
-      const derivedRoleNames = new Set(rolesDerived.value);
       const entries = Object.keys(roles.value).map(roleName => {
         const clamp = roleClamps.value.get(roleName);
         const distances = roleDistances.value.get(roleName) ?? new Map<string, number>();
         const synthesized = synthesizedRoleNames.has(roleName);
         const isPinned = pinnedRoleNames.has(roleName);
         const relationship = relationshipsByTarget.get(roleName);
-        const isDerived = derivedRoleNames.has(roleName);
+        const isDerived = relationship !== undefined;
 
         const candidates: RoleMathCandidateType[] = [...distances].map(([hex, dist]) => {
           const candidate: RoleMathCandidateType = {
@@ -92,10 +88,7 @@ class UseRoleMathListOperation {
 
         const def = roleDefinitionsByName.get(roleName);
 
-        let parentRole = UseRoleMathListOperation.relationshipSourceLabel(roleName, relationship);
-        if (parentRole === undefined && isDerived) {
-          parentRole = roleName;
-        }
+        const parentRole = UseRoleMathListOperation.relationshipSourceName(relationship);
         // roleName comes from Object.keys(roles.value) itself, so this lookup
         // can never miss — never a hardcoded placeholder.
         const hex = roles.value[roleName]!;
