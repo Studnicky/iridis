@@ -61,7 +61,7 @@
     "@tiptap/y-tiptap": "3.0.7",
     "better-sqlite3": "^12.11.1",
     "json-schema": "0.4.0",
-    "mermaid": "^11.16.1",
+    "mermaid": "^12.2.0",
     "nuxt": "^4.6.2",
     "nuxt-swiper": "^2.0.2",
     "parse5": "8.0.1",
