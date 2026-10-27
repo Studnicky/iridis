@@ -43,7 +43,7 @@
     "@types/json-schema": "^7.0.15",
     "@types/n3": "^1.26.1",
     "json-schema": "0.4.0",
-    "n3": "^2.13.9"
+    "n3": "^2.13.12"
   },
   "devDependencies": {
     "typescript": "^6.0.0"
