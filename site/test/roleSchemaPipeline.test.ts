@@ -32,11 +32,6 @@ class RoleSchemaPipelineFixture {
     return comparison;
   }
 
-  static hueDistance(left: number, right: number): number {
-    const distance = Math.abs(((left - right + 540) % 360) - 180);
-    return distance;
-  }
-
   static schemaPair(name: string): SchemaPair {
     const entries = Object.entries(roleSchemaByName);
     for (let index = 0; index < entries.length; index += 1) {
@@ -165,9 +160,9 @@ await test('iridis-32 status hue targets preserve their authored clamp and toler
       relationship.hue,
       relationship.clamp ?? RoleGeometry.DEFAULT_HUE_CLAMP
     );
-    assert.ok(RoleSchemaPipelineFixture.hueDistance(resolution.after.oklch.h, expected) <= 1e-12, `${roleName} baseline obeys its hue clamp`);
+    assert.ok(RoleGeometry.hueDifference(resolution.after.oklch.h, expected) <= 1e-12, `${roleName} baseline obeys its hue clamp`);
     assert.ok(
-      RoleSchemaPipelineFixture.hueDistance(final.oklch.h, resolution.after.oklch.h) <= (relationship.tolerance?.hue ?? 0) + 1e-12,
+      RoleGeometry.hueDifference(final.oklch.h, resolution.after.oklch.h) <= (relationship.tolerance?.hue ?? 0) + 1e-12,
       `${roleName} final hue stays inside its relationship tolerance`
     );
   }
