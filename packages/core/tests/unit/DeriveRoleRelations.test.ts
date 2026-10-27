@@ -453,9 +453,17 @@ void test('derive:roleRelations records missing-source and cycle runtime states'
     ['brand', 'a', 'b'],
     []
   );
+  const selfOwned = DeriveRoleRelationsFixture.run(
+    [RoleRelationshipEntity.create({ 'clamp': 20, 'hue': 120, 'id': 'self-owned', 'operation': 'hue-target', 'priority': 0, 'relaxability': 'fixed', 'target': 'error' })],
+    ['brand', 'error'],
+    []
+  );
   assert.equal(Metadata.relationshipResolution(missing.metadata).get('accent')?.blockedReason, 'missing-source');
   assert.equal(Metadata.relationshipResolution(cycle.metadata).get('a')?.blockedReason, 'cycle');
   assert.equal(Metadata.relationshipResolution(cycle.metadata).get('b')?.blockedReason, 'cycle');
+  assert.equal(selfOwned.roles.error, undefined);
+  assert.equal(Metadata.relationshipResolution(selfOwned.metadata).get('error')?.disposition, 'unresolved');
+  assert.equal(Metadata.relationshipResolution(selfOwned.metadata).get('error')?.blockedReason, 'missing-source');
 });
 
 

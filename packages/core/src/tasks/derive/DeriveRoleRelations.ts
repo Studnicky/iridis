@@ -370,11 +370,12 @@ class DeriveRoleRelations implements TaskInterface {
         continue;
       }
       const sources = RelationshipSources.names(item.relationship);
-      const missing = sources.some((source) => {
+      const existing = roles.get(item.relationship.target);
+      const missingCandidate = DeriveRoleRelations.ownsTarget(item.relationship) && existing === undefined;
+      const missing = missingCandidate || sources.some((source) => {
         const result = !roles.has(source) && !unresolvedTargets.has(source);
         return result;
       });
-      const existing = roles.get(item.relationship.target);
       resolution.set(item.relationship.target, RelationshipResolutionEntity.create({
         ...(existing === undefined ? {} : { 'before': existing }),
         'blockedReason': missing ? 'missing-source' : 'cycle',
