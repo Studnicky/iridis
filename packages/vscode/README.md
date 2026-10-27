@@ -21,7 +21,7 @@ Packages publish through GitHub Packages. Configure npm with a token that has `r
 import { Engine, coreTasks } from '@studnicky/iridis';
 import { contrastPlugin } from '@studnicky/iridis-contrast';
 import {
-  VSCODE_ROLE_SCHEMAS_64,
+  VSCODE_FULL_ROLE_SCHEMAS,
   vscodePlugin
 } from '@studnicky/iridis-vscode';
 
@@ -33,13 +33,10 @@ engine.pipeline([
   'vscode:seedRoles',
   'resolve:roles',
   'derive:roleRelations',
-  'vscode:deriveUiRoles',
-  'enforce:compliance',
-  'derive:variant',
-  'vscode:expandTokens',
-  'vscode:applyModifiers',
+  'enforce:contrast',
+  'report:compliance',
+  'withhold:compliance',
   'emit:vscodeSemanticRules',
-  'emit:vscodeUiPalette',
   'emit:vscodeThemeJson'
 ]);
 
@@ -59,7 +56,7 @@ const state = engine.run({
   'emit': undefined,
   'maxColors': undefined,
   'metadata': { 'themeName': 'Iridis Dark' },
-  'roles': VSCODE_ROLE_SCHEMAS_64.dark,
+  'roles': VSCODE_FULL_ROLE_SCHEMAS.dark,
   'runtime': { 'colorSpace': undefined, 'extra': undefined, 'framing': 'dark' }
 });
 
@@ -70,24 +67,20 @@ const themeJson = state.outputs['vscode:themeJson'];
 
 ## Schemas
 
-Use `VSCODE_ROLE_SCHEMAS_64.dark` or `.light` for the declared framing. The schemas are explicit dark and light role definitions; light themes are generated through the light schema, not by inverting a dark output. `VSCODE_ROLE_SCHEMAS_16` exports a compact view of the same canonical definitions. The selected seed tier declares its exact caller-supplied role keys.
+Use `VSCODE_FULL_ROLE_SCHEMAS.dark` or `.light` for the declared framing. The schemas are explicit dark and light role definitions; light themes use the light schema. `VSCODE_COMPACT_ROLE_SCHEMAS` exports the compact view. The selected seed tier declares its exact caller-supplied role keys.
 
 The schema declares WCAG pairs for foreground, muted text, syntax roles, status colours, `onAccent`, links, and chrome foreground. It also declares bounded pairs for `surface` and `accent`. The VS Code plugin consumes the same engine and the same `input.contrast` configuration as every other output. `enforce:compliance` applies the selected standard to these pairs and adjusts derived roles; a pair whose endpoints are both caller-stated is reported without changing either colour.
 
-The relationship graph resolves through `derive:roleRelations` immediately after `resolve:roles`; VS Code derivation tasks consume the resulting roles.
+The relationship graph resolves through `derive:roleRelations` immediately after `resolve:roles`; VS Code emitters consume the resulting roles.
 
 ## Tasks
 
 | Task | Purpose |
 |---|---|
 | `vscode:seedRoles` | Validates the structured tiered palette and creates named caller-stated seed records. |
-| `vscode:deriveUiRoles` | Derives absent UI extension roles while preserving caller-stated roles. |
-| `vscode:expandTokens` | Builds syntax and TextMate base tokens from the resolved framing surface. |
-| `vscode:applyModifiers` | Generates semantic token rules and enforces their background contrast. |
-| `emit:vscodeSemanticRules` | Writes `outputs['vscode:semanticTokenRules']`. |
-| `emit:vscodeUiPalette` | Writes `outputs['vscode:workbenchColors']` from the declared role vocabulary. |
-| `emit:vscodeThemeJson` | Combines workbench, semantic, and TextMate token output into `outputs['vscode:themeJson']`. |
+| `emit:vscodeSemanticRules` | Writes semantic-token rules from resolved graph roles. |
+| `emit:vscodeThemeJson` | Writes workbench colors, semantic token colors, and TextMate token colors into `outputs['vscode:themeJson']`. |
 
-`emit:vscodeThemeJson` requires both preceding emit tasks. The two emit tasks may run in either order after their own prerequisites.
+`emit:vscodeThemeJson` requires `emit:vscodeSemanticRules`.
 
 Part of [iridis](https://github.com/Studnicky/iridis).

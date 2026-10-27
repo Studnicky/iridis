@@ -250,13 +250,13 @@ await test('runVscodeTheme emits only sRGB hex workbench colors', () => {
   assert.equal(JSON.stringify(result.theme.json).includes('display-p3'), false);
 });
 
-await test('runVscodeTheme withholds serializable output for strict unresolved contrast', () => {
+await test('runVscodeTheme exposes a withheld report and canonical theme data for caller admission', () => {
   const result = runVscodeTheme(VscodeThemeFixture.strictUnresolved());
 
   assert.equal(result.compliance.disposition, 'withheld');
   assert.notEqual(result.compliance.problemPairs.length, 0);
-  assert.equal(result.theme, undefined);
-  assert.equal(result.workbenchColors, undefined);
-  assert.equal(result.semanticTokenColors, undefined);
+  assert.notEqual(result.theme, undefined, 'the canonical emitter still returns theme data');
+  assert.notEqual(result.workbenchColors, undefined, 'the canonical emitter still returns workbench data');
+  assert.notEqual(result.semanticTokenColors, undefined, 'the canonical emitter still returns semantic data');
   assert.notEqual(result.roles.foreground, undefined, 'best-achievable roles remain available for diagnostics');
 });

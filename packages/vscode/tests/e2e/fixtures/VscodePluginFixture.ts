@@ -5,7 +5,7 @@ import { vscodePlugin } from '@studnicky/iridis-vscode';
 import { Engine } from '@studnicky/iridis/engine';
 import { coreTasks } from '@studnicky/iridis/tasks';
 
-import { VSCODE_ROLE_SCHEMAS_16 } from '../../../src/index.ts';
+import { VSCODE_FULL_ROLE_SCHEMAS } from '../../../src/index.ts';
 
 /** Shared admitted inputs and engine execution for VS Code plugin scenarios. */
 export class VscodePluginFixture {
@@ -13,26 +13,16 @@ export class VscodePluginFixture {
     'intake:any',
     'resolve:roles',
     'derive:roleRelations',
-    'vscode:deriveUiRoles',
     'enforce:contrast',
-    'derive:variant',
-    'vscode:expandTokens',
-    'vscode:applyModifiers',
     'emit:vscodeSemanticRules',
-    'emit:vscodeUiPalette',
     'emit:vscodeThemeJson'
   ];
   static readonly pipelineHex = [
     'intake:hex',
     'resolve:roles',
     'derive:roleRelations',
-    'vscode:deriveUiRoles',
     'enforce:contrast',
-    'derive:variant',
-    'vscode:expandTokens',
-    'vscode:applyModifiers',
     'emit:vscodeSemanticRules',
-    'emit:vscodeUiPalette',
     'emit:vscodeThemeJson'
   ];
   static readonly seedsSrgb = [
@@ -72,7 +62,7 @@ export class VscodePluginFixture {
   static runFull(seeds: readonly string[], pipeline: readonly string[] = VscodePluginFixture.pipelineHex): PaletteStateInterface {
     const engine = VscodePluginFixture.engine();
     engine.pipeline(pipeline);
-    const result = engine.run(InputEntity.create({ 'colors': [...seeds], 'roles': VSCODE_ROLE_SCHEMAS_16.dark }));
+    const result = engine.run(InputEntity.create({ 'colors': [...seeds], 'roles': VSCODE_FULL_ROLE_SCHEMAS.dark }));
     return result;
   }
 
@@ -81,7 +71,7 @@ export class VscodePluginFixture {
     engine.pipeline(options?.pipeline ?? VscodePluginFixture.pipelineHex);
     const input = InputEntity.create({
       'colors': [...seeds],
-      'roles': options?.roles ?? VSCODE_ROLE_SCHEMAS_16.dark,
+      'roles': options?.roles ?? VSCODE_FULL_ROLE_SCHEMAS.dark,
       ...(options?.runtime === undefined ? {} : { 'runtime': options.runtime })
     });
     const result = engine.run(input);

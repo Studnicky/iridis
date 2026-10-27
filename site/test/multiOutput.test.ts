@@ -169,7 +169,7 @@ await test('useMultiOutput uses the current framing for non-VS-Code outputs and 
 await test('useMultiOutput does not retain the legacy VS Code pipeline', async () => {
   const source = await readFile(new URL('../app/composables/useMultiOutput.ts', import.meta.url), 'utf8');
   assert.equal(source.includes('intakeHexHint'), false);
-  assert.equal(source.includes('vscodeRoleSchema16'), false);
-  assert.equal(source.includes('VSCODE_ROLE_SCHEMAS_16'), false);
+  assert.equal(source.includes('vscodeCompactRoleSchema'), false);
+  assert.equal(source.includes('VSCODE_COMPACT_ROLE_SCHEMAS'), false);
   assert.equal(source.includes('vscode:seedRoles'), false);
 });

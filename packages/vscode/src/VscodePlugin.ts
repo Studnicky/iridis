@@ -4,19 +4,11 @@ import type {
   TaskInterface
 } from '@studnicky/iridis';
 
-import { applyModifiers }          from './tasks/ApplyModifiers.ts';
-import { deriveVscodeUiRoles }  from './tasks/DeriveVscodeUiRoles.ts';
 import { emitVscodeSemanticRules } from './tasks/EmitVscodeSemanticRules.ts';
-import { emitVscodeThemeJson }     from './tasks/EmitVscodeThemeJson.ts';
-import { emitVscodeUiPalette }     from './tasks/EmitVscodeUiPalette.ts';
-import { expandTokens }            from './tasks/ExpandTokens.ts';
-import { seedVscodeRoles }       from './tasks/SeedVscodeRoles.ts';
+import { emitVscodeThemeJson } from './tasks/EmitVscodeThemeJson.ts';
+import { seedVscodeRoles } from './tasks/SeedVscodeRoles.ts';
 
 const VSCODE_PLUGIN_SCHEMAS = {
-  'baseTokens': {
-    'additionalProperties': true,
-    'type':                 'object'
-  },
   'semanticTokenRules': {
     'additionalProperties': {
       'additionalProperties': false,
@@ -41,17 +33,7 @@ const VSCODE_PLUGIN_SCHEMAS = {
 /**
  * VscodePlugin
  *
- * Registers seven tasks that produce a complete VS Code theme from a
- * tiered palette resolved by the engine's core role tasks.
- *
- * Pipeline dependency order:
- *   vscode:seedRoles → resolve:roles → derive:roleRelations
- *   → vscode:deriveUiRoles
- *   → vscode:expandTokens
- *   → vscode:applyModifiers
- *   → emit:vscodeSemanticRules (parallel with emit:vscodeUiPalette)
- *   → emit:vscodeUiPalette (parallel with emit:vscodeSemanticRules)
- *   → emit:vscodeThemeJson
+ * Registers the canonical role-seeding and role-projection tasks for VS Code themes.
  */
 class VscodePlugin implements PluginInterface {
   readonly 'name'    = 'vscode';
@@ -59,23 +41,11 @@ class VscodePlugin implements PluginInterface {
   readonly 'version' = '0.1.0';
 
   tasks(): readonly TaskInterface[] {
-    return [
-      seedVscodeRoles,
-      deriveVscodeUiRoles,
-      expandTokens,
-      applyModifiers,
-      emitVscodeSemanticRules,
-      emitVscodeUiPalette,
-      emitVscodeThemeJson
-    ];
+    return [seedVscodeRoles, emitVscodeSemanticRules, emitVscodeThemeJson];
   }
 
   schemas(): PluginSchemaContributionInterfaceEntity.Type {
     return {
-      'metadata': {
-        'vscode:baseTokens':         VSCODE_PLUGIN_SCHEMAS.baseTokens,
-        'vscode:semanticTokenRules': VSCODE_PLUGIN_SCHEMAS.semanticTokenRules
-      },
       'outputs': {
         'vscode:semanticTokenRules': VSCODE_PLUGIN_SCHEMAS.semanticTokenRules,
         'vscode:themeJson':          VSCODE_PLUGIN_SCHEMAS.themeJson,

@@ -49,12 +49,8 @@ Every task registered by the core engine and by each official plugin, grouped by
 | Task | Reads | Writes | Requires | Description |
 |---|---|---|---|---|
 | `vscode:seedRoles` | `input.colors`, `runtime.framing` | `colors` | — | Validates the `{ tier, framing, roles }` palette body, requires matching framing, and creates named seed records for the selected tier's exact key set. |
-| `vscode:deriveUiRoles` | `roles`, `metadata.core:roleProvenance` | `roles` | `derive:roleRelations` | Derives missing UI extension roles from the resolved vocabulary and preserves caller-stated role values. |
-| `vscode:expandTokens` | `roles`, `runtime.framing`, `variants` | `metadata.vscode:baseTokens` | — | Derives syntax and TextMate base tokens from the resolved framing surface. |
-| `vscode:applyModifiers` | `metadata.vscode:baseTokens`, `roles`, `runtime.framing`, `variants` | `metadata.vscode:semanticTokenRules` | `vscode:expandTokens` | Creates semantic-token rules and applies background contrast enforcement. |
-| `emit:vscodeSemanticRules` | `metadata.vscode:semanticTokenRules`, `metadata.vscode:baseTokens` | `outputs.vscode:semanticTokenRules` | `vscode:applyModifiers` | Shapes semantic rules for VS Code’s semantic-token customisation map. |
-| `emit:vscodeUiPalette` | `roles`, `runtime.framing`, `variants` | `outputs.vscode:workbenchColors` | `vscode:deriveUiRoles` | Emits registry-backed workbench colour slots from the resolved vocabulary. |
-| `emit:vscodeThemeJson` | `outputs.vscode:workbenchColors`, `outputs.vscode:semanticTokenRules`, `metadata.vscode:baseTokens`, `roles`, `runtime.framing`, `variants` | `outputs.vscode:themeJson` | `emit:vscodeSemanticRules`, `emit:vscodeUiPalette` | Assembles `{ name, type, colors, semanticTokenColors, tokenColors }`. |
+| `emit:vscodeSemanticRules` | `roles` | `outputs.vscode:semanticTokenRules` | `derive:roleRelations` | Projects semantic rules from resolved graph roles. |
+| `emit:vscodeThemeJson` | `roles`, `metadata.core:roleProvenance`, `outputs.vscode:semanticTokenRules` | `outputs.vscode:workbenchColors`, `outputs.vscode:themeJson` | `emit:vscodeSemanticRules` | Assembles workbench colors, semantic token colors, and TextMate token colors. |
 
 ## `@studnicky/iridis-stylesheet`
 

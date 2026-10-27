@@ -126,7 +126,7 @@ function downloadTheme(): void {
         v-if="result.theme.compliance.disposition === 'withheld'"
         class="rounded-md border border-warning bg-warning/10 px-3 py-2 text-sm text-warning"
       >
-        Theme serialization is withheld because the requested strict compliance result is unavailable.
+        Strict palette admission withholds this unresolved result from use; the generated theme remains available for inspection with its compliance report.
       </p>
       <VscodeThemePreview
         v-if="result.theme.workbenchColors !== undefined && result.theme.semanticTokenColors !== undefined"

@@ -2,7 +2,7 @@ import type { ColorRecordEntity, PaletteStateInterface } from '@studnicky/iridis
 
 import { ContrastReportEntryEntity, coreTasks, Engine, InputEntity, Metadata } from '@studnicky/iridis';
 import { ComplianceReportEntity, contrastPlugin } from '@studnicky/iridis-contrast';
-import { VSCODE_ROLE_SCHEMAS_64, vscodePlugin } from '@studnicky/iridis-vscode';
+import { VSCODE_FULL_ROLE_SCHEMAS, vscodePlugin } from '@studnicky/iridis-vscode';
 
 import { VscodeThemeJsonEntity } from './entities/VscodeThemeJsonEntity.ts';
 import { VscodeThemeRequestEntity } from './entities/VscodeThemeRequestEntity.ts';
@@ -27,15 +27,14 @@ class VscodeThemeRun {
     roles: Readonly<Record<string, string>>,
     themeJson: VscodeThemeJsonEntity.Type
   ) {
-    const output = compliance.disposition === 'withheld' ? undefined : themeJson;
     this.compliance = compliance;
     this.contrast = contrast;
     this.palette = palette;
     this.provenance = { 'derivedRoles': derivedRoles, 'pinnedRoles': pinnedRoles };
     this.roles = roles;
-    this.semanticTokenColors = output?.semanticTokenColors;
-    this.theme = output === undefined ? undefined : { 'json': output };
-    this.workbenchColors = output?.colors;
+    this.semanticTokenColors = themeJson.semanticTokenColors;
+    this.theme = { 'json': themeJson };
+    this.workbenchColors = themeJson.colors;
   }
 }
 
@@ -122,15 +121,13 @@ class VscodeThemePipeline {
     engine.adopt(contrastPlugin);
     engine.adopt(vscodePlugin);
     engine.pipeline([
-      'vscode:seedRoles', 'resolve:roles', 'derive:roleRelations', 'vscode:deriveUiRoles', 'enforce:contrast',
-      'report:compliance', 'withhold:compliance', 'derive:variant', 'vscode:expandTokens', 'vscode:applyModifiers',
-      'emit:vscodeSemanticRules',
-      'emit:vscodeUiPalette', 'emit:vscodeThemeJson'
+      'vscode:seedRoles', 'resolve:roles', 'derive:roleRelations', 'enforce:contrast',
+      'report:compliance', 'withhold:compliance', 'emit:vscodeSemanticRules', 'emit:vscodeThemeJson'
     ]);
     const input = InputEntity.create({
       'colors': [{ 'framing': palette.framing, 'roles': palette.roles, 'tier': palette.tier }],
       'contrast': palette.contrast,
-      'roles': palette.framing === 'dark' ? VSCODE_ROLE_SCHEMAS_64.dark : VSCODE_ROLE_SCHEMAS_64.light,
+      'roles': palette.framing === 'dark' ? VSCODE_FULL_ROLE_SCHEMAS.dark : VSCODE_FULL_ROLE_SCHEMAS.light,
       'runtime': { 'colorSpace': 'srgb', 'framing': palette.framing }
     });
     const state = engine.run(input);

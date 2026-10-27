@@ -37,7 +37,7 @@ This separation keeps the roles schema independent from target naming. A stylesh
 
 ## VS Code is a dedicated palette contract
 
-The VS Code plugin uses a dedicated engine pass because its output requires an editor-specific role vocabulary. Its input is a structured palette object with supported tier keys and an explicit `dark` or `light` framing. `VSCODE_ROLE_SCHEMAS_64.dark` and `.light` define the canonical schemas; `VSCODE_ROLE_SCHEMAS_16` is a view of the same definitions.
+The VS Code plugin uses a dedicated engine pass because its output requires an editor-specific role vocabulary. Its input is a structured palette object with supported tier keys and an explicit `dark` or `light` framing. `VSCODE_FULL_ROLE_SCHEMAS.dark` and `.light` define the canonical schemas; `VSCODE_COMPACT_ROLE_SCHEMAS` is the compact view.
 
 The pass pins supplied role names, derives the remaining vocabulary, enforces declared WCAG minimum and maximum contrast bounds, then emits sRGB VS Code theme data. See the [VS Code theme recipe](/08-vscode-theme-recipe).
 

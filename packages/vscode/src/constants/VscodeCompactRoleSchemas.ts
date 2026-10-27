@@ -1,12 +1,12 @@
 import { RelationshipSources, RoleRelationshipGraphEntity, RoleSchemaEntity } from '@studnicky/iridis';
 
-import { VSCODE_ROLE_SCHEMAS_64 } from './VSCODE_ROLE_SCHEMAS_64.ts';
+import { VSCODE_FULL_ROLE_SCHEMAS } from './VscodeFullRoleSchemas.ts';
 
-/** Defines 16-role views of the canonical 64-role VS Code schemas. */
-class VscodeRoleSchemas16 {
-  static readonly dark: RoleSchemaEntity.Type = VscodeRoleSchemas16.baseView(VSCODE_ROLE_SCHEMAS_64.dark);
+/** Defines compact views of the canonical full VS Code schemas. */
+class VscodeCompactRoleSchemas {
+  static readonly dark: RoleSchemaEntity.Type = VscodeCompactRoleSchemas.baseView(VSCODE_FULL_ROLE_SCHEMAS.dark);
 
-  static readonly light: RoleSchemaEntity.Type = VscodeRoleSchemas16.baseView(VSCODE_ROLE_SCHEMAS_64.light);
+  static readonly light: RoleSchemaEntity.Type = VscodeCompactRoleSchemas.baseView(VSCODE_FULL_ROLE_SCHEMAS.light);
 
   static baseView(schema: RoleSchemaEntity.Type): RoleSchemaEntity.Type {
     const roles = schema.roles.slice(0, 16);
@@ -21,12 +21,12 @@ class VscodeRoleSchemas16 {
       const included = roleNames.has(pair.background) && roleNames.has(pair.foreground);
       return included;
     });
-    const description = schema.description?.replace('64-role', '16-role');
-    const relationshipGraph = VscodeRoleSchemas16.relationshipGraph(schema, roleNames);
+    const description = schema.description?.replace('Full', 'Compact');
+    const relationshipGraph = VscodeCompactRoleSchemas.relationshipGraph(schema, roleNames);
     const result = RoleSchemaEntity.create({
       ...(contrastPairs === undefined ? {} : { 'contrastPairs': contrastPairs }),
       ...(description === undefined ? {} : { 'description': description }),
-      'name': schema.name.replace('64', '16'),
+      'name': schema.name.replace('full', 'compact'),
       ...(relationshipGraph === undefined ? {} : { 'relationshipGraph': relationshipGraph }),
       'roles': roles
     });
@@ -50,7 +50,7 @@ class VscodeRoleSchemas16 {
       const relationships: RoleRelationshipGraphEntity.Type['groups'][number]['relationships'][number][] = [];
       for (let relationshipIndex = 0; relationshipIndex < group.relationships.length; relationshipIndex += 1) {
         const relationship = group.relationships[relationshipIndex];
-        if (relationship !== undefined && VscodeRoleSchemas16.includesRoles(relationship, roleNames)) {
+        if (relationship !== undefined && VscodeCompactRoleSchemas.includesRoles(relationship, roleNames)) {
           relationships.push(relationship);
         }
       }
@@ -74,4 +74,4 @@ class VscodeRoleSchemas16 {
   }
 }
 
-export const VSCODE_ROLE_SCHEMAS_16 = VscodeRoleSchemas16;
+export const VSCODE_COMPACT_ROLE_SCHEMAS = VscodeCompactRoleSchemas;
