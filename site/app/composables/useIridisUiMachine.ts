@@ -5,25 +5,19 @@ import * as VueModule from 'vue';
 import { useNuxtApp } from '#imports';
 
 import type { IridisUiEffect, IridisUiEvent } from './types/index.ts';
-import type { RoleSortKeyType } from './types/roleSortKeyType.ts';
 
 import { IridisUiMachine } from './fsm/IridisUiMachine.ts';
 import { logger } from './logger.ts';
 
 interface IridisUiEffectHandlersInterface {
   addSeed(hex: string | undefined): void;
-  clearCvdPreviews(): void;
   disableStrictCompliance(): void;
   enableStrictCompliance(): void;
   extractImageFiles(files: File | File[]): void;
   extractSampleImage(): void;
-  fitDiagram(): void;
-  navigateToTarget(targetId: string): void;
-  panDiagram(dx: number, dy: number): void;
   pinSeedRole(index: number, role: string | undefined): void;
   populatePickerFromImage(hexes: string[]): void;
   removeSeed(index: number): void;
-  resetDiagram(): void;
   selectImageCandidate(hexes: string[], label: string): void;
   setContrastStrictness(strictness: number): void;
   setCvdMode(cvdMode: string): void;
@@ -40,14 +34,10 @@ interface IridisUiEffectHandlersInterface {
   setLightFraming(): void;
   setMedianCutImageAlgorithm(): void;
   setNonMandatoryLevel(nonMandatoryLevel: string): void;
-  setRoleSort(keys: RoleSortKeyType[]): void;
   setSchema(schemaName: string): void;
   setSeed(index: number, hex: string): void;
   setSrgbColorSpace(): void;
   setWuQuantizeImageAlgorithm(): void;
-  toggleCvdPreview(cvdType: string): void;
-  toggleDiagramExpansion(): void;
-  zoomDiagram(factor: number): void;
 }
 
 /** One interpreter, handler port, and reactive state owner per Nuxt app/request. */

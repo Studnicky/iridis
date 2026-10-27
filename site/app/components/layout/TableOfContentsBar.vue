@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { IridisUiEvent } from '~/composables/types/index.ts';
 import { TocBarEvent } from '~/composables/types/tocBarEvent.ts';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useDebouncedResizeObserver } from '~/composables/useDebouncedResizeObserver.ts';
 import { useIridis } from '~/composables/useIridis.ts';
-import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
 import { useNavigationTargets } from '~/composables/useNavigationTargets.ts';
 import { useTocBarMachine } from '~/composables/useTocBarMachine.ts';
 
@@ -32,10 +30,9 @@ import { useTocBarMachine } from '~/composables/useTocBarMachine.ts';
  * main.css's `.toc-scroll-target` / index.vue) always accounts for however
  * tall the bar currently is — expanded, compact, or mobile.
  */
-const { send } = useIridisUiMachine();
 const { send: sendToc, state: tocState } = useTocBarMachine();
 const { 'uploadedImages': uploadedImages } = useIridis();
-const { 'cardTargets': cardTargets, 'stageTargets': stageTargets } = useNavigationTargets();
+const { 'activateTarget': activateTarget, 'cardTargets': cardTargets, 'stageTargets': stageTargets } = useNavigationTargets();
 
 /** Mirrors index.vue's `visibleStageGroups` filter — Combine isn't rendered until an image is uploaded, so neither its stage pill nor its cards may appear here (a click would silently no-op against a section not in the DOM). */
 const visibleStageTargets = computed(() => stageTargets
@@ -43,7 +40,7 @@ const visibleStageTargets = computed(() => stageTargets
 const visibleCardTargets = computed(() => cardTargets
   .filter((target) => target.stage !== 'combine' || uploadedImages.value.length > 0));
 
-function select(id: string): void { send(IridisUiEvent.navigateToTarget(id)); }
+function select(id: string): void { activateTarget(id); }
 
 /** Scrollspy: which stage section is currently "in view" — the one authoritative "you are here", read by Row 1's active chip AND Row 2's card filter. Defaults to the first visible stage so SSR/pre-hydration content isn't unmarked. */
 const activeStageId = ref<string>(visibleStageTargets.value[0]?.id ?? '');

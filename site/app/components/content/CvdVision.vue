@@ -2,7 +2,7 @@
 import type { CvdMatrixEntity } from '@studnicky/iridis-contrast';
 import { computed } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
-import { IridisUiEvent } from '~/composables/types/index.ts';
+import { usePresentationControls } from '~/composables/usePresentationControls.ts';
 import { buildCvdVisionModel } from './cvd/buildCvdVisionModel.ts';
 
 /**
@@ -13,14 +13,16 @@ import { buildCvdVisionModel } from './cvd/buildCvdVisionModel.ts';
  * condition actually is, and the resulting warnings report. Always usable, no
  * enable step — CVD correction runs inside enforce:compliance on every palette.
  */
-const { cvdPreviewTypes, contrastReport, send } = useIridis();
+const { contrastReport } = useIridis();
+const { dispatch, readModel } = usePresentationControls();
+const cvdPreviewTypes = computed(() => new Set(readModel.value.cvdPreviewTypes));
 
 const cvdReport = computed(() => {
   return buildCvdVisionModel.buildReport(contrastReport.value.cvd);
 });
 
 function toggleCvdPreview(cvdType: CvdMatrixEntity.Type['name']): void {
-  send(IridisUiEvent.toggleCvdPreview(cvdType));
+  void dispatch({ 'cvdPreviewType': cvdType, 'interaction': 'cvd-preview.toggle' });
 }
 </script>
 
@@ -48,7 +50,7 @@ function toggleCvdPreview(cvdType: CvdMatrixEntity.Type['name']): void {
             color="neutral"
             variant="ghost"
             size="xs"
-            @click="send(IridisUiEvent.clearCvdPreviews())"
+            @click="dispatch({ interaction: 'cvd-preview.clear' })"
           />
         </template>
       </SplitHeader>

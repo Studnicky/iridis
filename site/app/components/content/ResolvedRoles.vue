@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useDataLayout } from '~/composables/useDataLayout.ts';
-import { useIridis } from '~/composables/useIridis.ts';
+import { useSortedRoleContrastRows } from '~/composables/useSortedRoleContrastRows.ts';
 import { selectDataCardLayout } from './selectDataCardLayout.ts';
 
 /**
@@ -12,7 +12,7 @@ import { selectDataCardLayout } from './selectDataCardLayout.ts';
  * (RoleSortControls / roleSortKeys) with every other role listing on the
  * page — sorting here by, say, Compliance reorders Roles table identically.
  */
-const { sortedRoleContrastRows } = useIridis();
+const { sortedRoleContrastRows } = useSortedRoleContrastRows();
 const { dataLayout } = useDataLayout();
 
 const cardLayoutByMode = {

@@ -64,13 +64,14 @@ class ComplianceSortBehavior implements RoleSortFieldComparatorInterface {
 }
 
 export const ROLE_SORT_FIELD_OPTIONS: readonly {
+  readonly 'key': string;
   readonly 'label': string;
   readonly 'value': RoleSortFieldComparatorInterface;
 }[] = [
-  { 'label': 'Role name', 'value': new RoleNameSortBehavior() },
-  { 'label': 'Lightness', 'value': new LightnessSortBehavior() },
-  { 'label': 'Chroma', 'value': new ChromaSortBehavior() },
-  { 'label': 'Hue', 'value': new HueSortBehavior() },
-  { 'label': 'Ratio', 'value': new RatioSortBehavior() },
-  { 'label': 'Compliance', 'value': new ComplianceSortBehavior() }
+  { 'key': 'name', 'label': 'Role name', 'value': new RoleNameSortBehavior() },
+  { 'key': 'lightness', 'label': 'Lightness', 'value': new LightnessSortBehavior() },
+  { 'key': 'chroma', 'label': 'Chroma', 'value': new ChromaSortBehavior() },
+  { 'key': 'hue', 'label': 'Hue', 'value': new HueSortBehavior() },
+  { 'key': 'ratio', 'label': 'Ratio', 'value': new RatioSortBehavior() },
+  { 'key': 'compliance', 'label': 'Compliance', 'value': new ComplianceSortBehavior() }
 ];

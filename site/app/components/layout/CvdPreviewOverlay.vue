@@ -29,9 +29,9 @@ import type { CvdMatrixEntity } from '@studnicky/iridis-contrast';
 import { cvdMatrices } from '@studnicky/iridis-contrast';
 import { computed } from 'vue';
 
-import { useIridis } from '~/composables/useIridis.ts';
+import { usePresentationControls } from '~/composables/usePresentationControls.ts';
 
-const { cvdPreviewTypes } = useIridis();
+const { readModel } = usePresentationControls();
 
 const SRGB_GAMMA = 2.2;
 
@@ -52,7 +52,7 @@ const filterId = (name: string): string => {return `cvd-${name}`;};
  * order their filters chain — the most recently added simulates "looking at"
  * whatever the earlier ones already produced. */
 const activeFilterChain = computed<string>(() => {
-  const ids = [...cvdPreviewTypes.value].map((t) => {return `url(#${filterId(t)})`;});
+  const ids = readModel.value.cvdPreviewTypes.map((t) => {return `url(#${filterId(t)})`;});
   return ids.length > 0 ? ids.join(' ') : 'none';
 });
 </script>

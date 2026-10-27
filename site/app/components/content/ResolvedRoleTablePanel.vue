@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useIridis } from '~/composables/useIridis.ts';
+import { useSortedRoleContrastRows } from '~/composables/useSortedRoleContrastRows.ts';
 import { complianceBadgeColor } from '~/utils/complianceBadgeColor.ts';
 import { buildResolvedRoleTablePanelModel } from './buildResolvedRoleTablePanelModel.ts';
 
 /** UTable — the current sort's top 6 rows, so this table itself demonstrates the shared roleSortKeys ordering. */
-const { sortedRoleContrastRows } = useIridis();
+const { sortedRoleContrastRows } = useSortedRoleContrastRows();
 const tableModel = computed(() => buildResolvedRoleTablePanelModel.build(
   sortedRoleContrastRows.value,
   6

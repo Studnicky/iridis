@@ -10,6 +10,7 @@ import { roleSchemaFor } from '~/composables/roleSchemaFor.ts';
 import { RoleMathCandidatePresentation } from '~/composables/types/RoleMathCandidatePresentation.ts';
 import { RoleMathOrigin } from '~/composables/types/roleMathOrigin.ts';
 import { useIridis } from '~/composables/useIridis.ts';
+import { useRoleSortBehaviors } from '~/composables/useRoleSortBehaviors.ts';
 import { contrastRatio } from '~/theme/ContrastRatio.ts';
 import { roleSchemaByName } from '~/theme/RoleSchemaByName.ts';
 import { complianceFor } from '~/utils/complianceFor.ts';
@@ -18,7 +19,8 @@ import { sortRoleRows } from '~/utils/sortRoleRows.ts';
 
 class UseRoleMathListOperation {
   static run() {
-    const { framing, roleClamps, roleDistances, roles, roleSortKeys, rolesPinned, rolesSynthesized, schemaName } = useIridis();
+    const { framing, roleClamps, roleDistances, roles, rolesPinned, rolesSynthesized, schemaName } = useIridis();
+    const { roleSortBehaviors } = useRoleSortBehaviors();
 
     const allMathList = computed<RoleMathEntry[]>(() => {
       const pair = roleSchemaByName[schemaName.value];
@@ -125,7 +127,7 @@ class UseRoleMathListOperation {
         });
         return result;
       });
-      const sortedRows = sortRoleRows(sortableRows, roleSortKeys.value.map((key) => { return key.behavior; }));
+      const sortedRows = sortRoleRows(sortableRows, roleSortBehaviors.value);
       const result = sortedRows.map((row) => {
         const entry = entriesByName.get(row.name);
         if (entry === undefined) {throw new RangeError(`Missing role math entry for ${row.name}`);}

@@ -3,7 +3,6 @@ import type { RoleSchemaEntity } from '@studnicky/iridis';
 import { RoleRelationshipEntity } from '@studnicky/iridis';
 
 import type { RoleHexMapType } from '~/composables/types/index.ts';
-import type { RoleSortKeyType } from '~/composables/types/roleSortKeyType.ts';
 import type { RoleSortFieldBehaviorInterface } from '~/utils/roleSortFieldBehaviorInterface.ts';
 
 import { RoleSortableRowEntity } from '~/composables/entities/RoleSortableRowEntity.ts';
@@ -123,12 +122,11 @@ export const buildSchemaTree = class SchemaTreeBuilder {
       readonly 'schema': RoleSchemaEntity.Type;
     }[],
     roles: RoleHexMapType,
-    roleSortKeys: readonly RoleSortKeyType[],
+    sortBehaviors: readonly RoleSortFieldBehaviorInterface[],
     contrastRowsByName: ReadonlyMap<string, RoleSortableRowEntity.Type>
   ): SchemaTreeTier[] {
     const seen = new Set<string>();
     const tiers: SchemaTreeTier[] = [];
-    const sortBehaviors = roleSortKeys.map((roleSortKey) => { return roleSortKey.behavior; });
     for (let sourceIndex = 0; sourceIndex < schemaSources.length; sourceIndex += 1) {
       const source = schemaSources[sourceIndex];
       if (source === undefined) {

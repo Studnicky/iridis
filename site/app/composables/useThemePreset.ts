@@ -1,130 +1,64 @@
 /**
- * Multi-theme visual preset switcher. Fonts/corner-radius/border-style are
- * pure CSS now — each theme's own adapter stylesheet
- * (site/app/theme/presets/<key>.css) cascades in via
- * `[data-iridis-theme="<key>"]`, so this composable's only DOM write is the
- * data attribute itself. The ambient background stays JS-driven (real
- * per-shape counts/behavior AmbientBackground.vue needs), read from the
- * THEMES registry (site/app/theme/presets/index.ts) — a plain composed map of
- * per-theme adapter modules, not a switch/branch.
+ * Theme preset state for the current Nuxt app. The selected key lives in the
+ * presentation-controls store; each theme's adapter stylesheet cascades in via
+ * `[data-iridis-theme="<key>"]`, and the ambient background reads the active
+ * theme's config from the THEMES registry.
  */
-
-import type { ViteHotContext } from 'vite/types/hot.d.ts';
 
 import * as VueModule from 'vue';
 
 import { onNuxtReady } from '#imports';
 
 import type { ThemeDefinitionInterface } from '../theme/ThemeDefinitionInterface.ts';
+import type { PresentationControlsComposition } from './presentationControls/PresentationControlsComposition.ts';
 
 import { THEMES } from '../theme/presets/index.ts';
 import { THEME_PRESET_CONSTANTS } from './constants/ThemePresetConstants.ts';
+import { PresentationPreferencesBridge } from './presentationControls/PresentationPreferencesBridge.ts';
+import { usePresentationControls } from './usePresentationControls.ts';
 
-class ViteModule {
-  static readonly metadata: ImportMeta & { readonly 'hot'?: ViteHotContext } = import.meta;
-}
-
-/** Persisted, SSR-safe active theme key. Module-level so every consumer shares one instance. */
-const activeThemeKey = VueModule.ref<string>(THEME_PRESET_CONSTANTS.DEFAULT_THEME_KEY);
 const initialTheme = THEMES.get(THEME_PRESET_CONSTANTS.DEFAULT_THEME_KEY);
 if (initialTheme === undefined) {
   throw new TypeError('Theme registry must contain the default theme');
 }
 const defaultTheme: ThemeDefinitionInterface = initialTheme;
 
-/** Reactive ambient config AmbientBackground.vue reads — kept as its own ref so the component only re-renders on ambient changes, not on unrelated theme fields. */
-const activeAmbient = VueModule.ref<ThemeDefinitionInterface['ambient']>(defaultTheme.ambient);
+/** Attaches persistence once per app, after the client has mounted. */
+class ThemePersistence {
+  static readonly #attached = new WeakSet<object>();
 
-/** DOM writer — SSR-guarded. Sets the theme data attribute (its own adapter stylesheet cascades in font/radius/border-style) and updates the reactive ambient config. */
-class ThemePreset {
-  static resolve(key: string): ThemeDefinitionInterface {
-    const result = THEMES.get(key) ?? defaultTheme;
-    return result;
-  }
-
-  /**
-   * `<html>` sits outside the Vue-managed tree Nuxt hydrates (that starts at
-   * `#__nuxt`), so writing its data attribute is invisible to hydration
-   * diffing — safe to do as early as possible (even before the Vue app
-   * mounts) so the theme's CSS cascades in without a flash of the wrong
-   * theme. Split out from `apply()` so the DOM-attribute write and the
-   * Vue-reactive state update (`activeAmbient`, read by templates and
-   * therefore hydration-sensitive) can happen on different schedules.
-   */
-  static writeDomAttribute(key: string): void {
-    if (typeof document === 'undefined') { return; }
-    const theme = ThemePreset.resolve(key);
-    document.documentElement.dataset.iridisTheme = theme.key;
-  }
-
-  static apply(key: string): void {
-    const theme = ThemePreset.resolve(key);
-    activeAmbient.value = theme.ambient;
-    ThemePreset.writeDomAttribute(key);
-  }
-
-  static readPersistedKey(): string {
-    if (typeof window === 'undefined') { return THEME_PRESET_CONSTANTS.DEFAULT_THEME_KEY; }
-    const stored = window.localStorage.getItem(THEME_PRESET_CONSTANTS.STORAGE_KEY);
-    if (stored !== null && THEMES.has(stored)) { return stored; }
-    return THEME_PRESET_CONSTANTS.DEFAULT_THEME_KEY;
+  static schedule(composition: PresentationControlsComposition): void {
+    if (typeof window !== 'undefined' && !ThemePersistence.#attached.has(composition)) {
+      ThemePersistence.#attached.add(composition);
+      PresentationPreferencesBridge.applyStoredTheme({ 'element': document.documentElement, 'storage': window.localStorage });
+      onNuxtReady(() => {
+        void PresentationPreferencesBridge.attachAfterMount(composition.store, {
+          'element': document.documentElement,
+          'storage': window.localStorage
+        });
+      });
+    }
   }
 }
 
-let booted = false;
-/** Stop-handle for the `activeThemeKey` watcher, captured so HMR teardown can release it — null until `useThemePreset()` has booted once. */
-let stopWatch: (() => void) | null = null;
-
-/** Active theme key/ambient state, the THEMES registry, and the DOM-writing applicator — the single entry point every consumer (theme-switcher UI, AmbientBackground.vue) uses. */
+/** Active theme key/ambient state and the THEMES registry for the current app. */
 class UseThemePresetOperation {
-  static run(): {
-    'activeAmbient': typeof activeAmbient;
-    'activeThemeKey': typeof activeThemeKey;
-    'applyThemePreset': (key: string) => void;
-    'THEMES': ReadonlyMap<string, ThemeDefinitionInterface>;
-  } {
-    if (!booted) {
-      booted = true;
-      stopWatch = VueModule.watch(activeThemeKey, (key) => {
-        ThemePreset.apply(key);
-        if (typeof window !== 'undefined') { window.localStorage.setItem(THEME_PRESET_CONSTANTS.STORAGE_KEY, key); }
-      });
-      /**
-     * The site is fully static-prerendered — the prerendered HTML always
-     * bakes in DEFAULT_THEME_KEY, since there is no persisted preference at
-     * build time. Reading localStorage synchronously here would make the
-     * client's very first render (the one hydration diffs against) disagree
-     * with that baked-in default, producing hydration mismatches everywhere
-     * a theme value is read (ambient style, dataLayout branches, the theme
-     * picker's own label, LogoBackground's dispatch). Deferring the read to
-     * onNuxtReady means the client's first render matches the server
-     * byte-for-byte — the persisted theme then cascades in as one ordinary
-     * post-hydration reactive update, which Vue patches normally instead of
-     * skipping (hydration-time attribute/text patches are check-only and
-     * never actually applied in production).
-     */
-      const persisted = ThemePreset.readPersistedKey();
-      ThemePreset.writeDomAttribute(persisted);
-      onNuxtReady(() => {
-        if (persisted !== activeThemeKey.value) { activeThemeKey.value = persisted; }
-      });
-    }
-    return {
-      'activeAmbient':    activeAmbient,
-      'activeThemeKey':   activeThemeKey,
-      'applyThemePreset': ThemePreset.apply,
-      'THEMES':           THEMES
+  static run() {
+    const composition = usePresentationControls();
+    ThemePersistence.schedule(composition);
+    const activeThemeKey = VueModule.computed(() => {
+      const key = composition.readModel.value.themeKey;
+      return key;
+    });
+    const selectTheme = (key: string): void => {
+      void composition.dispatch({ 'interaction': 'theme.select', 'themeKey': key });
     };
+    const activeAmbient = VueModule.computed(() => {
+      const theme = THEMES.get(activeThemeKey.value) ?? defaultTheme;
+      return theme.ambient;
+    });
+    return { 'activeAmbient': activeAmbient, 'activeThemeKey': activeThemeKey, 'selectTheme': selectTheme, 'THEMES': THEMES };
   }
 }
 
 export const useThemePreset = UseThemePresetOperation.run;
-
-// Releases the activeThemeKey watcher before Vite re-evaluates this module on
-// HMR — without this, every reload registers a second watcher stacked on top
-// of the old one, each independently re-applying the theme on every change.
-ViteModule.metadata.hot?.dispose(() => {
-  stopWatch?.();
-  stopWatch = null;
-  booted = false;
-});
