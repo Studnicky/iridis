@@ -297,10 +297,18 @@ void test('RelationshipConstraintDomain projects exact and tolerant coordinate e
     'minimum': 0,
     'tolerance': 0
   });
+  const runtime = RelationshipConstraintDomain.coordinateRange({
+    'baseline': [0.6, 0.6],
+    'envelope': [0.3, 0.8],
+    'maximum': 1,
+    'minimum': 0,
+    'tolerance': 0.1
+  });
 
   assert.deepEqual(exact, [0.6, 0.6]);
   assert.deepEqual(tolerant, [0.35, 0.8]);
   assert.deepEqual(outside, [0.7, 0.7]);
+  assert.ok(tolerant[0] <= runtime[0] && tolerant[1] >= runtime[1], 'the authored source envelope contains every runtime baseline interval');
 });
 
 void test('RelationshipConstraint reuses one domain for repeated calls on one graph and resolution record', () => {
