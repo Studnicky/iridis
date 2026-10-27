@@ -15,7 +15,7 @@ import {
   PaletteRoleState,
   rgbToHex
 } from '@studnicky/iridis';
-import { RelationshipConstraint } from '@studnicky/iridis/model';
+import { CompositeKey, RelationshipConstraint } from '@studnicky/iridis/model';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
 import type { CvdEvalEntity } from '../entities/CvdEvalEntity.ts';
@@ -171,14 +171,14 @@ class CvdMoverGroup {
       return '';
     }
     const tolerance = domain.tolerance;
-    const result = [
+    const result = CompositeKey.of(
       domain.relationId,
       baseline.hex,
-      tolerance?.alpha ?? '',
-      tolerance?.chroma ?? '',
-      tolerance?.hue ?? '',
-      tolerance?.lightness ?? ''
-    ].join('\u0000');
+      String(tolerance?.alpha ?? ''),
+      String(tolerance?.chroma ?? ''),
+      String(tolerance?.hue ?? ''),
+      String(tolerance?.lightness ?? '')
+    );
     return result;
   }
 
@@ -1300,13 +1300,13 @@ class CvdSearchBudget {
     roleRange: ContrastPolicy.RoleRangeInterface,
     relationshipSignature: string
   ): string {
-    const result = [
+    const result = CompositeKey.of(
       original.hex,
       this.constraintSignature(constraints),
       relationshipSignature,
       roleRange.chromaRange?.join(',') ?? '',
       roleRange.lightnessRange?.join(',') ?? ''
-    ].join('\u0000');
+    );
     return result;
   }
 
@@ -1314,10 +1314,10 @@ class CvdSearchBudget {
     candidate: CvdSearchColor,
     constraints: readonly CvdPairConstraint[]
   ): string {
-    const result = [
+    const result = CompositeKey.of(
       candidate.emitted.hex,
       this.constraintSignature(constraints)
-    ].join('\u0000');
+    );
     return result;
   }
 
@@ -1342,7 +1342,7 @@ class CvdSearchBudget {
         Array.from(constraint.originalFailureTypes).join(',')
       );
     }
-    const result = parts.join('\u0000');
+    const result = CompositeKey.of(...parts);
     this.constraintSignatures.set(constraints, result);
     return result;
   }
@@ -2142,7 +2142,7 @@ class EnforceCvdSimulate {
     for (let index = 0; index < existing.length; index += 1) {
       const pair = existing[index];
       if (pair !== undefined) {
-        known.add(`${pair.foreground}\u0000${pair.background}`);
+        known.add(CompositeKey.of(pair.foreground, pair.background));
       }
     }
     const groups = this.terminalFailureGroups(
@@ -2203,7 +2203,7 @@ class EnforceCvdSimulate {
         failurePolicy
       );
       if (group !== undefined) {
-        groups.set(`${group.foreground}\u0000${group.background}`, group);
+        groups.set(CompositeKey.of(group.foreground, group.background), group);
       }
     }
     return groups;
@@ -2221,7 +2221,7 @@ class EnforceCvdSimulate {
   } | undefined {
     const foreground = state.roles[pair.foreground];
     const background = state.roles[pair.background];
-    const key = `${pair.foreground}\u0000${pair.background}`;
+    const key = CompositeKey.of(pair.foreground, pair.background);
     if (foreground === undefined || background === undefined || known.has(key)) {
       return undefined;
     }
