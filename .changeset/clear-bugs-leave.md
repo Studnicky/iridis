@@ -8,3 +8,7 @@ A role schema can declare a `relationshipGraph` of groups, modes, and relationsh
 CVD correction retains valid peer corrections when another correction group is restored, so nudge and enforce preserve affected syntax, link, and brand roles that clear CVD stability failures rather than resetting the whole component.
 
 Role schemas use `relationshipGraph` and `derive:roleRelations` instead of role fields `derivedFrom`, `hueOffset`, `hue`, `hueClamp`, `lightnessOffset`, and `chromaScale`, and instead of tasks `expand:family`, `derive:semanticHues`, and `pin:derivedRoles`. Consumers declare graph relationships and run `derive:roleRelations`.
+
+This minor release removes the published `expandFamily` API and `expand:family` task. Consumers replace them with `relationshipGraph` and `derive:roleRelations`. It also removes `HueTargetOverrideEntity`, role-level derivation and hue fields, and the `core:hueOffsetOverrides` and `core:hueTargetOverrides` metadata slots and accessors; authored relationships carry those values directly. `RelationshipConstraint.relationIds` no longer takes metadata, and `RelationshipSources.names` returns a readonly source list.
+
+`RoleSchemaEntity.intake` returns a deeply frozen admitted schema. Core exports `CompositeKey`, `RelationshipSources`, `hueResolutionChroma`, `ContrastPolicy.allowsRange`, `RelationshipConstraintDomain.coordinateRange`, `RelationshipConstraint.allowsCoordinates`, and `RelationshipConstraint.allowsDomain` for consumers that need the canonical relationship and coordinate rules.
