@@ -30,7 +30,7 @@ const detailsModel = computed(() => buildRoleMathDerivedDetailsModel.build(props
         as="div"
       />
       <div class="not-italic text-highlighted">
-        {{ props.role.relationshipOperation?.label ?? 'none' }}
+        {{ props.role.relationship?.operation ?? 'none' }}
       </div>
     </div>
   </div>

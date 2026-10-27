@@ -94,7 +94,7 @@ export const colorGraphLabelPainter = class ColorGraphLabelPainter {
     if (screenPosition === null) {return;}
     const [screenX, screenY] = screenPosition;
     if (screenX < 0 || screenY < 0 || screenX > width || screenY > height) {return;}
-    const label = meta.relationshipOperation !== null ? `${meta.name} · ${meta.relationshipOperation}` : meta.name;
+    const label = meta.relationship === null ? meta.name : `${meta.name} · ${meta.relationship.operation}`;
     const text = `${label}${meta.labelSuffix}`;
     const textWidth = context.measureText(text).width;
     const pillWidth = textWidth + padX * 2;

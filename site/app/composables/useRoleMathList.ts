@@ -1,6 +1,6 @@
-import type { RoleRelationshipEntity, RoleSchemaEntity } from '@studnicky/iridis';
+import type { RoleSchemaEntity } from '@studnicky/iridis';
 
-import { colorRecordFactory, RelationshipSources, RoleDefinitionEntity } from '@studnicky/iridis';
+import { colorRecordFactory, RelationshipSources, RoleDefinitionEntity, RoleRelationshipEntity } from '@studnicky/iridis';
 import { computed } from 'vue';
 
 import type { RoleMathCandidateType } from '~/composables/types/roleMathCandidateType.ts';
@@ -10,7 +10,6 @@ import { RoleSortableRowEntity } from '~/composables/entities/RoleSortableRowEnt
 import { roleSchemaFor } from '~/composables/roleSchemaFor.ts';
 import { RoleMathCandidatePresentation } from '~/composables/types/RoleMathCandidatePresentation.ts';
 import { RoleMathOrigin } from '~/composables/types/roleMathOrigin.ts';
-import { RoleRelationshipOperationPresentation } from '~/composables/types/RoleRelationshipOperationPresentation.ts';
 import { useIridis } from '~/composables/useIridis.ts';
 import { contrastRatio } from '~/theme/ContrastRatio.ts';
 import { roleSchemaByName } from '~/theme/RoleSchemaByName.ts';
@@ -19,15 +18,6 @@ import { minimumRatioForRole } from '~/utils/minimumRatioForRole.ts';
 import { sortRoleRows } from '~/utils/sortRoleRows.ts';
 
 class UseRoleMathListOperation {
-  private static readonly relationshipOperationPresentations = {
-    'alias': RoleRelationshipOperationPresentation.Alias,
-    'alpha-overlay': RoleRelationshipOperationPresentation.AlphaOverlay,
-    'hue-offset': RoleRelationshipOperationPresentation.HueOffset,
-    'hue-target': RoleRelationshipOperationPresentation.HueTarget,
-    'oklch-delta': RoleRelationshipOperationPresentation.OklchDelta,
-    'oklch-interpolate': RoleRelationshipOperationPresentation.OklchInterpolate
-  } satisfies Record<RoleRelationshipEntity.Type['operation'], RoleRelationshipOperationPresentation>;
-
   private static relationshipSourceLabel(
     roleName: string,
     relationship: NonNullable<RoleSchemaEntity.Type['relationshipGraph']>['groups'][number]['relationships'][number] | undefined
@@ -106,10 +96,6 @@ class UseRoleMathListOperation {
         if (parentRole === undefined && isDerived) {
           parentRole = roleName;
         }
-        const relationshipOperation = relationship === undefined
-          ? null
-          : UseRoleMathListOperation.relationshipOperationPresentations[relationship.operation];
-
         // roleName comes from Object.keys(roles.value) itself, so this lookup
         // can never miss — never a hardcoded placeholder.
         const hex = roles.value[roleName]!;
@@ -137,7 +123,7 @@ class UseRoleMathListOperation {
           'parentRole': parentRole,
           'pinnedSeedHex': origin.isPinned() ? (clamp?.seedHex.toLowerCase() ?? null) : null,
           'ratio': ratio,
-          'relationshipOperation': relationshipOperation
+          'relationship': relationship === undefined ? null : RoleRelationshipEntity.intake(relationship)
         };
       });
 

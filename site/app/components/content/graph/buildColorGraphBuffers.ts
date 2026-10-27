@@ -427,7 +427,7 @@ export const buildColorGraphBuffers = class ColorGraphBuffersBuilder {
         role.hex,
         role.clamp === null ? '' : ' ⏚',
         role.name,
-        role.relationshipOperation?.label ?? null
+        role.relationship
       ));
     }
     return meta;
