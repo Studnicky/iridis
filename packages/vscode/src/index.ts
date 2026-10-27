@@ -1,6 +1,5 @@
 import './types/augmentation.ts';
 
-export { VSCODE_COMPACT_ROLE_SCHEMAS } from './constants/VscodeCompactRoleSchemas.ts';
 export { VSCODE_FULL_ROLE_SCHEMAS } from './constants/VscodeFullRoleSchemas.ts';
 export { vscodeSeedRoleData } from './data/vscodeSeedRoleData.ts';
 export { emitVscodeSemanticRules } from './tasks/EmitVscodeSemanticRules.ts';

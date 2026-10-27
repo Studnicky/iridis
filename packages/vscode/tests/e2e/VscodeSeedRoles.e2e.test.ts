@@ -291,6 +291,34 @@ await test('VscodeSeedRoles :: reports every declared contrast pair across tiers
   }
 });
 
+await test('VscodeSeedRoles :: keeps dark chrome and ANSI shades distinct from text', () => {
+  const state = VscodeSeedRolesFixture.run(
+    VscodeSeedRolesFixture.body(
+      VscodeSeedPaletteBodyEntity.create({
+        'framing': 'dark',
+        'roles': {},
+        'tier': 4
+      })
+    )
+  );
+  const border = state.roles.border;
+  const guide = state.roles.guide;
+  const guideActive = state.roles.guideActive;
+  const widgetBorder = state.roles.widgetBorder;
+  const ansiBlack = state.roles.ansiBlack;
+  const ansiBrightBlack = state.roles.ansiBrightBlack;
+  const ansiWhite = state.roles.ansiWhite;
+  const ansiBrightWhite = state.roles.ansiBrightWhite;
+
+  assert.ok(border.oklch.l < 0.4);
+  assert.ok(guide.oklch.l < 0.45);
+  assert.ok(guideActive.oklch.l < 0.5);
+  assert.ok(widgetBorder.oklch.l < 0.4);
+  assert.ok(ansiBlack.oklch.l < 0.3);
+  assert.ok(ansiBrightBlack.oklch.l > ansiBlack.oklch.l);
+  assert.ok(ansiBrightWhite.oklch.l > ansiWhite.oklch.l);
+});
+
 await test('VscodeSeedRoles :: rejects malformed tier contracts and mismatched framing at the intake boundary', () => {
   const valid = VscodeSeedRolesFixture.body(
     VscodeSeedPaletteBodyEntity.create({ 'framing': 'dark', 'roles': {}, 'tier': 4 })

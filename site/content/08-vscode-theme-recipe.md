@@ -26,7 +26,7 @@ import {
 const schema = VSCODE_FULL_ROLE_SCHEMAS.dark;
 ```
 
-`VSCODE_FULL_ROLE_SCHEMAS.dark` and `.light` are independent, explicit schemas. A light theme uses the light schema and `runtime.framing: 'light'`. The package also exports `VSCODE_COMPACT_ROLE_SCHEMAS`.
+`VSCODE_FULL_ROLE_SCHEMAS.dark` and `.light` are independent, explicit schemas. A light theme uses the light schema and `runtime.framing: 'light'`.
 
 ## Provide a tiered palette
 

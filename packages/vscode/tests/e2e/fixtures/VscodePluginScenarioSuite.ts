@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { VSCODE_COMPACT_ROLE_SCHEMAS, VSCODE_FULL_ROLE_SCHEMAS, vscodePlugin } from '../../../src/index.ts';
+import { VSCODE_FULL_ROLE_SCHEMAS, vscodePlugin } from '../../../src/index.ts';
 import { VscodePluginFixture } from './VscodePluginFixture.ts';
 import { VscodePluginPattern } from './VscodePluginPattern.ts';
 import { VscodePluginState } from './VscodePluginState.ts';
@@ -15,19 +15,12 @@ await test('VscodePlugin :: registers only canonical seed and projection tasks',
   assert.deepEqual(names, ['vscode:seedRoles', 'emit:vscodeSemanticRules', 'emit:vscodeThemeJson']);
 });
 
-await test('VscodePlugin :: compact schemas retain the base vocabulary and full schemas include graph-authored output roles', () => {
-  const compactRoles = VSCODE_COMPACT_ROLE_SCHEMAS.dark.roles.map((role) => {
-    const result = role.name;
-    return result;
-  });
-  const fullRoles = VSCODE_FULL_ROLE_SCHEMAS.dark.roles.map((role) => {
-    const result = role.name;
-    return result;
+await test('VscodePlugin :: full schemas include graph-authored output roles', () => {
+  const roleNames = VSCODE_FULL_ROLE_SCHEMAS.dark.roles.map((role) => {
+    return role.name;
   });
 
-  assert.ok(compactRoles.includes('background'));
-  assert.ok(!compactRoles.includes('accent'));
-  assert.ok(fullRoles.includes('buttonSecondaryHover'));
+  assert.ok(roleNames.includes('buttonSecondaryHover'));
 });
 
 await test('VscodePlugin :: canonical pipeline emits semantic rules, theme JSON, and alpha-serialized workbench paints', () => {

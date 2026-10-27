@@ -348,6 +348,13 @@ class VscodeFullRoleSchemas {
     const uiLightness = framing.range([0.42, 0.62], [0.44, 0.62]);
     const surfaceLightness = framing.range([0.1, 0.3], [0.7, 0.94]);
     const textLightness = framing.range([0.56, 0.82], [0.2, 0.52]);
+    const subtleLightness = framing.range([0.16, 0.3], [0.7, 0.86]);
+    const guideLightness = framing.range([0.22, 0.4], [0.62, 0.8]);
+    const activeGuideLightness = framing.range([0.3, 0.48], [0.54, 0.72]);
+    const ansiBlackLightness = framing.range([0.08, 0.2], [0.78, 0.9]);
+    const ansiBrightBlackLightness = framing.range([0.28, 0.44], [0.56, 0.74]);
+    const ansiWhiteLightness = framing.range([0.68, 0.84], [0.16, 0.34]);
+    const ansiBrightWhiteLightness = framing.range([0.88, 0.98], [0.04, 0.16]);
     return [
       VscodeFullRoleSchemas.role(
         'accent',
@@ -455,7 +462,7 @@ class VscodeFullRoleSchemas {
         'Workbench chrome border',
         'muted',
         [0.0, 0.08],
-        textLightness,
+        subtleLightness,
         'foreground',
         undefined
       ),
@@ -464,7 +471,7 @@ class VscodeFullRoleSchemas {
         'Indent-guide and whitespace colour',
         'muted',
         [0.0, 0.08],
-        textLightness,
+        guideLightness,
         'border',
         undefined
       ),
@@ -473,7 +480,7 @@ class VscodeFullRoleSchemas {
         'Active indent-guide colour',
         'muted',
         [0.0, 0.08],
-        textLightness,
+        activeGuideLightness,
         'border',
         undefined
       ),
@@ -518,7 +525,7 @@ class VscodeFullRoleSchemas {
         'Terminal ANSI black',
         'muted',
         [0.0, 0.08],
-        textLightness,
+        ansiBlackLightness,
         'border',
         undefined
       ),
@@ -581,7 +588,7 @@ class VscodeFullRoleSchemas {
         'Terminal ANSI white',
         'text',
         [0.0, 0.04],
-        textLightness,
+        ansiWhiteLightness,
         'foreground',
         undefined
       ),
@@ -590,7 +597,7 @@ class VscodeFullRoleSchemas {
         'Terminal bright ANSI black',
         'muted',
         [0.0, 0.08],
-        textLightness,
+        ansiBrightBlackLightness,
         'muted',
         undefined
       ),
@@ -653,7 +660,7 @@ class VscodeFullRoleSchemas {
         'Terminal bright ANSI white',
         'text',
         [0.0, 0.04],
-        textLightness,
+        ansiBrightWhiteLightness,
         'ansiWhite',
         undefined
       ),
@@ -788,7 +795,7 @@ class VscodeFullRoleSchemas {
         'Editor widget border',
         'muted',
         [0.0, 0.08],
-        textLightness,
+        subtleLightness,
         'border',
         undefined
       )

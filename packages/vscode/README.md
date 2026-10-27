@@ -67,7 +67,7 @@ const themeJson = state.outputs['vscode:themeJson'];
 
 ## Schemas
 
-Use `VSCODE_FULL_ROLE_SCHEMAS.dark` or `.light` for the declared framing. The schemas are explicit dark and light role definitions; light themes use the light schema. `VSCODE_COMPACT_ROLE_SCHEMAS` exports the compact view. The selected seed tier declares its exact caller-supplied role keys.
+Use `VSCODE_FULL_ROLE_SCHEMAS.dark` or `.light` for the declared framing. The schemas are explicit dark and light role definitions; light themes use the light schema. The selected seed tier declares its exact caller-supplied role keys.
 
 The schema declares WCAG pairs for foreground, muted text, syntax roles, status colours, `onAccent`, links, and chrome foreground. It also declares bounded pairs for `surface` and `accent`. The VS Code plugin consumes the same engine and the same `input.contrast` configuration as every other output. `enforce:compliance` applies the selected standard to these pairs and adjusts derived roles; a pair whose endpoints are both caller-stated is reported without changing either colour.
 
