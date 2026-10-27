@@ -113,9 +113,20 @@ await test('VscodeRoleSchema64 :: each framing exposes the exact canonical 64-ro
   const expectedNames = [...VSCODE_ROLE_SCHEMA_64_EXPECTATIONS.baseNames, ...VSCODE_ROLE_SCHEMA_64_EXPECTATIONS.extensionNames];
   const schemas = [VSCODE_ROLE_SCHEMAS_64.dark, VSCODE_ROLE_SCHEMAS_64.light];
   for (let schemaCount = schemas.length, schemaIndex = 0; schemaIndex < schemaCount; schemaIndex += 1) {
-    const schema = schemas[schemaIndex]!;
+    const schema = schemas.at(schemaIndex);
+    assert.notEqual(schema, undefined, `64-role schema ${schemaIndex} exists`);
+    if (schema === undefined) {
+      throw new Error(`64-role schema ${schemaIndex} is absent`);
+    }
     const names: string[] = [];
-    for (let roleCount = schema.roles.length, roleIndex = 0; roleIndex < roleCount; roleIndex += 1) { names.push(schema.roles[roleIndex]!.name); }
+    for (let roleCount = schema.roles.length, roleIndex = 0; roleIndex < roleCount; roleIndex += 1) {
+      const role = schema.roles.at(roleIndex);
+      assert.notEqual(role, undefined, `64-role schema ${schemaIndex} role ${roleIndex} exists`);
+      if (role === undefined) {
+        throw new Error(`64-role schema ${schemaIndex} role ${roleIndex} is absent`);
+      }
+      names.push(role.name);
+    }
     assert.deepStrictEqual(names, expectedNames);
     assert.strictEqual(new Set(names).size, 64);
     assert.strictEqual(schema.roles.length, 64);
@@ -139,7 +150,11 @@ await test('VscodeRoleSchema64 :: dark and light share role membership and graph
   const extensionRoleNames = new Set<string>(VSCODE_ROLE_SCHEMA_64_EXPECTATIONS.extensionNames);
   const schemas = [VSCODE_ROLE_SCHEMAS_64.dark, VSCODE_ROLE_SCHEMAS_64.light];
   for (let schemaCount = schemas.length, schemaIndex = 0; schemaIndex < schemaCount; schemaIndex += 1) {
-    const schema = schemas[schemaIndex]!;
+    const schema = schemas.at(schemaIndex);
+    assert.notEqual(schema, undefined, `64-role contrast schema ${schemaIndex} exists`);
+    if (schema === undefined) {
+      throw new Error(`64-role contrast schema ${schemaIndex} is absent`);
+    }
     const pairsWithExtensionRoles = [];
     const contrastPairs = schema.contrastPairs ?? [];
     for (let pairIndex = 0; pairIndex < contrastPairs.length; pairIndex += 1) {
@@ -156,9 +171,20 @@ await test('VscodeRoleSchema64 :: 16-role views are exactly the canonical base v
   const baseRoleNames = new Set<string>(VSCODE_ROLE_SCHEMA_64_EXPECTATIONS.baseNames);
   const schemas = [VSCODE_ROLE_SCHEMAS_16.dark, VSCODE_ROLE_SCHEMAS_16.light];
   for (let schemaCount = schemas.length, schemaIndex = 0; schemaIndex < schemaCount; schemaIndex += 1) {
-    const schema = schemas[schemaIndex]!;
+    const schema = schemas.at(schemaIndex);
+    assert.notEqual(schema, undefined, `16-role schema ${schemaIndex} exists`);
+    if (schema === undefined) {
+      throw new Error(`16-role schema ${schemaIndex} is absent`);
+    }
     const names: string[] = [];
-    for (let roleCount = schema.roles.length, roleIndex = 0; roleIndex < roleCount; roleIndex += 1) { names.push(schema.roles[roleIndex]!.name); }
+    for (let roleCount = schema.roles.length, roleIndex = 0; roleIndex < roleCount; roleIndex += 1) {
+      const role = schema.roles.at(roleIndex);
+      assert.notEqual(role, undefined, `16-role schema ${schemaIndex} role ${roleIndex} exists`);
+      if (role === undefined) {
+        throw new Error(`16-role schema ${schemaIndex} role ${roleIndex} is absent`);
+      }
+      names.push(role.name);
+    }
     assert.deepStrictEqual(names, VSCODE_ROLE_SCHEMA_64_EXPECTATIONS.baseNames);
     assert.strictEqual(schema.roles.length, 16);
     const contrastPairs = schema.contrastPairs ?? [];

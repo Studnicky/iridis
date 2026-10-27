@@ -35,7 +35,12 @@ class RoleSchemaPipelineFixture {
   static schemaPair(name: string): SchemaPair {
     const entries = Object.entries(roleSchemaByName);
     for (let index = 0; index < entries.length; index += 1) {
-      const [registeredName, pair] = entries[index]!;
+      const entry = entries[index];
+      assert.notEqual(entry, undefined, `role schema entry ${index} exists`);
+      if (entry === undefined) {
+        throw new Error(`role schema entry ${index} is absent`);
+      }
+      const [registeredName, pair] = entry;
       if (registeredName === name) {return pair;}
     }
     throw new RangeError(`No role schema is registered for ${  name}`);
@@ -45,11 +50,39 @@ class RoleSchemaPipelineFixture {
     names.sort(RoleSchemaPipelineFixture.compareNames);
   }
 
+  static relationshipsByTarget(
+    schema: RoleSchemaEntity.Type
+  ): Map<string, NonNullable<RoleSchemaEntity.Type['relationshipGraph']>['groups'][number]['relationships'][number]> {
+    if (schema.relationshipGraph === undefined) {
+      throw new Error('iridis-32 schema is missing its relationship graph');
+    }
+    const result = new Map<string, NonNullable<RoleSchemaEntity.Type['relationshipGraph']>['groups'][number]['relationships'][number]>();
+    for (let groupIndex = 0; groupIndex < schema.relationshipGraph.groups.length; groupIndex += 1) {
+      const group = schema.relationshipGraph.groups[groupIndex];
+      if (group === undefined) {
+        throw new Error(`relationship group ${groupIndex} is absent`);
+      }
+      for (let relationshipIndex = 0; relationshipIndex < group.relationships.length; relationshipIndex += 1) {
+        const relationship = group.relationships[relationshipIndex];
+        if (relationship === undefined) {
+          throw new Error(`relationship ${relationshipIndex} is absent`);
+        }
+        result.set(relationship.target, relationship);
+      }
+    }
+    return result;
+  }
+
   static assertSchema(name: string): void {
     const { schema, state } = RoleSchemaPipelineFixture.run(name);
     const expectedRoleNames: string[] = [];
     for (let index = 0; index < schema.roles.length; index += 1) {
-      expectedRoleNames.push(schema.roles[index]!.name);
+      const role = schema.roles[index];
+      assert.notEqual(role, undefined, `${name} role ${index} exists`);
+      if (role === undefined) {
+        throw new Error(`${name} role ${index} is absent`);
+      }
+      expectedRoleNames.push(role.name);
     }
     RoleSchemaPipelineFixture.sortNames(expectedRoleNames);
     const resolvedRoleNames = Object.keys(state.roles);
@@ -65,7 +98,11 @@ class RoleSchemaPipelineFixture {
     });
 
     for (let index = 0; index < Tokens.SHADE_KEYS.length; index += 1) {
-      const shade = Tokens.SHADE_KEYS[index]!;
+      const shade = Tokens.SHADE_KEYS[index];
+      assert.notEqual(shade, undefined, `shade key ${index} exists`);
+      if (shade === undefined) {
+        throw new Error(`shade key ${index} is absent`);
+      }
       const variant = state.variants[`s${  shade}`];
       if (variant === undefined) {assert.fail(`s${  shade  } is absent`);}
       const variantRoleNames = Object.keys(variant);
@@ -92,7 +129,10 @@ class RoleSchemaPipelineFixture {
 }
 
 for (let index = 0; index < RoleSchemaPipelineFixture.names.length; index += 1) {
-  const name = RoleSchemaPipelineFixture.names[index]!;
+  const name = RoleSchemaPipelineFixture.names[index];
+  if (name === undefined) {
+    throw new Error(`schema name ${index} is absent`);
+  }
   await test(`${name  } resolves its complete dark schema through the public pipeline`, () => {
     const result = RoleSchemaPipelineFixture.assertSchema(name);
     return result;
@@ -125,18 +165,13 @@ await test('pinned derived roles remain byte-exact while unpinned roles resolve 
 await test('iridis-32 status hue targets preserve their authored clamp and tolerance', () => {
   const { schema, state } = RoleSchemaPipelineFixture.run('iridis-32');
   const resolutions = Metadata.relationshipResolution(state.metadata);
-  const relationshipsByTarget = new Map<string, NonNullable<RoleSchemaEntity.Type['relationshipGraph']>['groups'][number]['relationships'][number]>();
-  const groups = schema.relationshipGraph === undefined ? [] : schema.relationshipGraph.groups;
-  for (let groupIndex = 0; groupIndex < groups.length; groupIndex += 1) {
-    const relationships = groups[groupIndex]!.relationships;
-    for (let relationshipIndex = 0; relationshipIndex < relationships.length; relationshipIndex += 1) {
-      const relationship = relationships[relationshipIndex]!;
-      relationshipsByTarget.set(relationship.target, relationship);
-    }
-  }
+  const relationshipsByTarget = RoleSchemaPipelineFixture.relationshipsByTarget(schema);
   const statusRoleNames = ['error', 'info', 'success', 'warning'];
   for (let roleIndex = 0; roleIndex < statusRoleNames.length; roleIndex += 1) {
-    const roleName = statusRoleNames[roleIndex]!;
+    const roleName = statusRoleNames[roleIndex];
+    if (roleName === undefined) {
+      throw new Error(`status role ${roleIndex} is absent`);
+    }
     const relationship = relationshipsByTarget.get(roleName);
     const resolution = resolutions.get(roleName);
     const final = state.roles[roleName];

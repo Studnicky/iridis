@@ -434,7 +434,12 @@ void test('role-schema intake observes mutations to caller-owned schemas on the 
     'roles': [{ 'lightnessRange': [0.2, 0.4], 'name': 'brand' }]
   };
   const first = RoleSchemaEntity.intake(source);
-  source.roles[0]!.lightnessRange[0] = 0.3;
+  const brand = source.roles[0];
+  assert.notEqual(brand, undefined, 'mutable schema exposes its brand role');
+  if (brand === undefined) {
+    throw new Error('mutable schema is missing its brand role');
+  }
+  brand.lightnessRange[0] = 0.3;
   const second = RoleSchemaEntity.intake(source);
 
   assert.equal(first.roles[0]?.lightnessRange?.[0], 0.2);
@@ -454,7 +459,12 @@ void test('role-relationship graph intake observes caller-owned graph changes on
     }]
   };
   const first = RoleRelationshipGraphEntity.intake(source);
-  source.groups[0]!.relationships.push({ 'id': 'warning', 'operation': 'alias', 'priority': 1, 'relaxability': 'fixed', 'source': 'brand', 'target': 'warning' });
+  const family = source.groups[0];
+  assert.notEqual(family, undefined, 'mutable graph exposes its relationship group');
+  if (family === undefined) {
+    throw new Error('mutable graph is missing its relationship group');
+  }
+  family.relationships.push({ 'id': 'warning', 'operation': 'alias', 'priority': 1, 'relaxability': 'fixed', 'source': 'brand', 'target': 'warning' });
   const second = RoleRelationshipGraphEntity.intake(source);
 
   assert.equal(first.groups[0]?.relationships.length, 1);
@@ -479,7 +489,12 @@ void test('relationship integrity revalidates caller-owned graph changes', () =>
   };
   const first = RoleSchemaEntity.intake(source);
   assert.deepEqual(RoleRelationshipGraphIntegrity.validate(first), []);
-  source.relationshipGraph.groups[0]!.relationships.push({ 'id': 'warning', 'operation': 'alias', 'priority': 1, 'relaxability': 'fixed', 'source': 'brand', 'target': 'accent' });
+  const family = source.relationshipGraph.groups[0];
+  assert.notEqual(family, undefined, 'mutable integrity graph exposes its relationship group');
+  if (family === undefined) {
+    throw new Error('mutable integrity graph is missing its relationship group');
+  }
+  family.relationships.push({ 'id': 'warning', 'operation': 'alias', 'priority': 1, 'relaxability': 'fixed', 'source': 'brand', 'target': 'accent' });
   const second = RoleSchemaEntity.intake(source);
   const errors = RoleRelationshipGraphIntegrity.validate(second);
 

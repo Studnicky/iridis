@@ -37,8 +37,15 @@ class TonalScaleAssertion {
     }
     assert.equal(new Set(shades).size, Tokens.SHADE_KEYS.length, `${alias} has distinct tonal shades`);
     for (let index = 1; index < shades.length; index += 1) {
-      const prior = colorRecordFactory.fromHex(shades[index - 1]!).oklch.l;
-      const current = colorRecordFactory.fromHex(shades[index]!).oklch.l;
+      const priorShade = shades[index - 1];
+      const currentShade = shades[index];
+      assert.notEqual(priorShade, undefined, `${alias} shade before index ${index} exists`);
+      assert.notEqual(currentShade, undefined, `${alias} shade at index ${index} exists`);
+      if (priorShade === undefined || currentShade === undefined) {
+        throw new Error(`${alias} tonal scale is incomplete at index ${index}`);
+      }
+      const prior = colorRecordFactory.fromHex(priorShade).oklch.l;
+      const current = colorRecordFactory.fromHex(currentShade).oklch.l;
       assert.ok(prior > current, `${alias} shade lightness descends at index ${index}`);
     }
   }

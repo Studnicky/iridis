@@ -84,8 +84,15 @@ class RelationshipSourceFixture {
     const graph = buildColorGraphBuffers.build(roles, new ColorGraphCategoryVisibility());
     const result = new Set<string>();
     for (let linkIndex = 0; linkIndex < graph.links.length; linkIndex += 2) {
-      const child = graph.meta[graph.links[linkIndex]!]?.name;
-      const parent = graph.meta[graph.links[linkIndex + 1]!]?.name;
+      const childIndex = graph.links[linkIndex];
+      const parentIndex = graph.links[linkIndex + 1];
+      assert.notEqual(childIndex, undefined, `graph child index ${linkIndex} exists`);
+      assert.notEqual(parentIndex, undefined, `graph parent index ${linkIndex + 1} exists`);
+      if (childIndex === undefined || parentIndex === undefined) {
+        throw new Error(`graph link ${linkIndex} is incomplete`);
+      }
+      const child = graph.meta[childIndex]?.name;
+      const parent = graph.meta[parentIndex]?.name;
       if (child !== undefined && parent !== undefined) {
         result.add(CompositeKey.of(child, parent));
       }
