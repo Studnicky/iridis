@@ -30,6 +30,23 @@ class RelationshipWorkItem {
   }
 }
 
+class RelationshipResolutionIdentity {
+  static from(
+    group: RelationshipGraphShape.GroupInterface,
+    relationship: RelationshipGraphShape.GroupInterface['relationships'][number]
+  ) {
+    const result = {
+      'groupId': group.id,
+      'modeId': RelationshipHueDegrees.modeId(group, relationship),
+      'operation': relationship.operation,
+      'relationshipId': relationship.id,
+      'sources': [...RelationshipSources.names(relationship)],
+      ...(relationship.operation === 'hue-offset' && relationship.variantId !== undefined ? { 'variantId': relationship.variantId } : {})
+    };
+    return result;
+  }
+}
+
 class RelationshipOperation {
   static apply(
     group: RelationshipGraphShape.GroupInterface,
@@ -53,7 +70,7 @@ class RelationshipOperation {
       'chromaRange': target.chromaRange,
       'lightnessRange': target.lightnessRange
     };
-    const mode = RelationshipOperation.coordinateMode(relationship);
+    const mode = RoleGeometry.coordinateMode(relationship);
     const envelope = RoleGeometry.relationshipCoordinates(
       operationResult.oklch.l,
       operationResult.oklch.c,
@@ -83,18 +100,6 @@ class RelationshipOperation {
       'rgb': record.rgb,
       'sourceFormat': record.sourceFormat
     });
-    return result;
-  }
-
-  private static coordinateMode(
-    relationship: RelationshipGraphShape.GroupInterface['relationships'][number]
-  ) {
-    const explicit = relationship.operation === 'alpha-overlay'
-      || relationship.operation === 'oklch-interpolate'
-      || (relationship.operation === 'oklch-delta' && (
-        relationship.chromaScale !== undefined || relationship.lightnessOffset !== undefined
-      ));
-    const result = explicit ? RoleGeometry.clampMode : RoleGeometry.midpointMode;
     return result;
   }
 
@@ -318,12 +323,7 @@ class DeriveRoleRelations implements TaskInterface {
         'before': existing,
         'blockedReason': 'stated-target',
         'disposition': 'preserved-stated',
-        'groupId': group.id,
-        'modeId': group.defaultMode,
-        'operation': relationship.operation,
-        'relationshipId': relationship.id,
-        'sources': [...RelationshipSources.names(relationship)],
-        ...(relationship.operation === 'hue-offset' && relationship.variantId !== undefined ? { 'variantId': relationship.variantId } : {})
+        ...RelationshipResolutionIdentity.from(group, relationship)
       }));
       return true;
     }
@@ -350,12 +350,7 @@ class DeriveRoleRelations implements TaskInterface {
       'after': derived,
       ...(existing === undefined ? {} : { 'before': existing }),
       'disposition': 'applied',
-      'groupId': group.id,
-      'modeId': relationship.operation === 'hue-offset' ? relationship.modeId ?? group.defaultMode : group.defaultMode,
-      'operation': relationship.operation,
-      'relationshipId': relationship.id,
-      'sources': [...RelationshipSources.names(relationship)],
-      ...(relationship.operation === 'hue-offset' && relationship.variantId !== undefined ? { 'variantId': relationship.variantId } : {})
+      ...RelationshipResolutionIdentity.from(group, relationship)
     }));
     return true;
   }
@@ -384,12 +379,7 @@ class DeriveRoleRelations implements TaskInterface {
         ...(existing === undefined ? {} : { 'before': existing }),
         'blockedReason': missing ? 'missing-source' : 'cycle',
         'disposition': 'unresolved',
-        'groupId': item.group.id,
-        'modeId': item.group.defaultMode,
-        'operation': item.relationship.operation,
-        'relationshipId': item.relationship.id,
-        'sources': [...sources],
-        ...(item.relationship.operation === 'hue-offset' && item.relationship.variantId !== undefined ? { 'variantId': item.relationship.variantId } : {})
+        ...RelationshipResolutionIdentity.from(item.group, item.relationship)
       }));
     }
   }

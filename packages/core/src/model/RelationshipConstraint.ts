@@ -191,9 +191,7 @@ export class RelationshipConstraint {
     const baseline = resolution?.after === undefined
       ? undefined
       : ColorRecordEntity.intake(resolution.after);
-    const modeId = resolution?.modeId ?? (relationship.operation === 'hue-offset'
-      ? relationship.modeId ?? group.defaultMode
-      : group.defaultMode);
+    const modeId = resolution?.modeId ?? RelationshipHueDegrees.modeId(group, relationship);
     const hueDegrees = relationship.operation === 'hue-offset'
       ? RelationshipHueDegrees.resolve(group, relationship)
       : undefined;

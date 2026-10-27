@@ -13,6 +13,7 @@ import { RoleSchemaEntity } from '../../src/entities/RoleSchemaEntity.ts';
 import { TaskManifestEntity } from '../../src/entities/TaskManifestEntity.ts';
 import { colorRecordFactory } from '../../src/math/ColorRecordFactory.ts';
 import { mixOklch } from '../../src/math/MixOklch.ts';
+import { RelationshipConstraint } from '../../src/model/RelationshipConstraint.ts';
 import { coreTasks } from '../../src/tasks/index.ts';
 import { RoleGeometry } from '../../src/tasks/RoleGeometry.ts';
 import { Metadata } from '../../src/types/metadata.ts';
@@ -367,6 +368,75 @@ void test('derive:roleRelations preserves caller-stated targets', () => {
   const entry = Metadata.relationshipResolution(state.metadata).get('accent');
   assert.equal(entry?.disposition, 'preserved-stated');
   assert.equal(entry?.blockedReason, 'stated-target');
+});
+
+void test('derive:roleRelations preserves an explicit hue-offset mode in stated and unresolved provenance', () => {
+  const schema = RoleSchemaEntity.intake({
+    'name': 'explicit-hue-mode',
+    'relationshipGraph': {
+      'groups': [{
+        'anchor': 'brand',
+        'defaultMode': 'analogous',
+        'id': 'brand-family',
+        'modes': [
+          { 'hueOffsets': [{ 'degrees': 30, 'variantId': 'near' }], 'id': 'analogous' },
+          { 'hueOffsets': [{ 'degrees': 120, 'variantId': 'near' }], 'id': 'triadic' }
+        ],
+        'name': 'Brand family',
+        'relationships': [
+          {
+            'id': 'stated-offset',
+            'modeId': 'triadic',
+            'operation': 'hue-offset',
+            'priority': 0,
+            'relaxability': 'fixed',
+            'source': 'brand',
+            'target': 'accent',
+            'variantId': 'near'
+          },
+          {
+            'id': 'blocked-offset',
+            'modeId': 'triadic',
+            'operation': 'hue-offset',
+            'priority': 1,
+            'relaxability': 'fixed',
+            'source': 'missing',
+            'target': 'muted',
+            'variantId': 'near'
+          }
+        ]
+      }]
+    },
+    'roles': [{ 'name': 'brand' }, { 'name': 'accent' }, { 'name': 'missing' }, { 'name': 'muted' }]
+  });
+  const state = DeriveRoleRelationsFixture.runSchema(
+    schema,
+    [
+      DeriveRoleRelationsFixture.color('#7c3aed', 'brand'),
+      DeriveRoleRelationsFixture.color('#00ff00', 'accent')
+    ]
+  );
+  const resolution = Metadata.relationshipResolution(state.metadata);
+  const stated = resolution.get('accent');
+  const blockedState = DeriveRoleRelationsFixture.runSchema(schema, []);
+  const unresolved = Metadata.relationshipResolution(blockedState.metadata).get('muted');
+
+  assert.equal(stated?.disposition, 'preserved-stated');
+  assert.equal(stated?.modeId, 'triadic');
+  assert.equal(stated?.variantId, 'near');
+  assert.deepEqual(stated?.sources, ['brand']);
+  assert.equal(unresolved?.disposition, 'unresolved');
+  assert.equal(unresolved?.modeId, 'triadic');
+  assert.equal(unresolved?.variantId, 'near');
+  assert.deepEqual(unresolved?.sources, ['missing']);
+  assert.equal(
+    RelationshipConstraint.domain(state.input, state.metadata, 'accent')?.modeId,
+    'triadic'
+  );
+  assert.equal(
+    RelationshipConstraint.domain(blockedState.input, blockedState.metadata, 'muted')?.modeId,
+    'triadic'
+  );
 });
 
 void test('derive:roleRelations records missing-source and cycle runtime states', () => {
