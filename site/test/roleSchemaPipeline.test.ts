@@ -3,6 +3,7 @@ import type { RoleSchemaEntity } from '@studnicky/iridis/model';
 
 import { InputEntity, Metadata } from '@studnicky/iridis';
 import { ComplianceReportEntity, CvdResultSetEntity } from '@studnicky/iridis-contrast';
+import { RoleGeometry } from '@studnicky/iridis/tasks';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
@@ -29,6 +30,11 @@ class RoleSchemaPipelineFixture {
   private static compareNames(left: string, right: string): number {
     const comparison = left.localeCompare(right);
     return comparison;
+  }
+
+  static hueDistance(left: number, right: number): number {
+    const distance = Math.abs(((left - right + 540) % 360) - 180);
+    return distance;
   }
 
   static schemaPair(name: string): SchemaPair {
@@ -121,18 +127,48 @@ await test('pinned derived roles remain byte-exact while unpinned roles resolve 
   assert.deepEqual(provenance, { 'adjustments': [], 'origin': 'stated' });
 });
 
-await test('iridis-32 graph status relationships preserve the semantic role snapshot', () => {
-  const { state } = RoleSchemaPipelineFixture.run('iridis-32');
-  const snapshot = {
-    'error': state.roles.error?.hex,
-    'info': state.roles.info?.hex,
-    'success': state.roles.success?.hex,
-    'warning': state.roles.warning?.hex
-  };
-  assert.deepEqual(snapshot, {
-    'error': '#b68ee2',
-    'info': '#5a8bfd',
-    'success': '#cd9a0d',
-    'warning': '#fb942a'
-  });
+await test('iridis-32 status hue targets preserve their authored clamp and tolerance', () => {
+  const { schema, state } = RoleSchemaPipelineFixture.run('iridis-32');
+  const resolutions = Metadata.relationshipResolution(state.metadata);
+  const relationshipsByTarget = new Map<string, NonNullable<RoleSchemaEntity.Type['relationshipGraph']>['groups'][number]['relationships'][number]>();
+  const groups = schema.relationshipGraph === undefined ? [] : schema.relationshipGraph.groups;
+  for (let groupIndex = 0; groupIndex < groups.length; groupIndex += 1) {
+    const relationships = groups[groupIndex]!.relationships;
+    for (let relationshipIndex = 0; relationshipIndex < relationships.length; relationshipIndex += 1) {
+      const relationship = relationships[relationshipIndex]!;
+      relationshipsByTarget.set(relationship.target, relationship);
+    }
+  }
+  const statusRoleNames = ['error', 'info', 'success', 'warning'];
+  for (let roleIndex = 0; roleIndex < statusRoleNames.length; roleIndex += 1) {
+    const roleName = statusRoleNames[roleIndex]!;
+    const relationship = relationshipsByTarget.get(roleName);
+    const resolution = resolutions.get(roleName);
+    const final = state.roles[roleName];
+    assert.notEqual(relationship, undefined, `${roleName} declares a relationship`);
+    assert.notEqual(resolution, undefined, `${roleName} records a relationship baseline`);
+    assert.notEqual(final, undefined, `${roleName} resolves`);
+    if (relationship === undefined || resolution === undefined || final === undefined) {
+      throw new Error(`${roleName} is missing relationship resolution evidence`);
+    }
+    assert.equal(relationship.operation, 'hue-target', `${roleName} uses a hue target`);
+    if (relationship.operation !== 'hue-target') {
+      throw new Error(`${roleName} does not use a hue target`);
+    }
+    const source = relationship.source === undefined ? resolution.before : state.roles[relationship.source];
+    assert.notEqual(source, undefined, `${roleName} hue target resolves its source`);
+    if (source === undefined) {
+      throw new Error(`${roleName} hue target source is absent`);
+    }
+    const expected = RoleGeometry.hueTowards(
+      source.oklch.h,
+      relationship.hue,
+      relationship.clamp ?? RoleGeometry.DEFAULT_HUE_CLAMP
+    );
+    assert.ok(RoleSchemaPipelineFixture.hueDistance(resolution.after.oklch.h, expected) <= 1e-12, `${roleName} baseline obeys its hue clamp`);
+    assert.ok(
+      RoleSchemaPipelineFixture.hueDistance(final.oklch.h, resolution.after.oklch.h) <= (relationship.tolerance?.hue ?? 0) + 1e-12,
+      `${roleName} final hue stays inside its relationship tolerance`
+    );
+  }
 });
