@@ -1,4 +1,4 @@
-// APCA-W3 0.0.98G-4g formula: https://github.com/Myndex/SAPC-APCA
+// Myndex APCA-W3 0.1.9 Lc: https://github.com/Myndex/apca-w3
 import { APCA_COEFFICIENTS } from './constants/ApcaCoefficients.ts';
 import { srgbToLinear } from './SrgbToLinear.ts';
 
@@ -38,13 +38,15 @@ class ApcaLc {
       ? Ybg  + Math.pow(APCA_COEFFICIENTS.SA98G_CLAMP - Ybg,  APCA_COEFFICIENTS.SA98G_CLAMP_P)
       : Ybg;
 
+    if (Math.abs(bgClamp - txtClamp) < APCA_COEFFICIENTS.SA98G_DELTA_Y_MIN) {return 0;}
+
     let Lc = 0;
     if (bgClamp > txtClamp) {
       Lc = (Math.pow(bgClamp, APCA_COEFFICIENTS.SA98G_NORM_BG) - Math.pow(txtClamp, APCA_COEFFICIENTS.SA98G_NORM_TXT)) * APCA_COEFFICIENTS.SA98G_SCALE;
       if (Lc < APCA_COEFFICIENTS.SA98G_LOW_CLIP) {return 0;}
       Lc = Lc - APCA_COEFFICIENTS.SA98G_OFFSET;
     } else {
-      Lc = (Math.pow(bgClamp, 0.62) - Math.pow(txtClamp, 0.65)) * APCA_COEFFICIENTS.SA98G_SCALE;
+      Lc = (Math.pow(bgClamp, APCA_COEFFICIENTS.SA98G_REV_BG) - Math.pow(txtClamp, APCA_COEFFICIENTS.SA98G_REV_TXT)) * APCA_COEFFICIENTS.SA98G_SCALE;
       if (Lc > -APCA_COEFFICIENTS.SA98G_LOW_CLIP) {return 0;}
       Lc = Lc + APCA_COEFFICIENTS.SA98G_OFFSET;
     }
