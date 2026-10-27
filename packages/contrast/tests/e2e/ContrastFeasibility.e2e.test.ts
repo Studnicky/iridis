@@ -692,7 +692,7 @@ await test('ContrastFeasibility projects hue-target relationships through the au
   assert.strictEqual(bounded.sampled, undefined, 'bounded hue-target certificates do not rely on sampled evidence');
 });
 
-await test('ContrastFeasibility certifies a source-derived hue-target arc across the zero-degree wrap', () => {
+await test('ContrastFeasibility keeps a wrapped hue-target segment in its certificate domain', () => {
   const schema = RoleSchemaEntity.intake({
     'contrastPairs': [{ 'background': 'background', 'foreground': 'semantic', 'minimumContrastRatio': 4.5 }],
     'name': 'wrapped-hue-target-feasibility',
@@ -726,17 +726,18 @@ await test('ContrastFeasibility certifies a source-derived hue-target arc across
       }]
     },
     'roles': [
-      ContrastFeasibilityFixture.role('background', 0.05, 0.01, 0),
-      ContrastFeasibilityFixture.role('source', 0.85, 0.01),
-      ContrastFeasibilityFixture.role('semantic', 0.85, 0.01)
+      ContrastFeasibilityFixture.role('background', 0.65, 0.01, 0),
+      ContrastFeasibilityFixture.role('source', 0.25, 0.05),
+      ContrastFeasibilityFixture.role('semantic', 0.25, 0.05)
     ]
   });
 
   const pair = ContrastFeasibility.analyzeSchema(schema, ContrastFeasibilityFixture.options()).pairs[0];
 
   assert.ok(pair !== undefined, 'source-derived hue-target pair receives a feasibility result');
-  assert.strictEqual(pair.reachability, 'always-reachable');
-  assert.strictEqual(pair.sampled, undefined, 'the bounded target arc is certified through both wrapped segments');
+  assert.strictEqual(pair.reachability, 'indeterminate', 'a failed wrapped segment prevents an always-reachable certificate');
+  assert.ok(pair.sampled !== undefined, 'the unresolved wrapped arc retains sampled evidence');
+  assert.ok(pair.sampled.bestActual >= 4.5, 'another wrapped hue reaches the requirement, so the failure is not a uniformly failing envelope');
 });
 
 
@@ -777,47 +778,46 @@ await test('ContrastFeasibility leaves a hue-target arc crossing its antipode in
   assert.ok(pair.sampled !== undefined, 'the unresolved discontinuity retains sampled evidence');
 });
 
-await test('ContrastFeasibility bounds an unanchored hue-target by the authored clamp image', () => {
+await test('ContrastFeasibility bounds a source-less hue-target by its authored clamp image', () => {
   const schema = RoleSchemaEntity.intake({
     'contrastPairs': [{ 'background': 'background', 'foreground': 'target', 'minimumContrastRatio': 4.5 }],
-    'name': 'bounded-unanchored-hue-target',
+    'name': 'source-less-hue-target',
     'relationshipGraph': {
       'groups': [{
-        'anchor': 'source',
+        'anchor': 'target',
         'defaultMode': 'base',
         'id': 'target-group',
         'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'base' }], 'id': 'base' }],
         'name': 'Target',
         'relationships': [
           { 'clamp': 180, 'hue': 0, 'id': 'background-hue', 'operation': 'hue-target', 'priority': 0, 'relaxability': 'fixed', 'target': 'background' },
-          { 'clamp': 30, 'hue': 25, 'id': 'target-hue', 'operation': 'hue-target', 'priority': 1, 'relaxability': 'fixed', 'source': 'source', 'target': 'target' }
+          { 'clamp': 30, 'hue': 25, 'id': 'target-hue', 'operation': 'hue-target', 'priority': 1, 'relaxability': 'fixed', 'target': 'target' }
         ]
       }]
     },
     'roles': [
       ContrastFeasibilityFixture.role('background', 0.05, 0.01, 0),
-      ContrastFeasibilityFixture.role('source', 0.85, 0.2),
       ContrastFeasibilityFixture.role('target', 0.85, 0.2)
     ]
   });
 
   const pair = ContrastFeasibility.analyzeSchema(schema, ContrastFeasibilityFixture.options()).pairs[0];
 
-  assert.ok(pair !== undefined, 'unanchored target pair receives a feasibility result');
+  assert.ok(pair !== undefined, 'source-less target pair receives a feasibility result');
   assert.strictEqual(pair.reachability, 'indeterminate', 'a thirty-degree movement clamp permits the full one-hundred-fifty-degree output arc');
   assert.ok(pair.sampled !== undefined, 'the unresolved wide hue arc retains sampled evidence');
 });
 
 
-await test('ContrastFeasibility matches midpoint and clamped graph coordinate envelopes', () => {
+await test('ContrastFeasibility applies midpoint and clamp coordinate modes to material relationship domains', () => {
   const schemaFor = (
     relationship: RoleRelationshipEntity.Type,
     target: RoleDefinitionEntity.Type,
     sourceLightness: readonly [number, number]
   ): RoleSchemaEntity.Type => {
     const result = RoleSchemaEntity.intake({
-      'contrastPairs': [{ 'background': 'background', 'foreground': 'target', 'minimumContrastRatio': 7 }],
-      'name': 'graph-coordinate-envelope-parity',
+      'contrastPairs': [{ 'background': 'background', 'foreground': 'target', 'minimumContrastRatio': 4.5 }],
+      'name': 'graph-coordinate-domain',
       'relationshipGraph': {
         'groups': [{
           'anchor': 'source',
@@ -833,7 +833,7 @@ await test('ContrastFeasibility matches midpoint and clamped graph coordinate en
         }]
       },
       'roles': [
-        ContrastFeasibilityFixture.role('background', 0.05, 0, 0),
+        ContrastFeasibilityFixture.role('background', 0.65, 0, 0),
         RoleDefinitionEntity.intake({ 'chromaRange': [0.1, 0.3], 'lightnessRange': sourceLightness, 'name': 'source' }),
         target
       ]
@@ -851,12 +851,12 @@ await test('ContrastFeasibility matches midpoint and clamped graph coordinate en
   const midpointGraph = schemaFor(
     RoleRelationshipEntity.intake({ 'id': 'target-alias', 'operation': 'alias', 'priority': 2, 'relaxability': 'fixed', 'source': 'source', 'target': 'target' }),
     RoleDefinitionEntity.intake({ 'chromaRange': [0.01, 0.05], 'lightnessRange': [0.7, 0.9], 'name': 'target' }),
-    [0.3, 0.7]
+    [0.1, 0.9]
   );
   const midpointReference = schemaFor(
     RoleRelationshipEntity.intake({ 'clamp': 180, 'hue': 0, 'id': 'target-hue', 'operation': 'hue-target', 'priority': 2, 'relaxability': 'fixed', 'target': 'target' }),
     fixedTarget(0.8, 0.03),
-    [0.3, 0.7]
+    [0.1, 0.9]
   );
   const clampedGraph = schemaFor(
     RoleRelationshipEntity.intake({ 'id': 'target-delta', 'lightnessOffset': 0.1, 'operation': 'oklch-delta', 'priority': 2, 'relaxability': 'fixed', 'source': 'source', 'target': 'target' }),
@@ -875,18 +875,37 @@ await test('ContrastFeasibility matches midpoint and clamped graph coordinate en
 
   assert.ok(midpointGraphPair !== undefined, 'preserved graph target receives a feasibility result');
   assert.ok(midpointReferencePair !== undefined, 'midpoint reference receives a feasibility result');
-  assert.strictEqual(
-    midpointGraphPair.reachability,
-    midpointReferencePair.reachability,
-    'preserved graph coordinates use the declared target range midpoint'
-  );
-  assert.deepStrictEqual(
-    clampedGraphPair,
-    clampedReferencePair,
-    'explicit graph coordinates clamp into the declared target envelope'
-  );
+  assert.strictEqual(midpointGraphPair.reachability, 'never-reachable', 'the midpoint domain cannot borrow a passing source lightness');
+  assert.strictEqual(midpointGraphPair.proof?.bestActual, midpointReferencePair.proof?.bestActual, 'preserved coordinates produce the midpoint proof measurement');
+  const midpointTargetLightness = midpointGraphPair.proof?.limitingBounds.find((bound) => {
+    const result = bound.channel === 'lightness' && bound.role === 'target';
+    return result;
+  });
+  const midpointTargetChroma = midpointGraphPair.proof?.limitingBounds.find((bound) => {
+    const result = bound.channel === 'chroma' && bound.role === 'target';
+    return result;
+  });
+  assert.ok(midpointTargetLightness !== undefined, 'preserved target lightness bound is present');
+  assert.ok(midpointTargetChroma !== undefined, 'preserved target chroma bound is present');
+  assert.ok(Math.abs(midpointTargetLightness.value - 0.8) < 1e-12, 'preserved lightness uses the target midpoint');
+  assert.ok(Math.abs(midpointTargetChroma.value - 0.03) < 1e-12, 'preserved chroma uses the target midpoint');
+  assert.ok(clampedGraphPair !== undefined, 'explicit graph target receives a feasibility result');
+  assert.ok(clampedReferencePair !== undefined, 'clamped reference receives a feasibility result');
+  assert.strictEqual(clampedGraphPair.reachability, 'never-reachable', 'the explicit delta stays inside the target envelope');
+  assert.strictEqual(clampedGraphPair.proof?.bestActual, clampedReferencePair.proof?.bestActual, 'explicit coordinates produce the clamped proof measurement');
+  const clampedTargetLightness = clampedGraphPair.proof?.limitingBounds.find((bound) => {
+    const result = bound.channel === 'lightness' && bound.role === 'target';
+    return result;
+  });
+  const clampedTargetChroma = clampedGraphPair.proof?.limitingBounds.find((bound) => {
+    const result = bound.channel === 'chroma' && bound.role === 'target';
+    return result;
+  });
+  assert.ok(clampedTargetLightness !== undefined, 'explicit target lightness bound is present');
+  assert.ok(clampedTargetChroma !== undefined, 'explicit target chroma bound is present');
+  assert.ok(Math.abs(clampedTargetLightness.value - 0.7) < 1e-12, 'explicit lightness clamps to the target range');
+  assert.ok(Math.abs(clampedTargetChroma.value - 0.05) < 1e-12, 'explicit chroma clamps to the target range');
 });
-
 
 await test('ContrastFeasibility preserves source-less hue-target coordinate domains', () => {
   const schema = RoleSchemaEntity.intake({
