@@ -8,10 +8,12 @@ type VscodeRoleDraft = Readonly<{
 }>;
 
 class VscodeRoleSchemas64 {
+  static readonly #tolerantRelationship = { 'alpha': 1, 'chroma': 0.5, 'hue': 5, 'lightness': 1 } as const;
+
   static readonly #toleranceByOperation = {
-    'alias': { 'alpha': 1, 'chroma': 0.5, 'hue': 5, 'lightness': 1 },
-    'hue-offset': { 'alpha': 1, 'chroma': 0.5, 'hue': 5, 'lightness': 1 },
-    'oklch-delta': { 'alpha': 1, 'chroma': 0.5, 'hue': 5, 'lightness': 1 }
+    'alias': VscodeRoleSchemas64.#tolerantRelationship,
+    'hue-offset': VscodeRoleSchemas64.#tolerantRelationship,
+    'oklch-delta': VscodeRoleSchemas64.#tolerantRelationship
   } as const;
 
   static readonly #darkFraming = {

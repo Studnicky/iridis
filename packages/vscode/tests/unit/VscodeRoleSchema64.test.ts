@@ -1,5 +1,4 @@
-import type { RoleRelationshipGraphEntity } from '@studnicky/iridis';
-
+import { RelationshipSources, type RoleRelationshipGraphEntity } from '@studnicky/iridis';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
@@ -12,10 +11,15 @@ class VscodeRoleSchemaGraph {
   ): readonly Readonly<{ 'id': string; 'operation': string; 'source'?: string; 'target': string }>[] {
     const result: Readonly<{ 'id': string; 'operation': string; 'source'?: string; 'target': string }>[] = [];
     for (let groupIndex = 0; groupIndex < graph.groups.length; groupIndex += 1) {
-      const group = graph.groups[groupIndex]!;
+      const group = graph.groups.at(groupIndex);
+      if (group === undefined) {
+        continue;
+      }
       for (let relationshipIndex = 0; relationshipIndex < group.relationships.length; relationshipIndex += 1) {
-        const relationship = group.relationships[relationshipIndex]!;
-        result.push(VscodeRoleSchemaGraph.relationshipTopologyEntry(relationship));
+        const relationship = group.relationships.at(relationshipIndex);
+        if (relationship !== undefined) {
+          result.push(VscodeRoleSchemaGraph.relationshipTopologyEntry(relationship));
+        }
       }
     }
     return result;
@@ -42,39 +46,40 @@ class VscodeRoleSchemaGraph {
     baseRoleNames: ReadonlySet<string>
   ): void {
     for (let groupIndex = 0; groupIndex < graph.groups.length; groupIndex += 1) {
-      const group = graph.groups[groupIndex]!;
+      const group = graph.groups.at(groupIndex);
+      if (group === undefined) {
+        continue;
+      }
       for (let relationshipIndex = 0; relationshipIndex < group.relationships.length; relationshipIndex += 1) {
-        const relationship = group.relationships[relationshipIndex]!;
-        const names = VscodeRoleSchemaGraph.relationshipRoleNames(relationship);
+        const relationship = group.relationships.at(relationshipIndex);
+        if (relationship === undefined) {
+          continue;
+        }
+        assert.ok(baseRoleNames.has(relationship.target));
+        const names = RelationshipSources.names(relationship);
         for (let nameIndex = 0; nameIndex < names.length; nameIndex += 1) {
-          const name = names[nameIndex];
+          const name = names.at(nameIndex);
           assert.ok(name !== undefined && baseRoleNames.has(name));
         }
       }
     }
   }
 
-  private static relationshipRoleNames(
-    relationship: RoleRelationshipGraphEntity.Type['groups'][number]['relationships'][number]
-  ): readonly string[] {
-    if (relationship.operation === 'alpha-overlay') {
-      const result = [relationship.base, relationship.overlay, relationship.target];
-      return result;
+  static assertTolerantRelationships(graph: RoleRelationshipGraphEntity.Type): void {
+    for (let groupIndex = 0; groupIndex < graph.groups.length; groupIndex += 1) {
+      const group = graph.groups.at(groupIndex);
+      if (group === undefined) {
+        continue;
+      }
+      for (let relationshipIndex = 0; relationshipIndex < group.relationships.length; relationshipIndex += 1) {
+        const relationship = group.relationships.at(relationshipIndex);
+        if (relationship === undefined) {
+          continue;
+        }
+        assert.equal(relationship.relaxability, 'tolerant');
+        assert.deepStrictEqual(relationship.tolerance, { 'alpha': 1, 'chroma': 0.5, 'hue': 5, 'lightness': 1 });
+      }
     }
-    if (relationship.operation === 'oklch-interpolate') {
-      const result = [relationship.source, relationship.toward, relationship.target];
-      return result;
-    }
-    if (relationship.operation === 'hue-target' && relationship.source === undefined) {
-      const result = [relationship.target];
-      return result;
-    }
-    const source = relationship.source;
-    if (source === undefined) {
-      throw new TypeError('Only hue-target relationships may omit a source role.');
-    }
-    const result = [source, relationship.target];
-    return result;
   }
 }
 
@@ -129,6 +134,8 @@ await test('VscodeRoleSchema64 :: dark and light share role membership and graph
     VscodeRoleSchemaGraph.relationshipTopology(darkGraph),
     VscodeRoleSchemaGraph.relationshipTopology(lightGraph)
   );
+  VscodeRoleSchemaGraph.assertTolerantRelationships(darkGraph);
+  VscodeRoleSchemaGraph.assertTolerantRelationships(lightGraph);
   const extensionRoleNames = new Set<string>(VSCODE_ROLE_SCHEMA_64_EXPECTATIONS.extensionNames);
   const schemas = [VSCODE_ROLE_SCHEMAS_64.dark, VSCODE_ROLE_SCHEMAS_64.light];
   for (let schemaCount = schemas.length, schemaIndex = 0; schemaIndex < schemaCount; schemaIndex += 1) {

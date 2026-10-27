@@ -1,4 +1,4 @@
-import { RoleRelationshipGraphEntity, RoleSchemaEntity } from '@studnicky/iridis';
+import { RelationshipSources, RoleRelationshipGraphEntity, RoleSchemaEntity } from '@studnicky/iridis';
 
 import { VSCODE_ROLE_SCHEMAS_64 } from './VSCODE_ROLE_SCHEMAS_64.ts';
 
@@ -64,36 +64,12 @@ class VscodeRoleSchemas16 {
     relationship: RoleRelationshipGraphEntity.Type['groups'][number]['relationships'][number],
     roleNames: ReadonlySet<string>
   ): boolean {
-    const names = VscodeRoleSchemas16.relationshipNames(relationship);
-    for (let index = 0; index < names.length; index += 1) {
-      const name = names[index];
-      if (name === undefined || !roleNames.has(name)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  private static relationshipNames(
-    relationship: RoleRelationshipGraphEntity.Type['groups'][number]['relationships'][number]
-  ): readonly string[] {
-    if (relationship.operation === 'alpha-overlay') {
-      const result = [relationship.base, relationship.overlay, relationship.target];
-      return result;
-    }
-    if (relationship.operation === 'oklch-interpolate') {
-      const result = [relationship.source, relationship.toward, relationship.target];
-      return result;
-    }
-    if (relationship.operation === 'hue-target' && relationship.source === undefined) {
-      const result = [relationship.target];
-      return result;
-    }
-    const source = relationship.source;
-    if (source === undefined) {
-      throw new TypeError('Only hue-target relationships may omit a source role.');
-    }
-    const result = [source, relationship.target];
+    const sourcesIncluded = RelationshipSources.names(relationship).every((name) => {
+      const included = roleNames.has(name);
+      return included;
+    });
+    const targetIncluded = roleNames.has(relationship.target);
+    const result = sourcesIncluded && targetIncluded;
     return result;
   }
 }
