@@ -84,11 +84,13 @@ class VscodeThemeOutput {
 }
 
 class VscodeThemePublicInput {
+  readonly contrast: unknown;
   readonly framing: string;
   readonly roles: Record<string, string>;
   readonly tier: number;
 
-  constructor(framing: string, roles: Record<string, string>, tier: number) {
+  constructor(contrast: unknown, framing: string, roles: Record<string, string>, tier: number) {
+    this.contrast = contrast;
     this.framing = framing;
     this.roles = roles;
     this.tier = tier;
@@ -112,7 +114,7 @@ class VscodeThemePipeline {
     ]);
     const input = InputEntity.create({
       'colors': [{ 'framing': palette.framing, 'roles': palette.roles, 'tier': palette.tier }],
-      'contrast': { 'algorithm': 'wcag21', 'level': 'AA' },
+      'contrast': palette.contrast,
       'roles': palette.framing === 'dark' ? VSCODE_ROLE_SCHEMAS_64.dark : VSCODE_ROLE_SCHEMAS_64.light,
       'runtime': { 'colorSpace': 'srgb', 'framing': palette.framing }
     });

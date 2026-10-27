@@ -11,8 +11,20 @@ class VscodeThemeFixture {
     return comparison;
   }
 
+  static contrast() {
+    const result = {
+      'algorithm': 'wcag21',
+      'cvdMode': 'warn',
+      'enableStrictCompliance': false,
+      'level': 'AA',
+      'nonMandatoryLevel': 'AA'
+    };
+    return result;
+  }
+
   static darkTierFour() {
     const result = {
+      'contrast': VscodeThemeFixture.contrast(),
       'framing': 'dark',
       'roles': {
         'background': '#101820',
@@ -27,6 +39,7 @@ class VscodeThemeFixture {
 
   static lightTierFour() {
     const result = {
+      'contrast': VscodeThemeFixture.contrast(),
       'framing': 'light',
       'roles': {
         'background': '#f7f4ed',
@@ -41,6 +54,7 @@ class VscodeThemeFixture {
 
   static darkTierSixteen() {
     const result = {
+      'contrast': VscodeThemeFixture.contrast(),
       'framing': 'dark',
       'roles': {
         'background': '#101820',
@@ -67,6 +81,7 @@ class VscodeThemeFixture {
 
   static lightTierSixtyFour() {
     const result = {
+      'contrast': VscodeThemeFixture.contrast(),
       'framing': 'light',
       'roles': {
         'accent': '#f7f4ed',
@@ -163,6 +178,7 @@ await test('runVscodeTheme emits canonical dark and light VS Code theme data', (
 
 await test('runVscodeTheme preserves exact custom structured seed roles and reports pinned provenance', () => {
   const palette = {
+    'contrast': VscodeThemeFixture.contrast(),
     'framing': 'dark' as const,
     'roles': {
       'background': '#14202b',
