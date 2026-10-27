@@ -180,7 +180,6 @@ class DeriveRoleRelations implements TaskInterface {
     const graph = RoleRelationshipGraphEntity.intake(roleSchema.relationshipGraph);
     const roles = PaletteRoleState.admit(state.roles);
     const provenance = Metadata.roleProvenance(state.metadata);
-    const provenanceSize = provenance.size;
     const resolution = Metadata.relationshipResolution(state.metadata);
     const distances = Metadata.roleDistances(state.metadata);
     const targets = new Map(roleSchema.roles.map((role) => {
@@ -190,9 +189,7 @@ class DeriveRoleRelations implements TaskInterface {
     const unresolved = DeriveRoleRelations.resolvePending(roles, provenance, resolution, distances, targets, pending);
     DeriveRoleRelations.recordUnresolved(roles, resolution, unresolved);
     roles.commit();
-    if (provenance.size !== provenanceSize) {
-      Metadata.writeRoleProvenance(state.metadata, provenance);
-    }
+    Metadata.writeRoleProvenance(state.metadata, provenance);
     Metadata.writeRelationshipResolution(state.metadata, resolution);
     Metadata.writeRoleDistances(state.metadata, distances);
   }
@@ -348,9 +345,7 @@ class DeriveRoleRelations implements TaskInterface {
     if (!ownsTarget) {
       distances.delete(relationship.target);
     }
-    if (!provenance.has(relationship.target)) {
-      provenance.set(relationship.target, RoleProvenanceEntity.create({ 'adjustments': [], 'origin': 'derived' }));
-    }
+    provenance.set(relationship.target, RoleProvenanceEntity.create({ 'adjustments': [], 'origin': 'derived' }));
     resolution.set(relationship.target, RelationshipResolutionEntity.create({
       'after': derived,
       ...(existing === undefined ? {} : { 'before': existing }),

@@ -388,6 +388,41 @@ void test('derive:roleRelations records missing-source and cycle runtime states'
   assert.equal(Metadata.relationshipResolution(cycle.metadata).get('b')?.blockedReason, 'cycle');
 });
 
+
+void test('derive:roleRelations replaces transient target provenance and distances', () => {
+  const relationship = RoleRelationshipEntity.create({
+    'id': 'brand-to-accent',
+    'operation': 'alias',
+    'priority': 0,
+    'relaxability': 'fixed',
+    'source': 'brand',
+    'target': 'accent'
+  });
+  const schema = DeriveRoleRelationsFixture.schemaWithRoles(
+    [relationship],
+    [
+      RoleDefinitionEntity.create({ 'name': 'brand', 'required': true }),
+      RoleDefinitionEntity.create({
+        'chromaRange': [0.01, 0.03],
+        'lightnessRange': [0.20, 0.40],
+        'name': 'accent',
+        'required': true
+      })
+    ]
+  );
+  const seeded = DeriveRoleRelationsFixture.runSchema(
+    schema,
+    [DeriveRoleRelationsFixture.color('#7c3aed', 'brand')]
+  );
+  const seededProvenance = Metadata.roleProvenance(seeded.metadata).get('accent');
+  assert.deepEqual(seededProvenance, { 'adjustments': [], 'origin': 'derived' });
+  assert.equal(Metadata.roleDistances(seeded.metadata).has('accent'), false);
+
+  const synthesized = DeriveRoleRelationsFixture.runSchema(schema, []);
+  const synthesizedProvenance = Metadata.roleProvenance(synthesized.metadata).get('accent');
+  assert.deepEqual(synthesizedProvenance, { 'adjustments': [], 'origin': 'derived' });
+});
+
 void test('core tasks resolve relationship graphs immediately after role resolution', () => {
   const taskNames = coreTasks.map((task) => {
     const result = task.name;
