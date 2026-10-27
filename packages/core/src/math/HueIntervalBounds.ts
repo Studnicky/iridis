@@ -68,13 +68,19 @@ export class HueIntervalBounds {
   public readonly minimumRelativeLuminance: number;
 
   private constructor(red: NumericInterval, green: NumericInterval, blue: NumericInterval) {
-    const redLinear = HueIntervalBounds.linear(red);
-    const greenLinear = HueIntervalBounds.linear(green);
-    const blueLinear = HueIntervalBounds.linear(blue);
+    const redEncoded = HueIntervalBounds.encoded(red);
+    const greenEncoded = HueIntervalBounds.encoded(green);
+    const blueEncoded = HueIntervalBounds.encoded(blue);
+    const redLinear = HueIntervalBounds.mapped(redEncoded, srgbToLinear);
+    const greenLinear = HueIntervalBounds.mapped(greenEncoded, srgbToLinear);
+    const blueLinear = HueIntervalBounds.mapped(blueEncoded, srgbToLinear);
+    const redApca = HueIntervalBounds.mapped(redEncoded, apcaLc);
+    const greenApca = HueIntervalBounds.mapped(greenEncoded, apcaLc);
+    const blueApca = HueIntervalBounds.mapped(blueEncoded, apcaLc);
     this.minimumRelativeLuminance = 0.2126 * redLinear.minimum + 0.7152 * greenLinear.minimum + 0.0722 * blueLinear.minimum;
     this.maximumRelativeLuminance = 0.2126 * redLinear.maximum + 0.7152 * greenLinear.maximum + 0.0722 * blueLinear.maximum;
-    this.minimumApcaLuminance = 0.2126729 * redLinear.minimum + 0.7151522 * greenLinear.minimum + 0.072175 * blueLinear.minimum;
-    this.maximumApcaLuminance = 0.2126729 * redLinear.maximum + 0.7151522 * greenLinear.maximum + 0.072175 * blueLinear.maximum;
+    this.minimumApcaLuminance = 0.2126729 * redApca.minimum + 0.7151522 * greenApca.minimum + 0.072175 * blueApca.minimum;
+    this.maximumApcaLuminance = 0.2126729 * redApca.maximum + 0.7151522 * greenApca.maximum + 0.072175 * blueApca.maximum;
   }
 
   public static apcaMagnitudeBounds(
@@ -146,13 +152,15 @@ export class HueIntervalBounds {
     return result;
   }
 
-  private static linear(linearSrgb: NumericInterval): NumericInterval {
+  private static encoded(linearSrgb: NumericInterval): NumericInterval {
     const minimumEncoded = Math.max(0, Math.min(1, linearToSrgb.channel(linearSrgb.minimum)));
     const maximumEncoded = Math.max(0, Math.min(1, linearToSrgb.channel(linearSrgb.maximum)));
-    const result = new NumericInterval(
-      srgbToLinear.channel(minimumEncoded),
-      srgbToLinear.channel(maximumEncoded)
-    );
+    const result = new NumericInterval(minimumEncoded, maximumEncoded);
+    return result;
+  }
+
+  private static mapped(encoded: NumericInterval, curve: { channel(value: number): number }): NumericInterval {
+    const result = new NumericInterval(curve.channel(encoded.minimum), curve.channel(encoded.maximum));
     return result;
   }
 

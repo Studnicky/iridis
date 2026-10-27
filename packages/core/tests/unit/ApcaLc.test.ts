@@ -10,35 +10,76 @@ class ApcaLcSuite {
     for (let index = 0; index < vectors.length; index++) {
       const vector = vectors[index];
       if (typeof vector !== 'undefined') {
-        void test(`apcaLc.apply matches the APCA-W3 0.1.9 reference: ${vector.label}`, () => {
-          ApcaLcSuite.assertVector(vector.text, vector.background, vector.expected);
-        });
+        void test(`apcaLc.apply matches the APCA-W3 0.1.9 reference: ${vector.label}`, ApcaLcSuite.lcCase(vector.text, vector.background, vector.expected));
+      }
+    }
+
+    const luminances = APCA_REFERENCE_VECTORS.luminances;
+    for (let index = 0; index < luminances.length; index++) {
+      const vector = luminances[index];
+      if (typeof vector !== 'undefined') {
+        void test(`apcaLc.luminance matches reference sRGBtoY for 8-bit [${vector.channels.join(', ')}]`, ApcaLcSuite.luminanceCase(vector.channels, vector.expected));
+      }
+    }
+
+    const framing = APCA_REFERENCE_VECTORS.darkFraming;
+    for (let index = 0; index < framing.length; index++) {
+      const vector = framing[index];
+      if (typeof vector !== 'undefined') {
+        void test(`apcaLc dark framing text [${vector.text.join(', ')}] on [${vector.background.join(', ')}] matches the reference`, ApcaLcSuite.framingCase(vector.text, vector.background, vector.expected));
+      }
+    }
+
+    const rejected = APCA_REFERENCE_VECTORS.rejected;
+    for (let index = 0; index < rejected.length; index++) {
+      const pair = rejected[index];
+      if (typeof pair !== 'undefined') {
+        void test(`apcaLc.apply returns 0 for out-of-range input (${String(pair.text)}, ${String(pair.background)})`, ApcaLcSuite.rejectedCase(pair.text, pair.background));
       }
     }
   }
 
-  static assertVector(text: number, background: number, expected: number): void {
-    const result = apcaLc.apply(text, background);
+  static lcCase(text: number, background: number, expected: number): () => void {
+    const result = (): void => {
+      ApcaLcSuite.assertNear(apcaLc.apply(text, background), expected);
+    };
+    return result;
+  }
+
+  static luminanceCase(channels: readonly number[], expected: number): () => void {
+    const result = (): void => {
+      ApcaLcSuite.assertNear(ApcaLcSuite.unit(channels), expected);
+    };
+    return result;
+  }
+
+  static framingCase(text: readonly number[], background: readonly number[], expected: number): () => void {
+    const result = (): void => {
+      ApcaLcSuite.assertNear(apcaLc.apply(ApcaLcSuite.unit(text), ApcaLcSuite.unit(background)), expected);
+    };
+    return result;
+  }
+
+  static rejectedCase(text: number, background: number): () => void {
+    const result = (): void => {
+      assert.equal(apcaLc.apply(text, background), 0);
+    };
+    return result;
+  }
+
+  static assertNear(actual: number, expected: number): void {
     assert.ok(
-      Math.abs(result - expected) < APCA_REFERENCE_VECTORS.tolerance,
-      `expected ${String(expected)}, got ${String(result)}`
+      Math.abs(actual - expected) < APCA_REFERENCE_VECTORS.tolerance,
+      `expected ${String(expected)}, got ${String(actual)}`
     );
+  }
+
+  static unit(channels: readonly number[]): number {
+    const [red = 0, green = 0, blue = 0] = channels;
+    const eightBit = 255;
+    const result = apcaLc.luminance(red / eightBit, green / eightBit, blue / eightBit);
+    return result;
   }
 }
 
 ApcaLcSuite.register();
-
-void test('apcaLc.luminance linearises low channels with the piecewise sRGB segment, unlike the reference pure 2.4 power', () => {
-  const channel = 0.02;
-  const luminance = apcaLc.luminance(channel, channel, channel);
-  const coefficientSum = apcaLc.luminance(1, 1, 1);
-  const referenceLuminance = coefficientSum * (channel ** 2.4);
-
-  assert.ok(Math.abs(luminance - (coefficientSum * channel) / 12.92) < APCA_REFERENCE_VECTORS.tolerance);
-  assert.ok(luminance > referenceLuminance, 'piecewise Y exceeds pure-power Y for dark channels');
-});
-
-void test('apcaLc.luminance of white is the sum of the reference sRGB coefficients', () => {
-  const white = apcaLc.luminance(1, 1, 1);
-  assert.ok(Math.abs(white - 1.0000001) < APCA_REFERENCE_VECTORS.tolerance);
-});

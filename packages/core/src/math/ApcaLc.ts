@@ -1,6 +1,5 @@
 // Myndex APCA-W3 0.1.9 Lc: https://github.com/Myndex/apca-w3
 import { APCA_COEFFICIENTS } from './constants/ApcaCoefficients.ts';
-import { srgbToLinear } from './SrgbToLinear.ts';
 
 /** Shared APCA luminance coefficients and Lc formula, used by both
  *  `contrastApca` (signed Lc, polarity preserved) and `ensureContrast`
@@ -10,18 +9,21 @@ import { srgbToLinear } from './SrgbToLinear.ts';
 class ApcaLc {
   readonly 'name' = 'apcaLc';
 
-  /** APCA relative luminance: linear-light sRGB weighted by the APCA
-   *  luminance coefficients, no per-channel exponent. The norm/rev
-   *  perceptual exponents are applied once, in `apply()`, to the
-   *  clamped Y values — not per-channel here. Shared by both text and
-   *  background; APCA polarity is decided by which clamped Y is
-   *  larger, not by which coefficient set produced it. */
+  /** APCA relative luminance (reference `sRGBtoY`): channels in 0..1 are
+   *  raised to the 2.4 main TRC and weighted by the APCA coefficients.
+   *  The norm/rev exponents are applied once, in `apply()`. */
   luminance(r: number, g: number, b: number): number {
     const luminance =
-      0.2126729 * srgbToLinear.channel(r) +
-      0.7151522 * srgbToLinear.channel(g) +
-      0.0721750 * srgbToLinear.channel(b);
+      0.2126729 * this.channel(r) +
+      0.7151522 * this.channel(g) +
+      0.0721750 * this.channel(b);
     return luminance;
+  }
+
+  /** Reference main TRC for one encoded channel, clamped to the 0..1 domain. */
+  channel(value: number): number {
+    const result = Math.pow(Math.max(0, Math.min(1, value)), APCA_COEFFICIENTS.SA98G_MAIN_TRC);
+    return result;
   }
 
   /** Signed APCA Lc*100 between a text luminance `Ytxt` and a
@@ -31,6 +33,9 @@ class ApcaLc {
    *  (reverse polarity). Callers that need a magnitude take
    *  `Math.abs()` of the result. */
   apply(Ytxt: number, Ybg: number): number {
+    const inRange = Ytxt >= 0 && Ytxt <= APCA_COEFFICIENTS.SA98G_Y_MAX && Ybg >= 0 && Ybg <= APCA_COEFFICIENTS.SA98G_Y_MAX;
+    if (inRange === false) {return 0;}
+
     const txtClamp = Ytxt < APCA_COEFFICIENTS.SA98G_CLAMP
       ? Ytxt + Math.pow(APCA_COEFFICIENTS.SA98G_CLAMP - Ytxt, APCA_COEFFICIENTS.SA98G_CLAMP_P)
       : Ytxt;
