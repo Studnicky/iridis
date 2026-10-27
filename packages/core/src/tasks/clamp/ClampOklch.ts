@@ -9,14 +9,10 @@ import type {
 
 import { TaskManifestEntity } from '../../entities/TaskManifestEntity.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
+import { RoleGeometry } from '../RoleGeometry.ts';
 import { OKLCH_RANGES } from './constants/OklchRanges.ts';
 
 class OklchRangeGeometry {
-  static clampToRange(value: number, range: readonly [number, number]): number {
-    const result = Math.max(range[0], Math.min(range[1], value));
-    return result;
-  }
-
   static roleRangeFor(
     color: ColorRecordEntity.Type,
     state: PaletteStateInterface
@@ -70,8 +66,8 @@ class ClampOklch implements TaskInterface {
       const { cRange, lRange } = OklchRangeGeometry.roleRangeFor(color, state);
       const { c, h, l } = color.oklch;
 
-      const clampedL = OklchRangeGeometry.clampToRange(l, lRange);
-      const clampedC = OklchRangeGeometry.clampToRange(c, cRange);
+      const clampedL = RoleGeometry.clampRange(l, lRange);
+      const clampedC = RoleGeometry.clampRange(c, cRange);
 
       if (clampedL === l && clampedC === c) {
         continue;

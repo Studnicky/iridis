@@ -10,6 +10,7 @@ import { RoleRelationshipEntity } from '../entities/RoleRelationshipEntity.ts';
 import { RoleRelationshipGraphEntity } from '../entities/RoleRelationshipGraphEntity.ts';
 import { RoleRelationshipGroupEntity } from '../entities/RoleRelationshipGroupEntity.ts';
 import { hueResolutionChroma } from '../math/HueResolutionChroma.ts';
+import { RoleGeometry } from '../tasks/RoleGeometry.ts';
 import { Metadata } from '../types/metadata.ts';
 import { CompositeKey } from './CompositeKey.ts';
 import { RelationshipConstraintDomain } from './RelationshipConstraintDomain.ts';
@@ -252,7 +253,7 @@ export class RelationshipConstraint {
     const deviation = RelationshipToleranceEntity.create({
       'alpha': Math.abs(candidate.alpha - baseline.alpha),
       'chroma': Math.abs(candidate.oklch.c - baseline.oklch.c),
-      'hue': RelationshipConstraint.hueDifference(candidate.oklch.h, baseline.oklch.h),
+      'hue': RoleGeometry.hueDifference(candidate.oklch.h, baseline.oklch.h),
       'lightness': Math.abs(candidate.oklch.l - baseline.oklch.l)
     });
     resolutions.set(roleName, RelationshipResolutionEntity.create({
@@ -329,15 +330,11 @@ export class RelationshipConstraint {
     baseline: number,
     tolerance: number | undefined
   ): boolean {
-    const difference = RelationshipConstraint.hueDifference(candidate, baseline);
+    const difference = RoleGeometry.hueDifference(candidate, baseline);
     const result = tolerance === undefined
       ? difference === 0
       : difference <= tolerance;
     return result;
   }
 
-  private static hueDifference(left: number, right: number): number {
-    const result = Math.abs(((left - right + 540) % 360) - 180);
-    return result;
-  }
 }

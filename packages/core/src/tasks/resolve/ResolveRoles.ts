@@ -1,26 +1,21 @@
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
 import type { ColorHintsEntity } from '../../entities/ColorHintsEntity.ts';
+import type { ColorRecordEntity } from '../../entities/ColorRecordEntity.ts';
 import type { RoleSchemaEntity } from '../../entities/RoleSchemaEntity.ts';
 import type { PaletteStateInterface } from '../../interfaces/PaletteStateInterface.ts';
 import type { PipelineContextInterface } from '../../interfaces/PipelineContextInterface.ts';
 import type { TaskInterface } from '../../interfaces/TaskInterface.ts';
 
-import { ColorRecordEntity } from '../../entities/ColorRecordEntity.ts';
 import { RoleProvenanceEntity } from '../../entities/RoleProvenanceEntity.ts';
 import { TaskManifestEntity } from '../../entities/TaskManifestEntity.ts';
 import { PaletteRoleState } from '../../interfaces/PaletteStateInterface.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
+import { RoleRecord } from '../../model/RoleRecord.ts';
 import { Metadata } from '../../types/metadata.ts';
 import { RoleGeometry } from '../RoleGeometry.ts';
 
 class RoleNudge {
-  static clampToRange(value: number, range: readonly [number, number]): number {
-    if (value < range[0]) {return range[0];}
-    if (value > range[1]) {return range[1];}
-    return value;
-  }
-
   static distanceToRoleCenter(color: ColorRecordEntity.Type, role: RoleSchemaEntity.Type['roles'][number]): number {
     const { c, l } = color.oklch;
     let distance = 0;
@@ -52,29 +47,13 @@ class RoleNudge {
     return result;
   }
 
-  static copyWithHints(
-    candidate: ColorRecordEntity.Type,
-    hints: ColorHintsEntity.Type | undefined
-  ): ColorRecordEntity.Type {
-    const result = ColorRecordEntity.create({
-      'alpha': candidate.alpha,
-      ...(candidate.displayP3 === undefined ? {} : { 'displayP3': candidate.displayP3 }),
-      'hex': candidate.hex,
-      ...(hints === undefined ? {} : { 'hints': hints }),
-      'oklch': candidate.oklch,
-      'rgb': candidate.rgb,
-      'sourceFormat': candidate.sourceFormat
-    });
-    return result;
-  }
-
   static intoRole(
     candidate: ColorRecordEntity.Type,
     role: RoleSchemaEntity.Type['roles'][number]
   ) {
     const { c, h, l } = candidate.oklch;
-    const targetL = role.lightnessRange !== undefined ? RoleNudge.clampToRange(l, role.lightnessRange) : l;
-    const targetC = role.chromaRange !== undefined ? RoleNudge.clampToRange(c, role.chromaRange) : c;
+    const targetL = role.lightnessRange !== undefined ? RoleGeometry.clampRange(l, role.lightnessRange) : l;
+    const targetC = role.chromaRange !== undefined ? RoleGeometry.clampRange(c, role.chromaRange) : c;
     const targetH = h;
     const nextHints = RoleNudge.hintsFor(candidate, role);
     const adjustments: RoleProvenanceEntity.Type['adjustments'] = [];
@@ -93,7 +72,7 @@ class RoleNudge {
     }
 
     if (record === candidate && nextHints !== candidate.hints) {
-      record = RoleNudge.copyWithHints(candidate, nextHints);
+      record = RoleRecord.withHints(candidate, nextHints);
     }
 
     const result = { 'adjustments': adjustments, 'record': record };

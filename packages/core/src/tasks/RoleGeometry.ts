@@ -38,6 +38,20 @@ class RoleGeometry {
     return result;
   }
 
+  /** Clamps a coordinate into its declared inclusive range. */
+  static clampRange(value: number, range: readonly [number, number]): number {
+    const result = Math.max(range[0], Math.min(range[1], value));
+    return result;
+  }
+
+  /** Identifies hue targets that preserve their target role as the relationship source. */
+  static ownsTarget(relationship: Readonly<{ 'operation': string; 'source'?: string; 'target': string; }>): boolean {
+    const result = relationship.operation === 'hue-target' && (
+      relationship.source === undefined || relationship.source === relationship.target
+    );
+    return result;
+  }
+
   /** Resolves operation coordinates inside the target envelope. */
   static relationshipCoordinates(
     lightness: number,
@@ -74,10 +88,16 @@ class RoleGeometry {
       return value;
     }
     if (mode === RelationshipCoordinateMode.clamp) {
-      const result = Math.max(range[0], Math.min(range[1], value));
+      const result = RoleGeometry.clampRange(value, range);
       return result;
     }
     const result = RoleGeometry.rangeCenter(range);
+    return result;
+  }
+
+  /** Measures the shortest angular difference between two hue degrees. */
+  static hueDifference(left: number, right: number): number {
+    const result = Math.abs(((left - right + 540) % 360) - 180);
     return result;
   }
 
