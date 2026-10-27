@@ -1,3 +1,4 @@
+import { colorRecordFactory } from '@studnicky/iridis';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { reactive } from 'vue';
@@ -5,7 +6,43 @@ import { reactive } from 'vue';
 import { PaletteResolveRequestEntity } from '../app/composables/entities/PaletteResolveRequestEntity.ts';
 import { PaletteSnapshotEntity } from '../app/composables/entities/PaletteSnapshotEntity.ts';
 import { PaletteResolve } from '../app/composables/paletteResolve.ts';
+import { Tokens } from '../app/theme/Tokens.ts';
 import { PaletteResolveFixture } from './fixtures/PaletteResolveFixture.ts';
+
+class TonalScaleAssertion {
+  private static readonly aliases = ['error', 'info', 'neutral', 'primary', 'secondary', 'success', 'warning'];
+
+  static all(tokens: ReturnType<typeof Tokens.mapFromEngine>): void {
+    for (let aliasIndex = 0; aliasIndex < TonalScaleAssertion.aliases.length; aliasIndex += 1) {
+      const alias = TonalScaleAssertion.aliases[aliasIndex];
+      if (alias === undefined) {
+        continue;
+      }
+      TonalScaleAssertion.one(tokens, alias);
+    }
+  }
+
+  private static one(tokens: ReturnType<typeof Tokens.mapFromEngine>, alias: string): void {
+    const shades: string[] = [];
+    for (let shadeIndex = 0; shadeIndex < Tokens.SHADE_KEYS.length; shadeIndex += 1) {
+      const shade = Tokens.SHADE_KEYS[shadeIndex];
+      if (shade === undefined) {
+        continue;
+      }
+      const value = tokens[`--ui-color-${alias}-${shade}`];
+      if (value === undefined) {
+        assert.fail(`Missing ${alias} shade ${shade}`);
+      }
+      shades.push(value);
+    }
+    assert.equal(new Set(shades).size, Tokens.SHADE_KEYS.length, `${alias} has distinct tonal shades`);
+    for (let index = 1; index < shades.length; index += 1) {
+      const prior = colorRecordFactory.fromHex(shades[index - 1]!).oklch.l;
+      const current = colorRecordFactory.fromHex(shades[index]!).oklch.l;
+      assert.ok(prior > current, `${alias} shade lightness descends at index ${index}`);
+    }
+  }
+}
 
 await test('request entity survives a JSON round trip unchanged', () => {
   const request = PaletteResolveRequestEntity.create(PaletteResolveFixture.request());
@@ -41,6 +78,13 @@ await test('request entity rejects an unknown schema name', () => {
   assert.throws(() => {
     PaletteResolveRequestEntity.intake({ ...PaletteResolveFixture.request(), 'schemaName': 'iridis-5' });
   });
+});
+
+await test('palette resolution supplies distinct monotonic tonal scales to every Nuxt alias', () => {
+  const request = PaletteResolveRequestEntity.create(PaletteResolveFixture.request());
+  const snapshot = PaletteResolve.run(request);
+  const tokens = Tokens.mapFromEngine(Tokens.hexRecord(snapshot.roles), snapshot.scales);
+  TonalScaleAssertion.all(tokens);
 });
 
 await test('palette resolution rejects an incoherent relationship graph at its engine boundary', () => {

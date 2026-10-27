@@ -18,6 +18,7 @@ import { ContrastConfigOptionsEntity } from './entities/ContrastConfigOptionsEnt
 import { ImageCombineResultEntity } from './entities/ImageCombineResultEntity.ts';
 import { ImageExtractionResultEntity } from './entities/ImageExtractionResultEntity.ts';
 import { GalleryMetadataSlot } from './galleryMetadataSlot.ts';
+import { PaletteMetadata } from './paletteMetadata.ts';
 import { roleSchemaFor } from './roleSchemaFor.ts';
 import { schemaRoleCount } from './schemaRoleCount.ts';
 
@@ -42,9 +43,9 @@ export class ImageExtract {
         'nonMandatoryLevel': message.nonMandatoryLevel,
         'strictness': message.strictness
       })),
-      'metadata': {
+      'metadata': PaletteMetadata.withVariant({
         'gallery': ImageExtract.gallery(message.settings)
-      },
+      }),
       'roles': roleSchemaFor(roles),
       'runtime': { 'colorSpace': message.colorSpace, 'framing': message.framing }
     }));

@@ -14,6 +14,7 @@ import { ContrastConfigFor } from './contrastConfigFor.ts';
 import { createColorEngine } from './createColorEngine.ts';
 import { ContrastConfigOptionsEntity } from './entities/ContrastConfigOptionsEntity.ts';
 import { PaletteSnapshotEntity } from './entities/PaletteSnapshotEntity.ts';
+import { PaletteMetadata } from './paletteMetadata.ts';
 import { pickerSeedInputs } from './pickerSeedInputs.ts';
 import { roleSchemaFor } from './roleSchemaFor.ts';
 
@@ -99,6 +100,7 @@ export class PaletteResolve {
         'nonMandatoryLevel': request.nonMandatoryLevel,
         'strictness': request.strictness
       })),
+      'metadata': PaletteMetadata.withVariant({}),
       'roles': roleSchemaFor(roles),
       'runtime': { 'colorSpace': request.colorSpace, 'framing': request.framing }
     });
