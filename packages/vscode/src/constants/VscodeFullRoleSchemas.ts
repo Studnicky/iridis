@@ -1,5 +1,9 @@
 import {
-  ContrastPairEntity, RoleDefinitionEntity, RoleRelationshipEntity, RoleRelationshipGraphEntity, RoleSchemaEntity
+  ContrastPairEntity,
+  RoleDefinitionEntity,
+  RoleRelationshipEntity,
+  RoleRelationshipGraphEntity,
+  RoleSchemaEntity
 } from '@studnicky/iridis';
 
 type VscodeRoleDraft = Readonly<{
@@ -8,7 +12,12 @@ type VscodeRoleDraft = Readonly<{
 }>;
 
 class VscodeFullRoleSchemas {
-  static readonly #tolerantRelationship = { 'alpha': 1, 'chroma': 0.5, 'hue': 5, 'lightness': 1 } as const;
+  static readonly #tolerantRelationship = {
+    'alpha': 1,
+    'chroma': 0.5,
+    'hue': 5,
+    'lightness': 1
+  } as const;
 
   static readonly #toleranceByOperation = {
     'alias': VscodeFullRoleSchemas.#tolerantRelationship,
@@ -43,25 +52,122 @@ class VscodeFullRoleSchemas {
 
   static contrastPairs(): ContrastPairEntity.Type[] {
     const rawPairs = [
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'foreground', 'minimumContrastRatio': 7.0 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'comment', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'muted', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'surface', 'maximumContrastRatio': 2.0, 'minimumContrastRatio': 1.1 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'keyword', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'accent', 'maximumContrastRatio': 4.5, 'minimumContrastRatio': 3.0 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'type', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'function', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'variable', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'string', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'number', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'constant', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'error', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'warning', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'info', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'success', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'accent', 'foreground': 'onAccent', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'link', 'minimumContrastRatio': 4.5 },
-      { 'algorithm': 'wcag21', 'background': 'chrome', 'foreground': 'chromeForeground', 'minimumContrastRatio': 4.5 }
+      {
+        'algorithm': 'wcag21',
+        'background': 'background',
+        'foreground': 'foreground',
+        'minimumContrastRatio': 7.0
+      },
+      {
+        'algorithm': 'wcag21',
+        'background': 'background',
+        'foreground': 'comment',
+        'minimumContrastRatio': 4.5
+      },
+      {
+        'algorithm': 'wcag21',
+        'background': 'background',
+        'foreground': 'muted',
+        'minimumContrastRatio': 4.5
+      },
+      {
+        'algorithm': 'wcag21',
+        'background': 'background',
+        'foreground': 'surface',
+        'maximumContrastRatio': 2.0,
+        'minimumContrastRatio': 1.1
+      },
+      {
+        'algorithm': 'wcag21',
+        'background': 'background',
+        'foreground': 'keyword',
+        'minimumContrastRatio': 4.5
+      },
+      {
+        'algorithm': 'wcag21',
+        'background': 'background',
+        'foreground': 'accent',
+        'maximumContrastRatio': 4.5,
+        'minimumContrastRatio': 3.0
+      },
+      {
+        'algorithm': 'wcag21',
+        'background': 'background',
+        'foreground': 'type',
+        'minimumContrastRatio': 4.5
+      },
+      {
+        'algorithm': 'wcag21',
+        'background': 'background',
+        'foreground': 'function',
+        'minimumContrastRatio': 4.5
+      },
+      {
+        'algorithm': 'wcag21',
+        'background': 'background',
+        'foreground': 'variable',
+        'minimumContrastRatio': 4.5
+      },
+      {
+        'algorithm': 'wcag21',
+        'background': 'background',
+        'foreground': 'string',
+        'minimumContrastRatio': 4.5
+      },
+      {
+        'algorithm': 'wcag21',
+        'background': 'background',
+        'foreground': 'number',
+        'minimumContrastRatio': 4.5
+      },
+      {
+        'algorithm': 'wcag21',
+        'background': 'background',
+        'foreground': 'constant',
+        'minimumContrastRatio': 4.5
+      },
+      {
+        'algorithm': 'wcag21',
+        'background': 'background',
+        'foreground': 'error',
+        'minimumContrastRatio': 4.5
+      },
+      {
+        'algorithm': 'wcag21',
+        'background': 'background',
+        'foreground': 'warning',
+        'minimumContrastRatio': 4.5
+      },
+      {
+        'algorithm': 'wcag21',
+        'background': 'background',
+        'foreground': 'info',
+        'minimumContrastRatio': 4.5
+      },
+      {
+        'algorithm': 'wcag21',
+        'background': 'background',
+        'foreground': 'success',
+        'minimumContrastRatio': 4.5
+      },
+      {
+        'algorithm': 'wcag21',
+        'background': 'accent',
+        'foreground': 'onAccent',
+        'minimumContrastRatio': 4.5
+      },
+      {
+        'algorithm': 'wcag21',
+        'background': 'background',
+        'foreground': 'link',
+        'minimumContrastRatio': 4.5
+      },
+      {
+        'algorithm': 'wcag21',
+        'background': 'chrome',
+        'foreground': 'chromeForeground',
+        'minimumContrastRatio': 4.5
+      }
     ];
     const result = rawPairs.map(ContrastPairEntity.create);
     return result;
@@ -69,102 +175,637 @@ class VscodeFullRoleSchemas {
 
   static baseRoles(framing: {
     readonly 'accentLightnessOffset': number;
-    readonly 'range': (dark: [number, number], light: [number, number]) => [number, number];
+    readonly 'range': (
+      dark: [number, number],
+      light: [number, number]
+    ) => [number, number];
     readonly 'surfaceLightnessOffset': number;
   }): VscodeRoleDraft[] {
     const semanticChroma = framing.range([0.06, 0.18], [0.05, 0.16]);
-    const semanticLightness = framing.range([0.60, 0.80], [0.28, 0.48]);
+    const semanticLightness = framing.range([0.6, 0.8], [0.28, 0.48]);
     const accentChroma = framing.range([0.06, 0.18], [0.05, 0.16]);
     const accentLightness = framing.range([0.62, 0.82], [0.28, 0.46]);
-    const diagnosticLightness = framing.range([0.52, 0.70], [0.28, 0.46]);
-    const statusLightness = framing.range([0.60, 0.78], [0.28, 0.46]);
+    const diagnosticLightness = framing.range([0.52, 0.7], [0.28, 0.46]);
+    const statusLightness = framing.range([0.6, 0.78], [0.28, 0.46]);
     return [
-      VscodeFullRoleSchemas.role('background', 'Editor and chrome background', 'background', [0.00, 0.05], framing.range([0.06, 0.18], [0.92, 0.99]), undefined, undefined),
-      VscodeFullRoleSchemas.role('foreground', 'Primary text and editor foreground', 'text', [0.00, 0.04], framing.range([0.88, 0.98], [0.10, 0.24]), undefined, undefined),
-      VscodeFullRoleSchemas.role('surface', 'Sidebar, panels, and activity bar background', 'background', [0.00, 0.06], framing.range([0.12, 0.28], [0.76, 0.92]), 'background', undefined, { 'chromaScale': 0.9, 'lightnessOffset': framing.surfaceLightnessOffset }),
-      VscodeFullRoleSchemas.role('muted', 'Inactive and subdued text', 'muted', [0.00, 0.08], framing.range([0.55, 0.72], [0.35, 0.52]), 'foreground', undefined),
-      VscodeFullRoleSchemas.role('keyword', 'Keywords and primary interactive colour', 'accent', accentChroma, accentLightness, undefined, undefined),
-      VscodeFullRoleSchemas.role('type', 'Types, classes, interfaces, and structs', 'accent', semanticChroma, semanticLightness, 'keyword', 150),
-      VscodeFullRoleSchemas.role('function', 'Functions, methods, decorators, and events', 'accent', semanticChroma, semanticLightness, 'keyword', 45),
-      VscodeFullRoleSchemas.role('variable', 'Variables, parameters, and properties', 'accent', [0.04, 0.14], framing.range([0.64, 0.84], [0.24, 0.44]), 'foreground', undefined),
-      VscodeFullRoleSchemas.role('string', 'String literals and regular expressions', 'accent', semanticChroma, semanticLightness, 'function', 70),
-      VscodeFullRoleSchemas.role('number', 'Numeric literals', 'accent', semanticChroma, semanticLightness, 'string', 50),
-      VscodeFullRoleSchemas.role('constant', 'Constants and enum members', 'accent', semanticChroma, semanticLightness, 'number', 50),
-      VscodeFullRoleSchemas.role('comment', 'Comments and doc-comments', 'muted', [0.02, 0.10], framing.range([0.55, 0.72], [0.35, 0.52]), 'muted', undefined),
-      VscodeFullRoleSchemas.role('error', 'Error diagnostics', 'critical', [0.08, 0.20], diagnosticLightness, undefined, undefined),
-      VscodeFullRoleSchemas.role('warning', 'Warning diagnostics', 'muted', [0.08, 0.20], statusLightness, 'error', 50),
-      VscodeFullRoleSchemas.role('info', 'Info diagnostics and async hints', 'muted', [0.08, 0.20], statusLightness, 'error', 208),
-      VscodeFullRoleSchemas.role('success', 'Success diagnostics and added git state', 'positive', [0.08, 0.20], statusLightness, 'error', 125)
+      VscodeFullRoleSchemas.role(
+        'background',
+        'Editor and chrome background',
+        'background',
+        [0.0, 0.05],
+        framing.range([0.06, 0.18], [0.92, 0.99]),
+        undefined,
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'foreground',
+        'Primary text and editor foreground',
+        'text',
+        [0.0, 0.04],
+        framing.range([0.88, 0.98], [0.1, 0.24]),
+        undefined,
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'surface',
+        'Sidebar, panels, and activity bar background',
+        'background',
+        [0.0, 0.06],
+        framing.range([0.12, 0.28], [0.76, 0.92]),
+        'background',
+        undefined,
+        { 'chromaScale': 0.9, 'lightnessOffset': framing.surfaceLightnessOffset }
+      ),
+      VscodeFullRoleSchemas.role(
+        'muted',
+        'Inactive and subdued text',
+        'muted',
+        [0.0, 0.08],
+        framing.range([0.55, 0.72], [0.35, 0.52]),
+        'foreground',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'keyword',
+        'Keywords and primary interactive colour',
+        'accent',
+        accentChroma,
+        accentLightness,
+        undefined,
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'type',
+        'Types, classes, interfaces, and structs',
+        'accent',
+        semanticChroma,
+        semanticLightness,
+        'keyword',
+        150
+      ),
+      VscodeFullRoleSchemas.role(
+        'function',
+        'Functions, methods, decorators, and events',
+        'accent',
+        semanticChroma,
+        semanticLightness,
+        'keyword',
+        45
+      ),
+      VscodeFullRoleSchemas.role(
+        'variable',
+        'Variables, parameters, and properties',
+        'accent',
+        [0.04, 0.14],
+        framing.range([0.64, 0.84], [0.24, 0.44]),
+        'foreground',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'string',
+        'String literals and regular expressions',
+        'accent',
+        semanticChroma,
+        semanticLightness,
+        'function',
+        70
+      ),
+      VscodeFullRoleSchemas.role(
+        'number',
+        'Numeric literals',
+        'accent',
+        semanticChroma,
+        semanticLightness,
+        'string',
+        50
+      ),
+      VscodeFullRoleSchemas.role(
+        'constant',
+        'Constants and enum members',
+        'accent',
+        semanticChroma,
+        semanticLightness,
+        'number',
+        50
+      ),
+      VscodeFullRoleSchemas.role(
+        'comment',
+        'Comments and doc-comments',
+        'muted',
+        [0.02, 0.1],
+        framing.range([0.55, 0.72], [0.35, 0.52]),
+        'muted',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'error',
+        'Error diagnostics',
+        'critical',
+        [0.08, 0.2],
+        diagnosticLightness,
+        undefined,
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'warning',
+        'Warning diagnostics',
+        'muted',
+        [0.08, 0.2],
+        statusLightness,
+        'error',
+        50
+      ),
+      VscodeFullRoleSchemas.role(
+        'info',
+        'Info diagnostics and async hints',
+        'muted',
+        [0.08, 0.2],
+        statusLightness,
+        'error',
+        208
+      ),
+      VscodeFullRoleSchemas.role(
+        'success',
+        'Success diagnostics and added git state',
+        'positive',
+        [0.08, 0.2],
+        statusLightness,
+        'error',
+        125
+      )
     ];
   }
 
   static extensionRoles(framing: {
     readonly 'accentLightnessOffset': number;
-    readonly 'range': (dark: [number, number], light: [number, number]) => [number, number];
+    readonly 'range': (
+      dark: [number, number],
+      light: [number, number]
+    ) => [number, number];
     readonly 'surfaceLightnessOffset': number;
   }): VscodeRoleDraft[] {
     const uiChroma: [number, number] = [0.04, 0.14];
     const uiLightness = framing.range([0.42, 0.62], [0.44, 0.62]);
-    const surfaceLightness = framing.range([0.10, 0.30], [0.70, 0.94]);
-    const textLightness = framing.range([0.56, 0.82], [0.20, 0.52]);
+    const surfaceLightness = framing.range([0.1, 0.3], [0.7, 0.94]);
+    const textLightness = framing.range([0.56, 0.82], [0.2, 0.52]);
     return [
-      VscodeFullRoleSchemas.role('accent', 'Workbench accent colour', 'accent', uiChroma, uiLightness, 'keyword', 0, { 'chromaScale': 0.9, 'lightnessOffset': framing.accentLightnessOffset }),
-      VscodeFullRoleSchemas.role('onAccent', 'Content drawn over the accent', 'onAccent', [0.00, 0.04], framing.range([0.88, 0.98], [0.10, 0.24]), 'accent', undefined),
-      VscodeFullRoleSchemas.role('accentHover', 'Hovered workbench accent', 'accent', uiChroma, uiLightness, 'accent', undefined),
-      VscodeFullRoleSchemas.role('link', 'Text links and active text links', 'link', uiChroma, uiLightness, 'accent', undefined),
-      VscodeFullRoleSchemas.role('selection', 'Editor selection surfaces', 'accent', uiChroma, surfaceLightness, 'accent', undefined),
-      VscodeFullRoleSchemas.role('selectionList', 'Active list and focus surfaces', 'accent', uiChroma, surfaceLightness, 'selection', undefined),
-      VscodeFullRoleSchemas.role('buttonSecondary', 'Secondary button surface', 'button', uiChroma, surfaceLightness, 'selectionList', undefined),
-      VscodeFullRoleSchemas.interpolatedRole('buttonSecondaryHover', 'Hovered secondary button surface', 'button', uiChroma, surfaceLightness, 'buttonSecondary', 'foreground', 0.1),
-      VscodeFullRoleSchemas.role('findMatch', 'Find-match highlight surface', 'accent', uiChroma, surfaceLightness, 'accent', undefined),
-      VscodeFullRoleSchemas.role('bracketMatch', 'Matched bracket surface and border', 'accent', uiChroma, surfaceLightness, 'selection', undefined),
-      VscodeFullRoleSchemas.role('hover', 'Hover and line-highlight surface', 'background', [0.00, 0.06], surfaceLightness, 'background', undefined),
-      VscodeFullRoleSchemas.role('border', 'Workbench chrome border', 'muted', [0.00, 0.08], textLightness, 'foreground', undefined),
-      VscodeFullRoleSchemas.role('guide', 'Indent-guide and whitespace colour', 'muted', [0.00, 0.08], textLightness, 'border', undefined),
-      VscodeFullRoleSchemas.role('guideActive', 'Active indent-guide colour', 'muted', [0.00, 0.08], textLightness, 'border', undefined),
-      VscodeFullRoleSchemas.role('chrome', 'Active status and title bar background', 'background', [0.00, 0.06], surfaceLightness, 'background', undefined),
-      VscodeFullRoleSchemas.role('chromeInactive', 'Inactive chrome background', 'background', [0.00, 0.06], surfaceLightness, 'chrome', undefined),
-      VscodeFullRoleSchemas.role('chromeForeground', 'Chrome foreground content', 'text', [0.00, 0.08], textLightness, 'foreground', undefined),
-      VscodeFullRoleSchemas.role('inputBackground', 'Input background', 'background', [0.00, 0.06], surfaceLightness, 'background', undefined),
-      VscodeFullRoleSchemas.role('ansiBlack', 'Terminal ANSI black', 'muted', [0.00, 0.08], textLightness, 'border', undefined),
-      VscodeFullRoleSchemas.role('ansiRed', 'Terminal ANSI red', 'critical', [0.08, 0.20], textLightness, 'error', undefined),
-      VscodeFullRoleSchemas.role('ansiGreen', 'Terminal ANSI green', 'positive', [0.08, 0.20], textLightness, 'success', undefined),
-      VscodeFullRoleSchemas.role('ansiYellow', 'Terminal ANSI yellow', 'muted', [0.08, 0.20], textLightness, 'warning', undefined),
-      VscodeFullRoleSchemas.role('ansiBlue', 'Terminal ANSI blue', 'muted', [0.08, 0.20], textLightness, 'info', undefined),
-      VscodeFullRoleSchemas.role('ansiMagenta', 'Terminal ANSI magenta', 'accent', uiChroma, textLightness, 'type', undefined),
-      VscodeFullRoleSchemas.role('ansiCyan', 'Terminal ANSI cyan', 'accent', uiChroma, textLightness, 'function', undefined),
-      VscodeFullRoleSchemas.role('ansiWhite', 'Terminal ANSI white', 'text', [0.00, 0.04], textLightness, 'foreground', undefined),
-      VscodeFullRoleSchemas.role('ansiBrightBlack', 'Terminal bright ANSI black', 'muted', [0.00, 0.08], textLightness, 'muted', undefined),
-      VscodeFullRoleSchemas.role('ansiBrightRed', 'Terminal bright ANSI red', 'critical', [0.08, 0.20], textLightness, 'ansiRed', undefined),
-      VscodeFullRoleSchemas.role('ansiBrightGreen', 'Terminal bright ANSI green', 'positive', [0.08, 0.20], textLightness, 'ansiGreen', undefined),
-      VscodeFullRoleSchemas.role('ansiBrightYellow', 'Terminal bright ANSI yellow', 'muted', [0.08, 0.20], textLightness, 'ansiYellow', undefined),
-      VscodeFullRoleSchemas.role('ansiBrightBlue', 'Terminal bright ANSI blue', 'muted', [0.08, 0.20], textLightness, 'ansiBlue', undefined),
-      VscodeFullRoleSchemas.role('ansiBrightMagenta', 'Terminal bright ANSI magenta', 'accent', uiChroma, textLightness, 'ansiMagenta', undefined),
-      VscodeFullRoleSchemas.role('ansiBrightCyan', 'Terminal bright ANSI cyan', 'accent', uiChroma, textLightness, 'ansiCyan', undefined),
-      VscodeFullRoleSchemas.role('ansiBrightWhite', 'Terminal bright ANSI white', 'text', [0.00, 0.04], textLightness, 'ansiWhite', undefined),
-      VscodeFullRoleSchemas.role('gitAdded', 'Git added-resource decoration', 'positive', [0.08, 0.20], textLightness, 'success', undefined),
-      VscodeFullRoleSchemas.role('gitModified', 'Git modified-resource decoration', 'muted', [0.08, 0.20], textLightness, 'info', undefined),
-      VscodeFullRoleSchemas.role('gitDeleted', 'Git deleted-resource decoration', 'critical', [0.08, 0.20], textLightness, 'error', undefined),
-      VscodeFullRoleSchemas.role('gitUntracked', 'Git untracked-resource decoration', 'muted', [0.08, 0.20], textLightness, 'warning', undefined),
-      VscodeFullRoleSchemas.role('gitConflicting', 'Git conflicting-resource decoration', 'muted', [0.08, 0.20], textLightness, 'warning', undefined),
-      VscodeFullRoleSchemas.role('diffInserted', 'Inserted diff surface', 'positive', [0.08, 0.20], surfaceLightness, 'success', undefined),
-      VscodeFullRoleSchemas.role('diffRemoved', 'Removed diff surface', 'critical', [0.08, 0.20], surfaceLightness, 'error', undefined),
-      VscodeFullRoleSchemas.role('bracketLevel1', 'First bracket-highlight level', 'accent', uiChroma, textLightness, 'keyword', undefined),
-      VscodeFullRoleSchemas.role('bracketLevel2', 'Second bracket-highlight level', 'accent', uiChroma, textLightness, 'type', undefined),
-      VscodeFullRoleSchemas.role('bracketLevel3', 'Third bracket-highlight level', 'accent', uiChroma, textLightness, 'function', undefined),
-      VscodeFullRoleSchemas.role('bracketLevel4', 'Fourth bracket-highlight level', 'accent', uiChroma, textLightness, 'string', undefined),
-      VscodeFullRoleSchemas.role('bracketLevel5', 'Fifth bracket-highlight level', 'accent', uiChroma, textLightness, 'number', undefined),
-      VscodeFullRoleSchemas.role('bracketLevel6', 'Sixth bracket-highlight level', 'accent', uiChroma, textLightness, 'constant', undefined),
-      VscodeFullRoleSchemas.role('widgetBackground', 'Editor widget background', 'background', [0.00, 0.06], surfaceLightness, 'background', undefined),
-      VscodeFullRoleSchemas.role('widgetBorder', 'Editor widget border', 'muted', [0.00, 0.08], textLightness, 'border', undefined)
+      VscodeFullRoleSchemas.role(
+        'accent',
+        'Workbench accent colour',
+        'accent',
+        uiChroma,
+        uiLightness,
+        'keyword',
+        0,
+        { 'chromaScale': 0.9, 'lightnessOffset': framing.accentLightnessOffset }
+      ),
+      VscodeFullRoleSchemas.role(
+        'onAccent',
+        'Content drawn over the accent',
+        'onAccent',
+        [0.0, 0.04],
+        framing.range([0.88, 0.98], [0.1, 0.24]),
+        'accent',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'accentHover',
+        'Hovered workbench accent',
+        'accent',
+        uiChroma,
+        uiLightness,
+        'accent',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'link',
+        'Text links and active text links',
+        'link',
+        uiChroma,
+        uiLightness,
+        'accent',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'selection',
+        'Editor selection surfaces',
+        'accent',
+        uiChroma,
+        surfaceLightness,
+        'accent',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'selectionList',
+        'Active list and focus surfaces',
+        'accent',
+        uiChroma,
+        surfaceLightness,
+        'selection',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'buttonSecondary',
+        'Secondary button surface',
+        'button',
+        uiChroma,
+        surfaceLightness,
+        'selectionList',
+        undefined
+      ),
+      VscodeFullRoleSchemas.interpolatedRole(
+        'buttonSecondaryHover',
+        'Hovered secondary button surface',
+        'button',
+        uiChroma,
+        surfaceLightness,
+        'buttonSecondary',
+        'foreground',
+        0.1
+      ),
+      VscodeFullRoleSchemas.role(
+        'findMatch',
+        'Find-match highlight surface',
+        'accent',
+        uiChroma,
+        surfaceLightness,
+        'accent',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'bracketMatch',
+        'Matched bracket surface and border',
+        'accent',
+        uiChroma,
+        surfaceLightness,
+        'selection',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'hover',
+        'Hover and line-highlight surface',
+        'background',
+        [0.0, 0.06],
+        surfaceLightness,
+        'background',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'border',
+        'Workbench chrome border',
+        'muted',
+        [0.0, 0.08],
+        textLightness,
+        'foreground',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'guide',
+        'Indent-guide and whitespace colour',
+        'muted',
+        [0.0, 0.08],
+        textLightness,
+        'border',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'guideActive',
+        'Active indent-guide colour',
+        'muted',
+        [0.0, 0.08],
+        textLightness,
+        'border',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'chrome',
+        'Active status and title bar background',
+        'background',
+        [0.0, 0.06],
+        surfaceLightness,
+        'background',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'chromeInactive',
+        'Inactive chrome background',
+        'background',
+        [0.0, 0.06],
+        surfaceLightness,
+        'chrome',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'chromeForeground',
+        'Chrome foreground content',
+        'text',
+        [0.0, 0.08],
+        framing.range([0.88, 0.98], [0.2, 0.52]),
+        'foreground',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'inputBackground',
+        'Input background',
+        'background',
+        [0.0, 0.06],
+        surfaceLightness,
+        'background',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'ansiBlack',
+        'Terminal ANSI black',
+        'muted',
+        [0.0, 0.08],
+        textLightness,
+        'border',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'ansiRed',
+        'Terminal ANSI red',
+        'critical',
+        [0.08, 0.2],
+        textLightness,
+        'error',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'ansiGreen',
+        'Terminal ANSI green',
+        'positive',
+        [0.08, 0.2],
+        textLightness,
+        'success',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'ansiYellow',
+        'Terminal ANSI yellow',
+        'muted',
+        [0.08, 0.2],
+        textLightness,
+        'warning',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'ansiBlue',
+        'Terminal ANSI blue',
+        'muted',
+        [0.08, 0.2],
+        textLightness,
+        'info',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'ansiMagenta',
+        'Terminal ANSI magenta',
+        'accent',
+        uiChroma,
+        textLightness,
+        'type',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'ansiCyan',
+        'Terminal ANSI cyan',
+        'accent',
+        uiChroma,
+        textLightness,
+        'function',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'ansiWhite',
+        'Terminal ANSI white',
+        'text',
+        [0.0, 0.04],
+        textLightness,
+        'foreground',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'ansiBrightBlack',
+        'Terminal bright ANSI black',
+        'muted',
+        [0.0, 0.08],
+        textLightness,
+        'muted',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'ansiBrightRed',
+        'Terminal bright ANSI red',
+        'critical',
+        [0.08, 0.2],
+        textLightness,
+        'ansiRed',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'ansiBrightGreen',
+        'Terminal bright ANSI green',
+        'positive',
+        [0.08, 0.2],
+        textLightness,
+        'ansiGreen',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'ansiBrightYellow',
+        'Terminal bright ANSI yellow',
+        'muted',
+        [0.08, 0.2],
+        textLightness,
+        'ansiYellow',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'ansiBrightBlue',
+        'Terminal bright ANSI blue',
+        'muted',
+        [0.08, 0.2],
+        textLightness,
+        'ansiBlue',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'ansiBrightMagenta',
+        'Terminal bright ANSI magenta',
+        'accent',
+        uiChroma,
+        textLightness,
+        'ansiMagenta',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'ansiBrightCyan',
+        'Terminal bright ANSI cyan',
+        'accent',
+        uiChroma,
+        textLightness,
+        'ansiCyan',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'ansiBrightWhite',
+        'Terminal bright ANSI white',
+        'text',
+        [0.0, 0.04],
+        textLightness,
+        'ansiWhite',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'gitAdded',
+        'Git added-resource decoration',
+        'positive',
+        [0.08, 0.2],
+        textLightness,
+        'success',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'gitModified',
+        'Git modified-resource decoration',
+        'muted',
+        [0.08, 0.2],
+        textLightness,
+        'info',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'gitDeleted',
+        'Git deleted-resource decoration',
+        'critical',
+        [0.08, 0.2],
+        textLightness,
+        'error',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'gitUntracked',
+        'Git untracked-resource decoration',
+        'muted',
+        [0.08, 0.2],
+        textLightness,
+        'warning',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'gitConflicting',
+        'Git conflicting-resource decoration',
+        'muted',
+        [0.08, 0.2],
+        textLightness,
+        'warning',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'diffInserted',
+        'Inserted diff surface',
+        'positive',
+        [0.08, 0.2],
+        surfaceLightness,
+        'success',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'diffRemoved',
+        'Removed diff surface',
+        'critical',
+        [0.08, 0.2],
+        surfaceLightness,
+        'error',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'bracketLevel1',
+        'First bracket-highlight level',
+        'accent',
+        uiChroma,
+        textLightness,
+        'keyword',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'bracketLevel2',
+        'Second bracket-highlight level',
+        'accent',
+        uiChroma,
+        textLightness,
+        'type',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'bracketLevel3',
+        'Third bracket-highlight level',
+        'accent',
+        uiChroma,
+        textLightness,
+        'function',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'bracketLevel4',
+        'Fourth bracket-highlight level',
+        'accent',
+        uiChroma,
+        textLightness,
+        'string',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'bracketLevel5',
+        'Fifth bracket-highlight level',
+        'accent',
+        uiChroma,
+        textLightness,
+        'number',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'bracketLevel6',
+        'Sixth bracket-highlight level',
+        'accent',
+        uiChroma,
+        textLightness,
+        'constant',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'widgetBackground',
+        'Editor widget background',
+        'background',
+        [0.0, 0.06],
+        surfaceLightness,
+        'background',
+        undefined
+      ),
+      VscodeFullRoleSchemas.role(
+        'widgetBorder',
+        'Editor widget border',
+        'muted',
+        [0.0, 0.08],
+        textLightness,
+        'border',
+        undefined
+      )
     ];
   }
 
-  static darkRange(dark: [number, number], _light: [number, number]): [number, number] {
+  static darkRange(
+    dark: [number, number],
+    _light: [number, number]
+  ): [number, number] {
     return dark;
   }
 
-  static lightRange(_dark: [number, number], light: [number, number]): [number, number] {
+  static lightRange(
+    _dark: [number, number],
+    light: [number, number]
+  ): [number, number] {
     return light;
   }
 
@@ -174,7 +815,11 @@ class VscodeFullRoleSchemas {
     classification: string,
     chromaRange: [number, number],
     lightnessRange: [number, number],
-    ...relationshipInput: readonly [string | undefined, number | undefined, { readonly 'chromaScale'?: number; readonly 'lightnessOffset'?: number }?]
+    ...relationshipInput: readonly [
+      string | undefined,
+      number | undefined,
+      { readonly 'chromaScale'?: number; readonly 'lightnessOffset'?: number }?
+    ]
   ): VscodeRoleDraft {
     const [sourceRole, degrees, options = {}] = relationshipInput;
     const definition = RoleDefinitionEntity.create({
@@ -188,10 +833,17 @@ class VscodeFullRoleSchemas {
     const relationship = VscodeFullRoleSchemas.relationship(name, {
       ...(sourceRole === undefined ? {} : { 'source': sourceRole }),
       ...(degrees === undefined ? {} : { 'degrees': degrees }),
-      ...(options.chromaScale === undefined ? {} : { 'chromaScale': options.chromaScale }),
-      ...(options.lightnessOffset === undefined ? {} : { 'lightnessOffset': options.lightnessOffset })
+      ...(options.chromaScale === undefined
+        ? {}
+        : { 'chromaScale': options.chromaScale }),
+      ...(options.lightnessOffset === undefined
+        ? {}
+        : { 'lightnessOffset': options.lightnessOffset })
     });
-    const result = relationship === undefined ? { 'definition': definition } : { 'definition': definition, 'relationship': relationship };
+    const result =
+      relationship === undefined
+        ? { 'definition': definition }
+        : { 'definition': definition, 'relationship': relationship };
     return result;
   }
 
@@ -220,7 +872,8 @@ class VscodeFullRoleSchemas {
       'relaxability': 'tolerant',
       'source': source,
       'target': name,
-      'tolerance': VscodeFullRoleSchemas.#toleranceByOperation['oklch-interpolate'],
+      'tolerance':
+        VscodeFullRoleSchemas.#toleranceByOperation['oklch-interpolate'],
       'toward': toward,
       'weight': weight
     });
@@ -232,11 +885,17 @@ class VscodeFullRoleSchemas {
     description: string,
     framing: {
       readonly 'accentLightnessOffset': number;
-      readonly 'range': (dark: [number, number], light: [number, number]) => [number, number];
+      readonly 'range': (
+        dark: [number, number],
+        light: [number, number]
+      ) => [number, number];
       readonly 'surfaceLightnessOffset': number;
     }
   ): RoleSchemaEntity.Type {
-    const drafts = [...VscodeFullRoleSchemas.baseRoles(framing), ...VscodeFullRoleSchemas.extensionRoles(framing)];
+    const drafts = [
+      ...VscodeFullRoleSchemas.baseRoles(framing),
+      ...VscodeFullRoleSchemas.extensionRoles(framing)
+    ];
     const roles: RoleDefinitionEntity.Type[] = [];
     const relationships: RoleRelationshipEntity.Type[] = [];
     for (let index = 0; index < drafts.length; index += 1) {
@@ -254,20 +913,26 @@ class VscodeFullRoleSchemas {
       'description': description,
       'name': name,
       'relationshipGraph': RoleRelationshipGraphEntity.create({
-        'groups': [{
-          'anchor': 'background',
-          'defaultMode': 'default',
-          'id': 'vscode-derived-roles',
-          'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'default' }], 'id': 'default' }],
-          'name': 'VS Code derived roles',
-          'relationships': relationships
-        }]
+        'groups': [
+          {
+            'anchor': 'background',
+            'defaultMode': 'default',
+            'id': 'vscode-derived-roles',
+            'modes': [
+              {
+                'hueOffsets': [{ 'degrees': 0, 'variantId': 'default' }],
+                'id': 'default'
+              }
+            ],
+            'name': 'VS Code derived roles',
+            'relationships': relationships
+          }
+        ]
       }),
       'roles': roles
     });
     return result;
   }
-
 
   private static relationship(
     target: string,
@@ -283,26 +948,49 @@ class VscodeFullRoleSchemas {
       return undefined;
     }
     const identifier = [source, 'to', target].join('-');
-    const shared = { 'id': identifier, 'priority': 0, 'relaxability': 'tolerant' as const, 'source': source, 'target': target };
-    if (options.chromaScale !== undefined || options.lightnessOffset !== undefined) {
+    const shared = {
+      'id': identifier,
+      'priority': 0,
+      'relaxability': 'tolerant' as const,
+      'source': source,
+      'target': target
+    };
+    if (
+      options.chromaScale !== undefined ||
+      options.lightnessOffset !== undefined
+    ) {
       const result = RoleRelationshipEntity.create({
         ...shared,
-        ...(options.degrees === undefined ? {} : { 'hueOffset': options.degrees }),
-        ...(options.chromaScale === undefined ? {} : { 'chromaScale': options.chromaScale }),
-        ...(options.lightnessOffset === undefined ? {} : { 'lightnessOffset': options.lightnessOffset }),
+        ...(options.degrees === undefined
+          ? {}
+          : { 'hueOffset': options.degrees }),
+        ...(options.chromaScale === undefined
+          ? {}
+          : { 'chromaScale': options.chromaScale }),
+        ...(options.lightnessOffset === undefined
+          ? {}
+          : { 'lightnessOffset': options.lightnessOffset }),
         'operation': 'oklch-delta',
         'tolerance': VscodeFullRoleSchemas.#toleranceByOperation['oklch-delta']
       });
       return result;
     }
     if (options.degrees === undefined) {
-      const result = RoleRelationshipEntity.create({ ...shared, 'operation': 'alias', 'tolerance': VscodeFullRoleSchemas.#toleranceByOperation.alias });
+      const result = RoleRelationshipEntity.create({
+        ...shared,
+        'operation': 'alias',
+        'tolerance': VscodeFullRoleSchemas.#toleranceByOperation.alias
+      });
       return result;
     }
-    const result = RoleRelationshipEntity.create({ ...shared, 'degrees': options.degrees, 'operation': 'hue-offset', 'tolerance': VscodeFullRoleSchemas.#toleranceByOperation['hue-offset'] });
+    const result = RoleRelationshipEntity.create({
+      ...shared,
+      'degrees': options.degrees,
+      'operation': 'hue-offset',
+      'tolerance': VscodeFullRoleSchemas.#toleranceByOperation['hue-offset']
+    });
     return result;
   }
-
 }
 
 export const VSCODE_FULL_ROLE_SCHEMAS = VscodeFullRoleSchemas;
