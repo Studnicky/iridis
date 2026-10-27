@@ -158,6 +158,74 @@ class RelationshipConstraintSeedTask implements TaskInterface {
   }
 }
 
+void test('InputEntity intake keeps relationship graph admission immutable across runs', () => {
+  const input = InputEntity.intake({
+    'colors': [],
+    'roles': {
+      'contrastPairs': [],
+      'name': 'immutable-relationship-input',
+      'relationshipGraph': {
+        'groups': [{
+          'anchor': 'source',
+          'defaultMode': 'base',
+          'id': 'group',
+          'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'base' }], 'id': 'base' }],
+          'name': 'Group',
+          'relationships': [{
+            'id': 'source-to-text',
+            'operation': 'alias',
+            'priority': 0,
+            'relaxability': 'fixed',
+            'source': 'source',
+            'target': 'text'
+          }]
+        }]
+      },
+      'roles': [{ 'name': 'source' }, { 'lightnessRange': [0.2, 0.8], 'name': 'text' }]
+    }
+  });
+  const roleSchema = input.roles;
+  if (roleSchema === undefined) {
+    throw new TypeError('Input fixture lacks a role schema.');
+  }
+  const graph = roleSchema.relationshipGraph;
+  const textRole = roleSchema.roles.find((role) => {
+    const result = role.name === 'text';
+    return result;
+  });
+  const range = textRole?.lightnessRange;
+  if (graph === undefined || range === undefined) {
+    throw new TypeError('Input fixture lacks graph or range data.');
+  }
+  const group = graph.groups[0];
+  const relationship = group.relationships.at(0);
+  if (relationship === undefined) {
+    throw new TypeError('Input fixture lacks a relationship.');
+  }
+  assert.throws(() => {
+    const relationshipCount = group.relationships.push(relationship);
+    assert.equal(relationshipCount, 2);
+  }, TypeError);
+  assert.throws(() => {
+    const replacement = range[1];
+    range[0] = replacement;
+  }, TypeError);
+});
+
+void test('Engine runs isolate relationship output from earlier returned state mutations', () => {
+  const baseline = colorRecordFactory.fromHex('#777777');
+  const input = RelationshipConstraintFixture.input({ 'minimumContrastRatio': 4.5 });
+  const engine = RelationshipConstraintFixture.engine(input, baseline);
+  const first = engine.run(input);
+  const firstText = first.roles.text?.hex;
+
+  first.roles.text = colorRecordFactory.fromHex('#000000');
+  const second = engine.run(input);
+
+  assert.equal(second.roles.text?.hex, firstText);
+  assert.notEqual(second.roles.text?.hex, '#000000');
+});
+
 void test('RelationshipConstraint fixes a resolved relationship at its exact baseline', () => {
   const baseline = colorRecordFactory.fromHex('#77777780');
   const input = RelationshipConstraintFixture.input();

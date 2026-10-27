@@ -205,8 +205,9 @@ class ContrastProvenance {
 }
 
 class ContrastRangeCache {
+  static readonly #empty = new Map<string, ContrastPolicy.RoleRangeInterface>();
   static readonly #values = new WeakIdentityMemo<
-    PaletteStateInterface['input'],
+    NonNullable<PaletteStateInterface['input']['roles']>,
     ReadonlyMap<string, ContrastPolicy.RoleRangeInterface>
   >();
 
@@ -232,9 +233,13 @@ class ContrastRangeCache {
   private static values(
     input: PaletteStateInterface['input']
   ): ReadonlyMap<string, ContrastPolicy.RoleRangeInterface> {
-    const result = ContrastRangeCache.#values.get(input, () => {
+    const roles = input.roles;
+    if (roles === undefined) {
+      return ContrastRangeCache.#empty;
+    }
+    const result = ContrastRangeCache.#values.get(roles, () => {
       const values = new Map<string, ContrastPolicy.RoleRangeInterface>();
-      const definitions = input.roles?.roles ?? [];
+      const definitions = roles.roles ?? [];
       for (let index = 0; index < definitions.length; index += 1) {
         const definition = definitions[index];
         if (definition !== undefined) {
