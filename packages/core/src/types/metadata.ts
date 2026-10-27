@@ -183,6 +183,8 @@ export class Metadata {
     for (const [roleName, entry] of resolution) {
       admitted.set(roleName, RelationshipResolutionEntity.intake(entry));
     }
-    metadataRecord['core:relationshipResolution'] = Metadata.#recordFromEntries(admitted);
+    const serialized = Metadata.#recordFromEntries(admitted);
+    Object.freeze(serialized);
+    metadataRecord['core:relationshipResolution'] = serialized;
   }
 }

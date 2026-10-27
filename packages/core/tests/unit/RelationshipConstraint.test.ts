@@ -378,6 +378,42 @@ void test('RelationshipConstraintDomain projects exact and tolerant coordinate e
   assert.ok(tolerant[0] <= runtime[0] && tolerant[1] >= runtime[1], 'the authored source envelope contains every runtime baseline interval');
 });
 
+void test('RelationshipConstraint reads caller-owned resolution records after in-place replacement', () => {
+  const baseline = colorRecordFactory.fromHex('#777777');
+  const replacement = RelationshipConstraintFixture.candidate(baseline, {
+    'lightness': baseline.oklch.l + 0.1
+  });
+  const resolution = {
+    'text': RelationshipResolutionEntity.create({
+      'after': baseline,
+      'disposition': 'applied',
+      'groupId': 'text-group',
+      'operation': 'alias',
+      'relationshipId': 'text-from-source',
+      'sources': ['source']
+    })
+  };
+  const metadata: Record<string, JSONSchema7Type> = {
+    'core:relationshipResolution': resolution
+  };
+  const input = RelationshipConstraintFixture.input();
+  const initial = RelationshipConstraint.domain(input, metadata, 'text');
+
+  resolution.text = RelationshipResolutionEntity.create({
+    'after': replacement,
+    'disposition': 'applied',
+    'groupId': 'text-group',
+    'operation': 'alias',
+    'relationshipId': 'text-from-source',
+    'sources': ['source']
+  });
+  const updated = RelationshipConstraint.domain(input, metadata, 'text');
+
+  assert.equal(initial?.baseline?.hex, baseline.hex);
+  assert.equal(updated?.baseline?.hex, replacement.hex);
+  assert.notStrictEqual(updated, initial);
+});
+
 void test('RelationshipConstraint reuses one domain for repeated calls on one graph and resolution record', () => {
   const baseline = colorRecordFactory.fromHex('#777777');
   const input = RelationshipConstraintFixture.input({ 'tolerance': { 'lightness': 0.03 } });

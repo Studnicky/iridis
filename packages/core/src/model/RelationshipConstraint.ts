@@ -199,6 +199,9 @@ export class RelationshipConstraint {
     ) {
       return new RelationshipConstraintContext(graphContext, metadata);
     }
+    if (!Object.isFrozen(resolutionSource)) {
+      return new RelationshipConstraintContext(graphContext, metadata);
+    }
     const result = RelationshipConstraint.#resolutionContexts.get(graphSource, resolutionSource, () => {
       const next = new RelationshipConstraintContext(graphContext, metadata);
       return next;
@@ -266,11 +269,16 @@ export class RelationshipConstraint {
   private static graphContext(
     graphSource: object
   ): RelationshipConstraintGraphContext {
-    const result = RelationshipConstraint.#contexts.get(graphSource, () => {
+    const create = (): RelationshipConstraintGraphContext => {
       const graph = RoleRelationshipGraphEntity.intake(graphSource);
       const context = new RelationshipConstraintGraphContext(graph);
       return context;
-    });
+    };
+    if (!Object.isFrozen(graphSource)) {
+      const result = create();
+      return result;
+    }
+    const result = RelationshipConstraint.#contexts.get(graphSource, create);
     return result;
   }
 
