@@ -310,6 +310,19 @@ await test('VscodeSeedRoles :: keeps dark chrome and ANSI shades distinct from t
   const ansiWhite = state.roles.ansiWhite;
   const ansiBrightWhite = state.roles.ansiBrightWhite;
 
+  if (
+    border === undefined ||
+    guide === undefined ||
+    guideActive === undefined ||
+    widgetBorder === undefined ||
+    ansiBlack === undefined ||
+    ansiBrightBlack === undefined ||
+    ansiWhite === undefined ||
+    ansiBrightWhite === undefined
+  ) {
+    throw new Error('The full VS Code schema does not resolve its chrome and ANSI roles.');
+  }
+
   assert.ok(border.oklch.l < 0.4);
   assert.ok(guide.oklch.l < 0.45);
   assert.ok(guideActive.oklch.l < 0.5);

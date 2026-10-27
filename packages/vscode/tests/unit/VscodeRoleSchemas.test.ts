@@ -126,6 +126,7 @@ const VSCODE_ROLE_SCHEMA_EXPECTATIONS = {
     {
       'algorithm': 'wcag21',
       'background': 'background',
+      'contrastClass': 'non-text',
       'foreground': 'accent',
       'maximumContrastRatio': 4.5,
       'minimumContrastRatio': 3.0
@@ -133,18 +134,21 @@ const VSCODE_ROLE_SCHEMA_EXPECTATIONS = {
     {
       'algorithm': 'wcag21',
       'background': 'accent',
+      'contrastClass': 'text',
       'foreground': 'onAccent',
       'minimumContrastRatio': 4.5
     },
     {
       'algorithm': 'wcag21',
       'background': 'background',
+      'contrastClass': 'text',
       'foreground': 'link',
       'minimumContrastRatio': 4.5
     },
     {
       'algorithm': 'wcag21',
       'background': 'chrome',
+      'contrastClass': 'text',
       'foreground': 'chromeForeground',
       'minimumContrastRatio': 4.5
     }

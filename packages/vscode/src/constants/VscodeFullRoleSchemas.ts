@@ -55,24 +55,28 @@ class VscodeFullRoleSchemas {
       {
         'algorithm': 'wcag21',
         'background': 'background',
+        'contrastClass': 'text',
         'foreground': 'foreground',
         'minimumContrastRatio': 7.0
       },
       {
         'algorithm': 'wcag21',
         'background': 'background',
+        'contrastClass': 'text',
         'foreground': 'comment',
         'minimumContrastRatio': 4.5
       },
       {
         'algorithm': 'wcag21',
         'background': 'background',
+        'contrastClass': 'text',
         'foreground': 'muted',
         'minimumContrastRatio': 4.5
       },
       {
         'algorithm': 'wcag21',
         'background': 'background',
+        'contrastClass': 'non-text',
         'foreground': 'surface',
         'maximumContrastRatio': 2.0,
         'minimumContrastRatio': 1.1
@@ -80,12 +84,14 @@ class VscodeFullRoleSchemas {
       {
         'algorithm': 'wcag21',
         'background': 'background',
+        'contrastClass': 'text',
         'foreground': 'keyword',
         'minimumContrastRatio': 4.5
       },
       {
         'algorithm': 'wcag21',
         'background': 'background',
+        'contrastClass': 'non-text',
         'foreground': 'accent',
         'maximumContrastRatio': 4.5,
         'minimumContrastRatio': 3.0
@@ -93,78 +99,91 @@ class VscodeFullRoleSchemas {
       {
         'algorithm': 'wcag21',
         'background': 'background',
+        'contrastClass': 'text',
         'foreground': 'type',
         'minimumContrastRatio': 4.5
       },
       {
         'algorithm': 'wcag21',
         'background': 'background',
+        'contrastClass': 'text',
         'foreground': 'function',
         'minimumContrastRatio': 4.5
       },
       {
         'algorithm': 'wcag21',
         'background': 'background',
+        'contrastClass': 'text',
         'foreground': 'variable',
         'minimumContrastRatio': 4.5
       },
       {
         'algorithm': 'wcag21',
         'background': 'background',
+        'contrastClass': 'text',
         'foreground': 'string',
         'minimumContrastRatio': 4.5
       },
       {
         'algorithm': 'wcag21',
         'background': 'background',
+        'contrastClass': 'text',
         'foreground': 'number',
         'minimumContrastRatio': 4.5
       },
       {
         'algorithm': 'wcag21',
         'background': 'background',
+        'contrastClass': 'text',
         'foreground': 'constant',
         'minimumContrastRatio': 4.5
       },
       {
         'algorithm': 'wcag21',
         'background': 'background',
+        'contrastClass': 'text',
         'foreground': 'error',
         'minimumContrastRatio': 4.5
       },
       {
         'algorithm': 'wcag21',
         'background': 'background',
+        'contrastClass': 'text',
         'foreground': 'warning',
         'minimumContrastRatio': 4.5
       },
       {
         'algorithm': 'wcag21',
         'background': 'background',
+        'contrastClass': 'text',
         'foreground': 'info',
         'minimumContrastRatio': 4.5
       },
       {
         'algorithm': 'wcag21',
         'background': 'background',
+        'contrastClass': 'text',
         'foreground': 'success',
         'minimumContrastRatio': 4.5
       },
       {
         'algorithm': 'wcag21',
         'background': 'accent',
+        'contrastClass': 'text',
         'foreground': 'onAccent',
         'minimumContrastRatio': 4.5
       },
       {
         'algorithm': 'wcag21',
         'background': 'background',
+        'contrastClass': 'text',
         'foreground': 'link',
         'minimumContrastRatio': 4.5
       },
       {
         'algorithm': 'wcag21',
         'background': 'chrome',
+        'contrastClass': 'text',
         'foreground': 'chromeForeground',
         'minimumContrastRatio': 4.5
       }
