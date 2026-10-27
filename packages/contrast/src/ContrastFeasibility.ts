@@ -353,14 +353,9 @@ class ContrastFeasibilityDomain {
     foreground: RoleDomainInterface, background: RoleDomainInterface, foregroundRoot: string, backgroundRoot: string,
     foregroundArc: HueArcInterface, backgroundArc: HueArcInterface, requirement: ContrastPolicy.RequirementInterface
   ): boolean {
-    const foregroundHue = ContrastFeasibilityDomain.domainHueArc(foreground, foregroundRoot, foregroundArc);
-    const backgroundHue = ContrastFeasibilityDomain.domainHueArc(background, backgroundRoot, backgroundArc);
-    if (
-      foregroundHue === undefined ||
-      backgroundHue === undefined ||
-      foregroundHue.start < 0 || foregroundHue.end > 360 ||
-      backgroundHue.start < 0 || backgroundHue.end > 360
-    ) {
+    const foregroundHues = ContrastFeasibilityDomain.domainHueArcs(foreground, foregroundRoot, foregroundArc);
+    const backgroundHues = ContrastFeasibilityDomain.domainHueArcs(background, backgroundRoot, backgroundArc);
+    if (foregroundHues === undefined || backgroundHues === undefined) {
       return false;
     }
     const foregroundCandidates = ContrastFeasibilityDomain.candidates(foreground);
@@ -370,13 +365,40 @@ class ContrastFeasibilityDomain {
       if (foregroundCandidate === undefined) { continue; }
       for (let backgroundIndex = 0; backgroundIndex < backgroundCandidates.length; backgroundIndex += 1) {
         const backgroundCandidate = backgroundCandidates[backgroundIndex];
-        if (backgroundCandidate === undefined) { continue; }
-        if (ContrastFeasibilityDomain.witnessPasses(foregroundCandidate, backgroundCandidate, foregroundHue, backgroundHue, requirement)) {
+        if (
+          backgroundCandidate !== undefined &&
+          ContrastFeasibilityDomain.witnessPassesEveryDomain(
+            foregroundCandidate, backgroundCandidate, foregroundHues, backgroundHues, requirement
+          )
+        ) {
           return true;
         }
       }
     }
     return false;
+  }
+
+  private static witnessPassesEveryDomain(
+    foreground: readonly [number, number],
+    background: readonly [number, number],
+    foregroundHues: readonly HueArcInterface[],
+    backgroundHues: readonly HueArcInterface[],
+    requirement: ContrastPolicy.RequirementInterface
+  ): boolean {
+    for (let foregroundIndex = 0; foregroundIndex < foregroundHues.length; foregroundIndex += 1) {
+      const foregroundHue = foregroundHues[foregroundIndex];
+      if (foregroundHue === undefined) { return false; }
+      for (let backgroundIndex = 0; backgroundIndex < backgroundHues.length; backgroundIndex += 1) {
+        const backgroundHue = backgroundHues[backgroundIndex];
+        if (
+          backgroundHue === undefined ||
+          !ContrastFeasibilityDomain.witnessPasses(foreground, background, foregroundHue, backgroundHue, requirement)
+        ) {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 
   private static candidates(domain: RoleDomainInterface): readonly (readonly [number, number])[] {
@@ -531,40 +553,48 @@ class ContrastFeasibilityDomain {
         'minimumWcag': coordinate.relativeLuminance
       };
     }
-    const hue = ContrastFeasibilityDomain.domainHueArc(domain, root, arc);
-    if (hue === undefined) {
+    const hues = ContrastFeasibilityDomain.domainHueArcs(domain, root, arc);
+    if (hues === undefined) {
       return undefined;
     }
-    const bounds = HueIntervalBounds.range(domain.lightness, domain.chroma, hue.start, hue.end);
-    return {
-      'maximumApca': bounds.maximumApcaLuminance,
-      'maximumWcag': bounds.maximumRelativeLuminance,
-      'minimumApca': bounds.minimumApcaLuminance,
-      'minimumWcag': bounds.minimumRelativeLuminance
-    };
+    let maximumApca = -Infinity;
+    let maximumWcag = -Infinity;
+    let minimumApca = Infinity;
+    let minimumWcag = Infinity;
+    for (let index = 0; index < hues.length; index += 1) {
+      const hue = hues[index];
+      if (hue === undefined) { continue; }
+      const bounds = HueIntervalBounds.range(domain.lightness, domain.chroma, hue.start, hue.end);
+      maximumApca = Math.max(maximumApca, bounds.maximumApcaLuminance);
+      maximumWcag = Math.max(maximumWcag, bounds.maximumRelativeLuminance);
+      minimumApca = Math.min(minimumApca, bounds.minimumApcaLuminance);
+      minimumWcag = Math.min(minimumWcag, bounds.minimumRelativeLuminance);
+    }
+    return { 'maximumApca': maximumApca, 'maximumWcag': maximumWcag, 'minimumApca': minimumApca, 'minimumWcag': minimumWcag };
   }
 
-  private static domainHueArc(
+  private static domainHueArcs(
     domain: RoleDomainInterface,
     root: string,
     arc: HueArcInterface
-  ): HueArcInterface | undefined {
+  ): readonly HueArcInterface[] | undefined {
     if (domain.hue !== undefined) {
-      const result = { 'end': domain.hue, 'start': domain.hue };
-      return result;
+      return [{ 'end': domain.hue, 'start': domain.hue }];
     }
     const relation = domain.relation;
     if (relation?.root === root && relation.affineOffset === undefined) {
-      if (
-        relation.targetClamp !== undefined &&
-        relation.targetClamp < 180 &&
-        (relation.discontinuity === undefined || ContrastFeasibilityDomain.containsHue(arc, relation.discontinuity))
-      ) {
-        return undefined;
+      const sourceArcs = relation.targetClamp === undefined || relation.targetClamp >= 180 || relation.discontinuity === undefined
+        ? [arc]
+        : ContrastFeasibilityDomain.splitAtDiscontinuity(arc, relation.discontinuity);
+      const result: HueArcInterface[] = [];
+      for (let index = 0; index < sourceArcs.length; index += 1) {
+        const sourceArc = sourceArcs[index];
+        if (sourceArc === undefined) { continue; }
+        const start = relation.resolve(sourceArc.start);
+        const end = relation.resolve(sourceArc.end);
+        result.push({ 'end': Math.max(start, end), 'start': Math.min(start, end) });
       }
-      const start = relation.resolve(arc.start);
-      const end = relation.resolve(arc.end);
-      return { 'end': Math.max(start, end), 'start': Math.min(start, end) };
+      return result;
     }
     const offset = ContrastFeasibilityDomain.domainAffineOffset(domain, root);
     if (offset === undefined) {
@@ -575,16 +605,21 @@ class ContrastFeasibilityDomain {
     if (start > end) {
       return undefined;
     }
-    const result = { 'end': end, 'start': start };
-    return result;
+    return [{ 'end': end, 'start': start }];
   }
 
-  private static containsHue(arc: HueArcInterface, hue: number): boolean {
-    const normalized = hue === 360 ? 0 : hue;
-    const result = normalized === 0
-      ? arc.start === 0 || arc.end === 360
-      : arc.start <= normalized && normalized <= arc.end;
-    return result;
+  private static splitAtDiscontinuity(
+    arc: HueArcInterface,
+    discontinuity: number
+  ): readonly HueArcInterface[] {
+    if (discontinuity <= arc.start || discontinuity >= arc.end) {
+      return [arc];
+    }
+    const next = discontinuity + Number.EPSILON * Math.max(1, Math.abs(discontinuity));
+    return [
+      { 'end': discontinuity, 'start': arc.start },
+      { 'end': arc.end, 'start': next }
+    ];
   }
 
   private static domainAffineOffset(domain: RoleDomainInterface, root: string): number | undefined {

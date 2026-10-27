@@ -741,7 +741,7 @@ await test('ContrastFeasibility keeps a wrapped hue-target segment in its certif
 });
 
 
-await test('ContrastFeasibility leaves a hue-target arc crossing its antipode indeterminate', () => {
+await test('ContrastFeasibility splits a hue-target arc crossing its antipode into sound witness domains', () => {
   const schema = RoleSchemaEntity.intake({
     'contrastPairs': [{ 'background': 'background', 'foreground': 'target', 'minimumContrastRatio': 1 }],
     'name': 'hue-target-antipode',
@@ -765,17 +765,17 @@ await test('ContrastFeasibility leaves a hue-target arc crossing its antipode in
       }]
     },
     'roles': [
-      ContrastFeasibilityFixture.role('background', 0.1, 0.2),
-      ContrastFeasibilityFixture.role('source', 0.85, 0.2),
-      ContrastFeasibilityFixture.role('target', 0.85, 0.2)
+      ContrastFeasibilityFixture.role('background', 0.05, 0),
+      ContrastFeasibilityFixture.role('source', 0.95, 0.1),
+      ContrastFeasibilityFixture.role('target', 0.95, 0.1)
     ]
   });
 
   const pair = ContrastFeasibility.analyzeSchema(schema, ContrastFeasibilityFixture.options()).pairs[0];
 
   assert.ok(pair !== undefined, 'antipode-crossing target receives a feasibility result');
-  assert.strictEqual(pair.reachability, 'indeterminate', 'the discontinuous hue-target image never receives a continuous certificate');
-  assert.ok(pair.sampled !== undefined, 'the unresolved discontinuity retains sampled evidence');
+  assert.strictEqual(pair.reachability, 'always-reachable', 'each side of the antipode split clears the witness requirement');
+  assert.strictEqual(pair.sampled, undefined, 'split arcs yield a continuous certificate without sampled evidence');
 });
 
 await test('ContrastFeasibility bounds a source-less hue-target by its authored clamp image', () => {
