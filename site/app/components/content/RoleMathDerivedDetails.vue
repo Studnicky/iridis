@@ -13,7 +13,7 @@ const detailsModel = computed(() => buildRoleMathDerivedDetailsModel.build(props
 <template>
   <div v-if="props.role.origin.isDerived()">
     <StatusNote class="space-y-2">
-      <div>This role is derived from <strong class="text-highlighted uppercase">{{ props.role.parentRole }}</strong>. Its color is computed by offsetting the parent's OKLCH values according to the schema below.</div>
+      <div>This role follows <strong class="text-highlighted uppercase">{{ props.role.parentRole }}</strong> through its authored relationship.</div>
     </StatusNote>
     <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
       <MetricTile
@@ -30,7 +30,7 @@ const detailsModel = computed(() => buildRoleMathDerivedDetailsModel.build(props
         as="div"
       />
       <div class="not-italic text-highlighted">
-        {{ props.role.relationshipOperation ?? 'none' }}
+        {{ props.role.relationshipOperation?.label ?? 'none' }}
       </div>
     </div>
   </div>

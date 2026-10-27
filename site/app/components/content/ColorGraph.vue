@@ -1,6 +1,5 @@
 <script setup lang="ts">
 /** Renders the engine-resolved role graph using authored relationship edges. */
-import { EffectInterpreter } from '@studnicky/fsm/browser';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/browser';
 import { nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 

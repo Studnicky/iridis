@@ -1,5 +1,7 @@
 import type { RoleSchemaEntity } from '@studnicky/iridis/model';
 
+import { RelationshipSources } from '@studnicky/iridis/model';
+
 import type { RoleHexMapType } from '~/composables/types/index.ts';
 import type { RoleSortKeyType } from '~/composables/types/roleSortKeyType.ts';
 import type { RoleSortFieldBehaviorInterface } from '~/utils/roleSortFieldBehaviorInterface.ts';
@@ -57,10 +59,11 @@ export const buildSchemaTree = class SchemaTreeBuilder {
       const relationships = groups[groupIndex]?.relationships ?? [];
       for (let relationshipIndex = 0; relationshipIndex < relationships.length; relationshipIndex += 1) {
         const relationship = relationships[relationshipIndex];
-        if (relationship === undefined || relationship.operation === 'alpha-overlay' || relationship.operation === 'hue-target') {
+        if (relationship === undefined) {
           continue;
         }
-        sources.set(relationship.target, relationship.source);
+        const names = RelationshipSources.names(relationship);
+        sources.set(relationship.target, names.length === 0 ? relationship.target : names.join(' + '));
       }
     }
     return sources;

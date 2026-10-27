@@ -5,29 +5,7 @@ import { colorRecordFactory } from '@studnicky/iridis';
 import { contrastRatio } from '~/theme/ContrastRatio.ts';
 
 import type { ColorGraphCategoryVisibility } from './ColorGraphCategoryVisibility.ts';
-import type { ColorGraphNodeCategory } from './ColorGraphNodeCategory.ts';
-
-class ColorGraphPointMeta {
-  public readonly relationshipOperation: string | null;
-  public readonly category: ColorGraphNodeCategory;
-  public readonly hex: string;
-  public readonly labelSuffix: string;
-  public readonly name: string;
-
-  public constructor(
-    relationshipOperation: string | null,
-    category: ColorGraphNodeCategory,
-    hex: string,
-    labelSuffix: string,
-    name: string
-  ) {
-    this.relationshipOperation = relationshipOperation;
-    this.category = category;
-    this.hex = hex;
-    this.labelSuffix = labelSuffix;
-    this.name = name;
-  }
-}
+import type { ColorGraphPointMeta } from './ColorGraphPointMeta.ts';
 
 export const colorGraphLabelPainter = class ColorGraphLabelPainter {
   public static backgroundColorFromTheme(): [number, number, number, number] {

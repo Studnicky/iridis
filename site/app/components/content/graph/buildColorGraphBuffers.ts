@@ -5,28 +5,7 @@ import type { RoleMathEntry } from '~/composables/types/roleMathEntry.ts';
 import type { ColorGraphCategoryVisibility } from './ColorGraphCategoryVisibility.ts';
 
 import { ColorGraphNodeCategory } from './ColorGraphNodeCategory.ts';
-
-class ColorGraphPointMeta {
-  public readonly relationshipOperation: string | null;
-  public readonly category: ColorGraphNodeCategory;
-  public readonly labelSuffix: string;
-  public readonly hex: string;
-  public readonly name: string;
-
-  public constructor(
-    relationshipOperation: string | null,
-    category: ColorGraphNodeCategory,
-    labelSuffix: string,
-    hex: string,
-    name: string
-  ) {
-    this.relationshipOperation = relationshipOperation;
-    this.category = category;
-    this.labelSuffix = labelSuffix;
-    this.hex = hex;
-    this.name = name;
-  }
-}
+import { ColorGraphPointMeta } from './ColorGraphPointMeta.ts';
 
 class ColorGraphBuffers {
   public readonly colors: Float32Array;
@@ -444,11 +423,11 @@ export const buildColorGraphBuffers = class ColorGraphBuffersBuilder {
       if (role === undefined) {continue;}
       const category = ColorGraphNodeCategory.fromRole(role);
       meta.push(new ColorGraphPointMeta(
-        role.relationshipOperation,
         category,
-        role.clamp === null ? '' : ' ⏚',
         role.hex,
-        role.name
+        role.clamp === null ? '' : ' ⏚',
+        role.name,
+        role.relationshipOperation?.label ?? null
       ));
     }
     return meta;
