@@ -39,8 +39,10 @@ interface HueEvaluationInterface {
 
 interface HueRelationInterface {
   readonly 'affineOffset'?: number;
+  readonly 'discontinuity'?: number;
   resolve(rootHue: number): number;
   readonly 'root': string;
+  readonly 'targetClamp'?: number;
 }
 
 interface HueArcInterface {
@@ -219,6 +221,9 @@ class ContrastFeasibilityDomain {
     const baseline = domain.relationship?.baseline?.oklch.h;
     if (tolerance === undefined || tolerance <= 0 || baseline === undefined) {
       return undefined;
+    }
+    if (tolerance >= 180) {
+      return [{ 'end': 360, 'start': 0 }];
     }
     const lower = baseline - tolerance;
     const upper = baseline + tolerance;
@@ -550,6 +555,13 @@ class ContrastFeasibilityDomain {
     }
     const relation = domain.relation;
     if (relation?.root === root && relation.affineOffset === undefined) {
+      if (
+        relation.targetClamp !== undefined &&
+        relation.targetClamp < 180 &&
+        (relation.discontinuity === undefined || ContrastFeasibilityDomain.containsHue(arc, relation.discontinuity))
+      ) {
+        return undefined;
+      }
       const start = relation.resolve(arc.start);
       const end = relation.resolve(arc.end);
       return { 'end': Math.max(start, end), 'start': Math.min(start, end) };
@@ -564,6 +576,14 @@ class ContrastFeasibilityDomain {
       return undefined;
     }
     const result = { 'end': end, 'start': start };
+    return result;
+  }
+
+  private static containsHue(arc: HueArcInterface, hue: number): boolean {
+    const normalized = hue === 360 ? 0 : hue;
+    const result = normalized === 0
+      ? arc.start === 0 || arc.end === 360
+      : arc.start <= normalized && normalized <= arc.end;
     return result;
   }
 
@@ -1198,7 +1218,9 @@ export class ContrastFeasibility {
     }
     const definition = relationship.relationship;
     if (source === undefined) {
-      const result = ContrastFeasibility.sourceLessOptions(role.name, definition);
+      const result = relationship.baseline === undefined
+        ? ContrastFeasibility.sourceLessOptions(role.name, definition)
+        : ContrastFeasibility.runtimeBaselineOptions(relationship);
       return result;
     }
     const delta = definition.operation === 'oklch-delta' ? definition : undefined;
@@ -1206,18 +1228,16 @@ export class ContrastFeasibility {
     const chromaScale = delta?.chromaScale ?? 1;
     const hueOffset = ContrastFeasibility.hueOffset(relationship, delta);
     const tolerance = relationship.tolerance;
-    const lightnessProjector = delta?.lightnessOffset === undefined
-      ? ContrastFeasibility.preservedCoordinateRange
-      : ContrastFeasibility.projectedCoordinateRange;
-    const chromaProjector = delta?.chromaScale === undefined
-      ? ContrastFeasibility.preservedCoordinateRange
-      : ContrastFeasibility.projectedCoordinateRange;
-    const lightness = lightnessProjector(
+    const coordinateMode = RoleGeometry.coordinateMode(definition);
+    const projector = coordinateMode === RoleGeometry.clampMode
+      ? ContrastFeasibility.projectedCoordinateRange
+      : ContrastFeasibility.preservedCoordinateRange;
+    const lightness = projector(
       role.lightnessRange,
       [source.lightness[0] + lightnessOffset, source.lightness[1] + lightnessOffset],
       { 'maximum': 1, 'minimum': 0, 'tolerance': tolerance?.lightness }
     );
-    const chroma = chromaProjector(
+    const chroma = projector(
       role.chromaRange,
       [source.chroma[0] * chromaScale, source.chroma[1] * chromaScale],
       { 'maximum': 0.5, 'minimum': 0, 'tolerance': tolerance?.chroma }
@@ -1317,6 +1337,22 @@ export class ContrastFeasibility {
     return result;
   }
 
+  private static runtimeBaselineOptions(
+    relationship: RelationshipConstraintDomain
+  ): RoleDomainOptionsInterface {
+    const baseline = relationship.baseline;
+    if (baseline === undefined) {
+      throw new TypeError('Runtime relationship projection requires its resolved baseline');
+    }
+    const tolerance = relationship.tolerance?.hue;
+    const result: RoleDomainOptionsInterface = {
+      ...(tolerance === undefined || tolerance <= 0
+        ? { 'resolvedHue': baseline.oklch.h }
+        : { 'hueArcs': ContrastFeasibility.hueArcsFor(baseline.oklch.h, tolerance) })
+    };
+    return result;
+  }
+
   private static sourceLessOptions(
     roleName: string,
     definition: RelationshipConstraintDomain['relationship']
@@ -1345,11 +1381,13 @@ export class ContrastFeasibility {
     clamp: number
   ): HueRelationInterface {
     const result: HueRelationInterface = {
+      'discontinuity': ContrastFeasibility.normalizeHue(hue + 180),
       'resolve': (rootHue: number): number => {
         const resolved = RoleGeometry.hueTowards(rootHue, hue, clamp);
         return resolved;
       },
-      'root': root
+      'root': root,
+      'targetClamp': clamp
     };
     return result;
   }
@@ -1360,13 +1398,22 @@ export class ContrastFeasibility {
     clamp: number
   ): HueRelationInterface {
     const sourceRelation = source.relation;
+    const sourceOffset = sourceRelation?.affineOffset;
+    let discontinuity: number | undefined;
+    if (sourceRelation === undefined) {
+      discontinuity = ContrastFeasibility.normalizeHue(hue + 180);
+    } else if (sourceOffset !== undefined) {
+      discontinuity = ContrastFeasibility.normalizeHue(hue + 180 - sourceOffset);
+    }
     const result: HueRelationInterface = {
+      ...(discontinuity === undefined ? {} : { 'discontinuity': discontinuity }),
       'resolve': (rootHue: number): number => {
         const sourceHue = sourceRelation?.resolve(rootHue) ?? rootHue;
         const resolved = RoleGeometry.hueTowards(sourceHue, hue, clamp);
         return resolved;
       },
-      'root': sourceRelation?.root ?? source.name
+      'root': sourceRelation?.root ?? source.name,
+      'targetClamp': clamp
     };
     return result;
   }
@@ -1390,6 +1437,9 @@ export class ContrastFeasibility {
   }
 
   private static hueArcsFor(hue: number, tolerance: number): readonly HueArcInterface[] {
+    if (tolerance >= 180) {
+      return [{ 'end': 360, 'start': 0 }];
+    }
     const lower = hue - tolerance;
     const upper = hue + tolerance;
     if (lower < 0) {

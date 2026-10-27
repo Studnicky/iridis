@@ -55,10 +55,10 @@ Constraints are `pin`, `range`, `hue-relationship`, `gamut`, `cvd-floor`, or
 `passed` value is false.
 
 A relationship graph resolves each target through one authored relationship before
-compliance. An operation that explicitly computes lightness or chroma clamps that
-coordinate into the target range. An operation that preserves a source coordinate
-uses the target range midpoint when that range exists and otherwise preserves the
-source coordinate. A source-less `hue-target` retains its already-resolved target
+compliance. An operation that explicitly computes either lightness or chroma clamps
+both coordinates into the target ranges. An operation that preserves both source
+coordinates uses each target range midpoint when that range exists and otherwise
+preserves the source coordinate. A source-less `hue-target` retains its already-resolved target
 lightness, chroma, and alpha. `core:relationshipResolution.after` records this
 final coordinate result. Fixed relationships preserve that record; tolerant
 relationships bound compliance movement to their declared channel deltas. An

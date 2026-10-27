@@ -17,6 +17,21 @@ class RoleGeometry {
    */
   static readonly DEFAULT_HUE_CLAMP = 90;
 
+  /** Selects the target-envelope mode shared by relationship resolution and feasibility. */
+  static coordinateMode(relationship: Readonly<{
+    'chromaScale'?: number;
+    'lightnessOffset'?: number;
+    'operation': string;
+  }>): RelationshipCoordinateMode {
+    const explicit = relationship.operation === 'alpha-overlay'
+      || relationship.operation === 'oklch-interpolate'
+      || (relationship.operation === 'oklch-delta' && (
+        relationship.chromaScale !== undefined || relationship.lightnessOffset !== undefined
+      ));
+    const result = explicit ? RoleGeometry.clampMode : RoleGeometry.midpointMode;
+    return result;
+  }
+
   /** Midpoint of a declared `[min, max]` range. */
   static rangeCenter(range: readonly [number, number]): number {
     const result = (range[0] + range[1]) / 2;

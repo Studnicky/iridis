@@ -419,6 +419,113 @@ await test('ContrastFeasibility bounds tolerant relationships by their baseline-
   assert.ok(pair.proof.bestActual < pair.proof.required, 'the proof excludes the role range outside its relationship tolerance');
 });
 
+await test('ContrastFeasibility treats a full-circle relationship hue tolerance as a bounded domain', () => {
+  const baseline = colorRecordFactory.fromOklch(0.5, 0.1, 10);
+  const schema = RoleSchemaEntity.intake({
+    'contrastPairs': [{ 'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 7 }],
+    'name': 'full-circle-hue-tolerance',
+    'relationshipGraph': {
+      'groups': [{
+        'anchor': 'source',
+        'defaultMode': 'base',
+        'id': 'text-group',
+        'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'base' }], 'id': 'base' }],
+        'name': 'Text',
+        'relationships': [{
+          'id': 'text-alias',
+          'operation': 'alias',
+          'priority': 0,
+          'relaxability': 'tolerant',
+          'source': 'source',
+          'target': 'text',
+          'tolerance': { 'hue': 360 }
+        }]
+      }]
+    },
+    'roles': [
+      ContrastFeasibilityFixture.role('background', 1, 0, 0),
+      ContrastFeasibilityFixture.role('source', 0.5, 0.1, 10),
+      ContrastFeasibilityFixture.role('text', 0.5, 0.1, 10)
+    ]
+  });
+  const metadata = {};
+  Metadata.writeRelationshipResolution(metadata, new Map([['text', RelationshipResolutionEntity.create({
+    'after': baseline,
+    'disposition': 'applied',
+    'groupId': 'text-group',
+    'operation': 'alias',
+    'relationshipId': 'text-alias',
+    'sources': ['source']
+  })]]));
+  const state = {
+    'colors': [],
+    'input': InputEntity.intake({ 'colors': [], 'contrast': ContrastFeasibilityFixture.options(), 'roles': schema }),
+    'metadata': metadata,
+    'outputs': {},
+    'roles': { 'background': colorRecordFactory.fromHex('#ffffff'), 'source': baseline, 'text': baseline },
+    'runtime': RuntimeOptionsEntity.intake({}),
+    'variants': {}
+  };
+
+  assert.doesNotThrow(() => {
+    ContrastFeasibility.proveRun(state);
+  }, 'a 360-degree hue tolerance stays inside the analytic hue domain');
+});
+
+await test('ContrastFeasibility proves source-less hue targets from their runtime tolerance', () => {
+  const baseline = colorRecordFactory.fromOklch(0.5, 0.1, 170);
+  const schema = RoleSchemaEntity.intake({
+    'contrastPairs': [{ 'background': 'background', 'foreground': 'target', 'minimumContrastRatio': 4.5 }],
+    'name': 'runtime-hue-target-tolerance',
+    'relationshipGraph': {
+      'groups': [{
+        'anchor': 'target',
+        'defaultMode': 'base',
+        'id': 'target-group',
+        'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'base' }], 'id': 'base' }],
+        'name': 'Target',
+        'relationships': [{
+          'clamp': 30,
+          'hue': 160,
+          'id': 'target-hue',
+          'operation': 'hue-target',
+          'priority': 0,
+          'relaxability': 'tolerant',
+          'target': 'target',
+          'tolerance': { 'hue': 5 }
+        }]
+      }]
+    },
+    'roles': [
+      ContrastFeasibilityFixture.role('background', 1, 0, 0),
+      ContrastFeasibilityFixture.role('target', 0.5, 0.1, 170)
+    ]
+  });
+  const metadata = {};
+  Metadata.writeRelationshipResolution(metadata, new Map([['target', RelationshipResolutionEntity.create({
+    'after': baseline,
+    'disposition': 'applied',
+    'groupId': 'target-group',
+    'operation': 'hue-target',
+    'relationshipId': 'target-hue',
+    'sources': []
+  })]]));
+  const state = {
+    'colors': [],
+    'input': InputEntity.intake({ 'colors': [], 'contrast': ContrastFeasibilityFixture.options(), 'roles': schema }),
+    'metadata': metadata,
+    'outputs': {},
+    'roles': { 'background': colorRecordFactory.fromHex('#ffffff'), 'target': baseline },
+    'runtime': RuntimeOptionsEntity.intake({}),
+    'variants': {}
+  };
+
+  const pair = ContrastFeasibility.proveRun(state).pairs[0];
+
+  assert.ok(pair !== undefined, 'runtime target receives a feasibility result');
+  assert.strictEqual(pair.reachability, 'always-reachable', 'proof bounds hue around the emitted baseline instead of the authored clamp image');
+});
+
 await test('ContrastFeasibility leaves alpha-overlay schema targets indeterminate with sampled evidence', () => {
   const schema = RoleSchemaEntity.intake({
     'contrastPairs': [{ 'background': 'background', 'foreground': 'overlay-target', 'minimumContrastRatio': 4.5 }],
@@ -633,6 +740,43 @@ await test('ContrastFeasibility certifies a source-derived hue-target arc across
 });
 
 
+await test('ContrastFeasibility leaves a hue-target arc crossing its antipode indeterminate', () => {
+  const schema = RoleSchemaEntity.intake({
+    'contrastPairs': [{ 'background': 'background', 'foreground': 'target', 'minimumContrastRatio': 1 }],
+    'name': 'hue-target-antipode',
+    'relationshipGraph': {
+      'groups': [{
+        'anchor': 'source',
+        'defaultMode': 'base',
+        'id': 'target-group',
+        'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'base' }], 'id': 'base' }],
+        'name': 'Target',
+        'relationships': [{
+          'clamp': 90,
+          'hue': 160,
+          'id': 'target-hue',
+          'operation': 'hue-target',
+          'priority': 0,
+          'relaxability': 'fixed',
+          'source': 'source',
+          'target': 'target'
+        }]
+      }]
+    },
+    'roles': [
+      ContrastFeasibilityFixture.role('background', 0.1, 0.2),
+      ContrastFeasibilityFixture.role('source', 0.85, 0.2),
+      ContrastFeasibilityFixture.role('target', 0.85, 0.2)
+    ]
+  });
+
+  const pair = ContrastFeasibility.analyzeSchema(schema, ContrastFeasibilityFixture.options()).pairs[0];
+
+  assert.ok(pair !== undefined, 'antipode-crossing target receives a feasibility result');
+  assert.strictEqual(pair.reachability, 'indeterminate', 'the discontinuous hue-target image never receives a continuous certificate');
+  assert.ok(pair.sampled !== undefined, 'the unresolved discontinuity retains sampled evidence');
+});
+
 await test('ContrastFeasibility bounds an unanchored hue-target by the authored clamp image', () => {
   const schema = RoleSchemaEntity.intake({
     'contrastPairs': [{ 'background': 'background', 'foreground': 'target', 'minimumContrastRatio': 4.5 }],
@@ -696,9 +840,9 @@ await test('ContrastFeasibility matches midpoint and clamped graph coordinate en
     });
     return result;
   };
-  const fixedTarget = (lightness: number): RoleDefinitionEntity.Type => {
+  const fixedTarget = (lightness: number, chroma: number): RoleDefinitionEntity.Type => {
     const result = RoleDefinitionEntity.intake({
-      'chromaRange': [0.03, 0.03],
+      'chromaRange': [chroma, chroma],
       'lightnessRange': [lightness, lightness],
       'name': 'target'
     });
@@ -709,9 +853,9 @@ await test('ContrastFeasibility matches midpoint and clamped graph coordinate en
     RoleDefinitionEntity.intake({ 'chromaRange': [0.01, 0.05], 'lightnessRange': [0.7, 0.9], 'name': 'target' }),
     [0.3, 0.7]
   );
-  const midpointLegacyEquivalent = schemaFor(
+  const midpointReference = schemaFor(
     RoleRelationshipEntity.intake({ 'clamp': 180, 'hue': 0, 'id': 'target-hue', 'operation': 'hue-target', 'priority': 2, 'relaxability': 'fixed', 'target': 'target' }),
-    fixedTarget(0.8),
+    fixedTarget(0.8, 0.03),
     [0.3, 0.7]
   );
   const clampedGraph = schemaFor(
@@ -719,26 +863,26 @@ await test('ContrastFeasibility matches midpoint and clamped graph coordinate en
     RoleDefinitionEntity.intake({ 'chromaRange': [0.01, 0.05], 'lightnessRange': [0.7, 0.9], 'name': 'target' }),
     [0.1, 0.2]
   );
-  const clampedLegacyEquivalent = schemaFor(
+  const clampedReference = schemaFor(
     RoleRelationshipEntity.intake({ 'clamp': 180, 'hue': 0, 'id': 'target-hue', 'operation': 'hue-target', 'priority': 2, 'relaxability': 'fixed', 'target': 'target' }),
-    fixedTarget(0.7),
+    fixedTarget(0.7, 0.05),
     [0.1, 0.2]
   );
   const midpointGraphPair = ContrastFeasibility.analyzeSchema(midpointGraph, ContrastFeasibilityFixture.options()).pairs[0];
-  const midpointLegacyPair = ContrastFeasibility.analyzeSchema(midpointLegacyEquivalent, ContrastFeasibilityFixture.options()).pairs[0];
+  const midpointReferencePair = ContrastFeasibility.analyzeSchema(midpointReference, ContrastFeasibilityFixture.options()).pairs[0];
   const clampedGraphPair = ContrastFeasibility.analyzeSchema(clampedGraph, ContrastFeasibilityFixture.options()).pairs[0];
-  const clampedLegacyPair = ContrastFeasibility.analyzeSchema(clampedLegacyEquivalent, ContrastFeasibilityFixture.options()).pairs[0];
+  const clampedReferencePair = ContrastFeasibility.analyzeSchema(clampedReference, ContrastFeasibilityFixture.options()).pairs[0];
 
   assert.ok(midpointGraphPair !== undefined, 'preserved graph target receives a feasibility result');
-  assert.ok(midpointLegacyPair !== undefined, 'legacy midpoint equivalent receives a feasibility result');
+  assert.ok(midpointReferencePair !== undefined, 'midpoint reference receives a feasibility result');
   assert.strictEqual(
     midpointGraphPair.reachability,
-    midpointLegacyPair.reachability,
+    midpointReferencePair.reachability,
     'preserved graph coordinates use the declared target range midpoint'
   );
   assert.deepStrictEqual(
     clampedGraphPair,
-    clampedLegacyPair,
+    clampedReferencePair,
     'explicit graph coordinates clamp into the declared target envelope'
   );
 });
