@@ -2,7 +2,7 @@ import { RelationshipSources, RoleRelationshipGraphEntity, RoleSchemaEntity } fr
 
 import { VSCODE_ROLE_SCHEMAS_64 } from './VSCODE_ROLE_SCHEMAS_64.ts';
 
-/** Backward-compatible 16-role views of the canonical 64-role VS Code schemas. */
+/** Defines 16-role views of the canonical 64-role VS Code schemas. */
 class VscodeRoleSchemas16 {
   static readonly dark: RoleSchemaEntity.Type = VscodeRoleSchemas16.baseView(VSCODE_ROLE_SCHEMAS_64.dark);
 
