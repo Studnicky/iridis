@@ -9,6 +9,7 @@ import {
   ColorRecordEntity,
   contrastWcag21,
   Metadata,
+  RelationshipHueDegrees,
   RelationshipSources,
   RelationshipToleranceEntity,
   RoleRelationshipEntity,
@@ -290,7 +291,7 @@ class ReasonAnnotate implements TaskInterface {
       store.addQuad(DataFactory.quad(relationshipNode, DataFactory.namedNode(iridisVocab.hueDegrees), ReasonAnnotate.authoredNumber(relationship.degrees)));
     }
     if (relationship.variantId !== undefined) {
-      const modeId = relationship.modeId ?? group.defaultMode;
+      const modeId = RelationshipHueDegrees.modeId(group, relationship);
       const variantNode = DataFactory.namedNode(Iri.harmonyVariant(schemaName, group.id, modeId, relationship.variantId));
       store.addQuad(DataFactory.quad(relationshipNode, DataFactory.namedNode(iridisVocab.harmonyVariant), variantNode));
     }

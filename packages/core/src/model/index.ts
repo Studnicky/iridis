@@ -10,6 +10,7 @@ export { PaletteStateSchema }   from './PaletteStateSchema.ts';
 export { PluginSchema }         from './PluginSchema.ts';
 export { RelationshipConstraint } from './RelationshipConstraint.ts';
 export { RelationshipConstraintDomain } from './RelationshipConstraintDomain.ts';
+export { RelationshipHueDegrees } from './RelationshipHueDegrees.ts';
 export { RelationshipSources } from './RelationshipSources.ts';
 export { RoleSchemaSchema }     from './RoleSchemaSchema.ts';
 export { TaskManifestSchema }   from './TaskManifestSchema.ts';
