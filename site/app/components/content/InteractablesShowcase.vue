@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
+import { useSortedRoleContrastRows } from '~/composables/useSortedRoleContrastRows.ts';
 import type { AliasColorEntity } from '~/theme/entities/AliasColorEntity.ts';
 import { buildInteractablesShowcaseModel } from './interactables/buildInteractablesShowcaseModel.ts';
 
@@ -13,7 +14,8 @@ import { buildInteractablesShowcaseModel } from './interactables/buildInteractab
  * iteration inside one `flex flex-wrap` parent wrap at the child level, not
  * the pair level, which is what previously interleaved them.
  */
-const { roleViews, roles, contrastStrictness, sortedRoleContrastRows, contrastReport } = useIridis();
+const { roleViews, roles, contrastStrictness, contrastReport } = useIridis();
+const { sortedRoleContrastRows } = useSortedRoleContrastRows();
 
 
 /** A real filter applied to the avatar/badge row below, not decoration. */

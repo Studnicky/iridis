@@ -1,6 +1,6 @@
 import type { RoleSchemaEntity } from '@studnicky/iridis/model';
 
-import type { RoleSortKeyType } from '~/composables/types/roleSortKeyType.ts';
+import type { RoleSortFieldBehaviorInterface } from '~/utils/roleSortFieldBehaviorInterface.ts';
 
 import { RoleSortableRowEntity } from '~/composables/entities/RoleSortableRowEntity.ts';
 import { sortRoleRows } from '~/utils/sortRoleRows.ts';
@@ -30,7 +30,7 @@ export const buildRolesComplianceRows = class RolesComplianceRows {
   public static build(
     schema: RoleSchemaEntity.Type | undefined,
     rows: readonly RoleSortableRowEntity.Type[],
-    roleSortKeys: readonly RoleSortKeyType[]
+    sortBehaviors: readonly RoleSortFieldBehaviorInterface[]
   ): RoleSortableRowEntity.Type[] {
     const labeled: RoleSortableRowEntity.Type[] = [];
     for (let index = 0; index < rows.length; index += 1) {
@@ -42,8 +42,7 @@ export const buildRolesComplianceRows = class RolesComplianceRows {
       const labeledRow = RoleSortableRowEntity.create({ 'c': row.c, 'compliance': isStructural === true ? 'n/a' : row.compliance, 'h': row.h, 'hex': row.hex, 'l': row.l, 'name': row.name, 'ratio': row.ratio });
       labeled.push(labeledRow);
     }
-    const behaviors = roleSortKeys.map((key) => { return key.behavior; });
-    const result = sortRoleRows(labeled, behaviors);
+    const result = sortRoleRows(labeled, sortBehaviors);
     return result;
   }
 };

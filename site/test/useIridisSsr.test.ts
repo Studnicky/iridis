@@ -16,12 +16,8 @@ await test('useIridis boots a resolved palette during SSR without starting brows
   assert.equal(state.uploadedImages.value.length, 0);
   assert.equal(typeof state.roles.value.background, 'string');
   assert.equal(typeof state.roles.value.brand, 'string');
-  assert.ok(state.sortedRoleContrastRows.value.length > 0);
+  assert.ok(state.roleContrastRows.value.length > 0);
 
-  state.send(IridisUiEvent.toggleCvdPreview('protanopia'));
-  assert.equal(state.cvdPreviewTypes.value.has('protanopia'), true);
-  state.send(IridisUiEvent.toggleCvdPreview('unsupported-preview'));
-  assert.deepEqual([...state.cvdPreviewTypes.value], ['protanopia']);
 });
 
 await test('useIridis shares one client context and isolates concurrent SSR request state', async (context) => {

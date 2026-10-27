@@ -6,7 +6,7 @@
  * the authored relationship graph. The projector only reads those hexes.
  */
 
-import type { ComplianceReportEntity, ContrastFeasibilityReportEntity, CvdMatrixEntity, CvdResultSetEntity } from '@studnicky/iridis-contrast';
+import type { ComplianceReportEntity, ContrastFeasibilityReportEntity, CvdResultSetEntity } from '@studnicky/iridis-contrast';
 import type { ClusterStrategyInterface, GalleryCandidateOutputEntity } from '@studnicky/iridis-image';
 import type { GalleryHistogramSlotInterface } from '@studnicky/iridis-image/types';
 import type { ViteHotContext } from 'vite/types/hot.d.ts';
@@ -22,7 +22,6 @@ import type { WorkerEnvelopeEntity } from './entities/WorkerEnvelopeEntity.ts';
 import type { WorkerReplyEntity } from './entities/WorkerReplyEntity.ts';
 import type { PickerSeedType, RoleHexMapType, RoleViewType, ScaleMapType, UploadedImage } from './types/index.ts';
 import type { RoleMathClampType } from './types/roleMathClampType.ts';
-import type { RoleSortKeyType } from './types/roleSortKeyType.ts';
 
 import { contrastRatio } from '../theme/ContrastRatio.ts';
 import { roleSchemaByName } from '../theme/RoleSchemaByName.ts';
@@ -32,9 +31,6 @@ import { complianceFor } from '../utils/complianceFor.ts';
 import { debounce } from '../utils/debounce.ts';
 import { keyedDebounce } from '../utils/keyedDebounce.ts';
 import { minimumRatioForRole } from '../utils/minimumRatioForRole.ts';
-import { RoleSortBehavior } from '../utils/roleSortBehavior.ts';
-import { ROLE_SORT_FIELD_OPTIONS } from '../utils/roleSortFieldOptions.ts';
-import { sortRoleRows } from '../utils/sortRoleRows.ts';
 import { AccessibilityBlockers } from './accessibilityBlockers.ts';
 import { BrowserWorkerPort } from './browserWorkerPort.ts';
 import { IRIDIS_CONSTANTS } from './constants/IridisConstants.ts';
@@ -54,21 +50,10 @@ import { roleSchemaFor } from './roleSchemaFor.ts';
 import { schemaRoleCount } from './schemaRoleCount.ts';
 import { IridisUiEvent } from './types/index.ts';
 import { useIridisUiMachine } from './useIridisUiMachine.ts';
-import { useNavigationTargets } from './useNavigationTargets.ts';
 import { WorkerRequestClient } from './workerRequestClient.ts';
 
 class ViteModule {
   static readonly metadata: ImportMeta & { readonly 'hot'?: ViteHotContext } = import.meta;
-}
-
-class CvdTypeRegistry {
-  static resolve(value: string): CvdMatrixEntity.Type['name'] {
-    if (value === 'protanopia' || value === 'deuteranopia' || value === 'tritanopia' || value === 'achromatopsia') {
-      const result = value;
-      return result;
-    }
-    throw new RangeError(`Unsupported CVD preview type: ${value}`);
-  }
 }
 
 class IridisContextFactory {
@@ -221,23 +206,7 @@ class IridisContextFactory {
     );
     const selectRelationshipMode = RelationshipGraphSelection.selectMode;
 
-    /**
- * Visual CVD preview — purely a display-time filter over whatever the engine
- * already resolved, independent of the always-on CVD correction. This is the
- * "see it as an afflicted person would" toggle: the previewed palette is the
- * corrected one. A `Set` because real CVD isn't always a single
- * condition — combined/comorbid deficiencies exist, so more than one type
- * can be active at once (CvdPreviewOverlay.vue chains their filters).
- * Empty = preview off. Consumed by a display-layer component, not by the
- * engine pipeline — changing it never triggers a recompute.
- */
-    const cvdPreviewTypes = VueModule.ref<Set<CvdMatrixEntity.Type['name']>>(new Set());
 
-    /** Diagram view state (zoom level, pan offset, expanded fullscreen mode). */
-    const diagramScale = VueModule.ref<number>(1);
-    const diagramTranslateX = VueModule.ref<number>(0);
-    const diagramTranslateY = VueModule.ref<number>(0);
-    const diagramIsExpanded = VueModule.ref<boolean>(false);
 
     const roles = VueModule.ref<RoleHexMapType>({});
     const roleViews = VueModule.ref<RoleViewType[]>([]);
@@ -275,30 +244,6 @@ class IridisContextFactory {
 
     const endOperation = EndOperationOperation.run;
 
-    /**
- * Single source of truth for "sort the role list by ___" — every place the
- * full resolved-role set is listed (Roles table, Resolved roles, Clamps)
- * reads the SAME sortedRoleContrastRows / roleSortKeys rather than keeping
- * its own local sort state, so changing the sort in one place changes it
- * everywhere else showing the palette. Default matches the compliance-first
- * ordering Roles table already shipped with.
- */
-    const complianceField = ROLE_SORT_FIELD_OPTIONS.find((option) => {
-      const matches = option.label === 'Compliance';
-      return matches;
-    });
-    const ratioField = ROLE_SORT_FIELD_OPTIONS.find((option) => {
-      const matches = option.label === 'Ratio';
-      return matches;
-    });
-    if (complianceField === undefined || ratioField === undefined) {
-      throw new Error('Role sort field registry is missing a required default field');
-    }
-    const roleSortKeys = VueModule.ref<RoleSortKeyType[]>([
-      { 'behavior': RoleSortBehavior.descending(complianceField.value) },
-      { 'behavior': RoleSortBehavior.descending(ratioField.value) }
-    ]);
-
     const roleContrastRows = VueModule.computed<RoleSortableRowEntity.Type[]>(() => {
       // 'background' is a required role in every schema tier (RoleSchemaByName.ts),
       // and run() resolves it synchronously before any component can read this —
@@ -319,7 +264,6 @@ class IridisContextFactory {
       return result;
     });
 
-    const sortedRoleContrastRows = VueModule.computed(() => { const result = sortRoleRows(roleContrastRows.value, roleSortKeys.value.map((key) => { return key.behavior; })); return result; });
     const error = VueModule.ref<string | null>(null);
 
     /** Compliance blockers from the latest run; the empty set when the run is compliant. */
@@ -1205,7 +1149,6 @@ class IridisContextFactory {
         run();
       }
       static setMedianCutImageAlgorithm(): void { imgStrategy.value = ClusterDispatcher.resolve('median-cut'); scheduleCombine(); }
-      static setRoleSort(keys: RoleSortKeyType[]): void { roleSortKeys.value = keys; }
       static setSchema(nextSchemaName: string): void {
         schemaName.value = SchemaNameEntity.intake(nextSchemaName);
         RelationshipGraphSelection.reset();
@@ -1216,40 +1159,9 @@ class IridisContextFactory {
       static setWuQuantizeImageAlgorithm(): void { imgStrategy.value = ClusterDispatcher.resolve('wu-quantize'); scheduleCombine(); }
     }
 
-    class DiagramViewOperation {
-      static fit(): void { DiagramViewOperation.reset(); }
-      static pan(dx: number, dy: number): void { diagramTranslateX.value += dx; diagramTranslateY.value += dy; }
-      static reset(): void { diagramScale.value = 1; diagramTranslateX.value = 0; diagramTranslateY.value = 0; }
-      static toggleExpansion(): void { diagramIsExpanded.value = !diagramIsExpanded.value; }
-      static zoom(factor: number): void { diagramScale.value = Math.min(8, Math.max(0.05, diagramScale.value * factor)); }
-    }
-
-    class CvdPreviewOperation {
-      static clear(): void { cvdPreviewTypes.value = new Set(); }
-
-      static toggle(cvdTypeName: string): void {
-        const cvdType = CvdTypeRegistry.resolve(cvdTypeName);
-        const next = new Set(cvdPreviewTypes.value);
-        if (next.has(cvdType)) {
-          next.delete(cvdType);
-        } else {
-          next.add(cvdType);
-        }
-        cvdPreviewTypes.value = next;
-      }
-    }
-
     class PopulatePickerFromImageOperation {
       static run(hexes: string[]): void {
         pickerSeeds.value = hydratePaletteSeeds(hexes, pickerSeeds.value);
-      }
-    }
-
-    const { 'activateTarget': activateNavigationTarget } = useNavigationTargets();
-
-    class NavigateToTargetOperation {
-      static run(targetId: string): void {
-        activateNavigationTarget(targetId);
       }
     }
 
@@ -1296,18 +1208,13 @@ class IridisContextFactory {
 
     registerEffectHandlers({
       'addSeed': SeedMutationOperation.add,
-      'clearCvdPreviews': CvdPreviewOperation.clear,
       'disableStrictCompliance': PaletteParameterOperation.disableStrictCompliance,
       'enableStrictCompliance': PaletteParameterOperation.enableStrictCompliance,
       'extractImageFiles': ImageEffectExtractionOperation.files,
       'extractSampleImage': ImageEffectExtractionOperation.sample,
-      'fitDiagram': DiagramViewOperation.fit,
-      'navigateToTarget': NavigateToTargetOperation.run,
-      'panDiagram': DiagramViewOperation.pan,
       'pinSeedRole': PinSeedRoleOperation.run,
       'populatePickerFromImage': PopulatePickerFromImageOperation.run,
       'removeSeed': SeedMutationOperation.remove,
-      'resetDiagram': DiagramViewOperation.reset,
       'selectImageCandidate': SelectImageCandidateOperation.run,
       'setContrastStrictness': PaletteParameterOperation.setContrastStrictness,
       'setCvdMode': PaletteParameterOperation.setCvdMode,
@@ -1324,14 +1231,10 @@ class IridisContextFactory {
       'setLightFraming': PaletteParameterOperation.setLightFraming,
       'setMedianCutImageAlgorithm': PaletteParameterOperation.setMedianCutImageAlgorithm,
       'setNonMandatoryLevel': PaletteParameterOperation.setNonMandatoryLevel,
-      'setRoleSort': PaletteParameterOperation.setRoleSort,
       'setSchema': PaletteParameterOperation.setSchema,
       'setSeed': SeedMutationOperation.set,
       'setSrgbColorSpace': PaletteParameterOperation.setSrgbColorSpace,
-      'setWuQuantizeImageAlgorithm': PaletteParameterOperation.setWuQuantizeImageAlgorithm,
-      'toggleCvdPreview': CvdPreviewOperation.toggle,
-      'toggleDiagramExpansion': DiagramViewOperation.toggleExpansion,
-      'zoomDiagram': DiagramViewOperation.zoom
+      'setWuQuantizeImageAlgorithm': PaletteParameterOperation.setWuQuantizeImageAlgorithm
     });
 
     let booted = false;
@@ -1411,22 +1314,21 @@ class IridisContextFactory {
         }
         ConsumerLifecycleOperation.register();
         const result = {
-          'accessibilityBlockers': accessibilityBlockers, 'activeSeeds': activeSeeds, 'addUploadedImages': addUploadedImages, 'candidates': candidates, 'colorSpace': colorSpace, 'combineLocked': combineLocked, 'contrastReport': contrastReport, 'contrastStrictness': contrastStrictness, 'cvdMode': cvdMode,          'cvdPreviewTypes': cvdPreviewTypes, 'diagramIsExpanded': diagramIsExpanded, 'diagramScale': diagramScale,
-          'diagramTranslateX': diagramTranslateX, 'diagramTranslateY': diagramTranslateY,
+          'accessibilityBlockers': accessibilityBlockers, 'activeSeeds': activeSeeds, 'addUploadedImages': addUploadedImages, 'candidates': candidates, 'colorSpace': colorSpace, 'combineLocked': combineLocked, 'contrastReport': contrastReport, 'contrastStrictness': contrastStrictness, 'cvdMode': cvdMode,
           'effectiveHexesFor': effectiveHexesFor, 'enableStrictCompliance': enableStrictCompliance, 'error': error, 'framing': framing,
           'histogram': histogram,
           'imageSeeds': imageSeeds, 'imgChromaRange': imgChromaRange, 'imgDeltaECap': imgDeltaECap,
           'imgHarmonize': imgHarmonize, 'imgHistogramBits': imgHistogramBits, 'imgK': imgK, 'imgLightnessRange': imgLightnessRange, 'imgStrategy': imgStrategy, 'mode': mode, 'nonMandatoryLevel': nonMandatoryLevel, 'paletteRevision': paletteRevision, 'pickerSeeds': pickerSeeds,
-          'pinnableRoles': pinnableRoles, 'rejectedPinRoles': rejectedPinRoles, 'relationshipGraph': relationshipGraph, 'removeUploadedImage': removeUploadedImage, 'reRunCombine': reRunCombine, 'resolving': resolving, 'roleClamps': roleClamps, 'roleDistances': roleDistances,
-          'roles': roles, 'rolesDerived': rolesDerived,
-          'roleSortKeys': roleSortKeys, 'rolesPinned': rolesPinned, 'rolesSynthesized': rolesSynthesized,
+          'pinnableRoles': pinnableRoles, 'rejectedPinRoles': rejectedPinRoles, 'relationshipGraph': relationshipGraph, 'removeUploadedImage': removeUploadedImage, 'reRunCombine': reRunCombine, 'resolving': resolving, 'roleClamps': roleClamps, 'roleContrastRows': roleContrastRows,
+          'roleDistances': roleDistances, 'roles': roles,
+          'rolesDerived': rolesDerived, 'rolesPinned': rolesPinned, 'rolesSynthesized': rolesSynthesized,
           'roleViews': roleViews,
           'run': run, 'running': running,
           'scales': scales,
           'schemaFeasibilityChecking': schemaFeasibilityChecking, 'schemaFeasibilityReport': schemaFeasibilityReport,
           'schemaName': schemaName,
           'selectedCandidateLabel': selectedCandidateLabel,
-          'selectEntryCandidate': selectEntryCandidate, 'selectRelationshipMode': selectRelationshipMode, 'send': sendUiEvent, 'sortedRoleContrastRows': sortedRoleContrastRows,
+          'selectEntryCandidate': selectEntryCandidate, 'selectRelationshipMode': selectRelationshipMode, 'send': sendUiEvent,
           'updateUploadedImageSetting': uploadedImageSettingUpdate, 'uploadedImages': uploadedImages
         };
         return result;

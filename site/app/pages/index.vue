@@ -34,11 +34,11 @@ const {
   'removeUploadedImage': removeUploadedImage, 'updateUploadedImageSetting': updateUploadedImageSetting,
   'selectEntryCandidate': selectEntryCandidate
 } = useIridis();
-const { 'registerDocumentTargets': registerDocumentTargets, 'registerStageIndexSetter': registerStageIndexSetter } = useNavigationTargets();
+const { 'activateTarget': activateTarget, 'registerDocumentTargets': registerDocumentTargets, 'registerStageIndexSetter': registerStageIndexSetter } = useNavigationTargets();
 watch(allDocs, (docs) => { if (docs) {registerDocumentTargets(docs);} }, { 'immediate': true });
 
 /** Theme-preset switcher options, derived from the THEMES registry so the list grows automatically as more themes are registered. */
-const { 'THEMES': THEMES, 'activeThemeKey': activeThemeKey } = useThemePreset();
+const { 'THEMES': THEMES, 'activeThemeKey': activeThemeKey, 'selectTheme': selectTheme } = useThemePreset();
 const themeOptions = computed(() => Array.from(THEMES.values()).map((theme) => ({ 'label': theme.label, 'value': theme.key })));
 
 /** One local active-index per stage carousel — keyed by stage name (STAGE_GROUPS[].name). */
@@ -170,7 +170,7 @@ onBeforeUnmount(teardownRemainingDocumentScrollSpy);
 
 function goTo(targetId: string | undefined): void {
   if (!targetId) return;
-  send(IridisUiEvent.navigateToTarget(targetId));
+  activateTarget(targetId);
   if (remainingDocAnchorIds.value.includes(targetId)) {currentRemainingDocId.value = targetId;}
 }
 
@@ -268,10 +268,11 @@ function onDocsClick(e: MouseEvent): void {
              change handler, styled from the same engine tokens as the rest
              of the chrome. -->
         <AppSelect
-          v-model="activeThemeKey"
+          :model-value="activeThemeKey"
           :items="themeOptions"
           aria-label="Theme preset"
           class="w-44 shrink-0"
+          @update:model-value="selectTheme"
         />
         <div class="flex items-center gap-2">
           <span class="text-xs font-medium uppercase tracking-wide text-muted">Light</span>

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
+import { useRoleSortBehaviors } from '~/composables/useRoleSortBehaviors.ts';
+import { useSortedRoleContrastRows } from '~/composables/useSortedRoleContrastRows.ts';
 import { roleSchemaFor } from '~/composables/roleSchemaFor.ts';
 import { roleSchemaByName } from '~/theme/RoleSchemaByName.ts';
 import { buildSchemaTree } from './schema/buildSchemaTree.ts';
@@ -13,7 +15,9 @@ import { buildSchemaTree } from './schema/buildSchemaTree.ts';
  * by the authored relationship graph — pinning a seed to it in
  * PaletteControls overrides either path — plus its live hex if resolved.
  */
-const { roles, framing, schemaName, roleSortKeys, sortedRoleContrastRows } = useIridis();
+const { roles, framing, schemaName } = useIridis();
+const { roleSortBehaviors } = useRoleSortBehaviors();
+const { sortedRoleContrastRows } = useSortedRoleContrastRows();
 
 /** Looks up each leaf's l/c/h/ratio/compliance from the SAME sortedRoleContrastRows every other role listing reads, instead of recomputing OKLCH from hex a second time for a value the engine already resolved. */
 const contrastRowByName = computed(() => new Map(sortedRoleContrastRows.value.map((r) => [r.name, r])));
@@ -37,7 +41,7 @@ const tree = computed(() => {
   const builtTree = buildSchemaTree.build(
     schemaSources.value,
     roles.value,
-    roleSortKeys.value,
+    roleSortBehaviors.value,
     contrastRowByName.value
   );
   const result = builtTree.map((tier, index) => {

@@ -22,6 +22,7 @@
     "@nuxt/ui": "^4.11.3",
     "@playwright/test": "^1.63.0",
     "@studnicky/entity": "^15.2.1",
+    "@studnicky/event-bus": "^15.2.1",
     "@studnicky/fsm": "^15.2.1",
     "@studnicky/iridis": "workspace:*",
     "@studnicky/iridis-algebra": "workspace:*",

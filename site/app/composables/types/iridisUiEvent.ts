@@ -1,7 +1,5 @@
 import type { FsmStepInterface } from '@studnicky/fsm/browser';
 
-import type { RoleSortKeyType } from './roleSortKeyType.ts';
-
 import { IridisUiEffect } from './iridisUiEffect.ts';
 import { IridisUiState } from './iridisUiState.ts';
 
@@ -10,21 +8,16 @@ export abstract class IridisUiEvent {
   abstract readonly type: string;
 
   static addSeed(hex: string | undefined): IridisUiEvent { return new EffectOnlyIridisUiEvent('ADD_SEED', IridisUiEffect.addSeed(hex)); }
-  static clearCvdPreviews(): IridisUiEvent { return new EffectOnlyIridisUiEvent('CVD_CLEAR_PREVIEWS', IridisUiEffect.clearCvdPreviews()); }
   static displayP3ColorSpace(): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_COLOR_SPACE', IridisUiEffect.setColorSpace(IridisUiEffect.displayP3ColorSpace())); }
   static dragEnd(count: number, shiftedBy: number): IridisUiEvent { return new DragEndIridisUiEvent(count, shiftedBy); }
   static dragMove(dragPx: number): IridisUiEvent { return new DragMoveIridisUiEvent(dragPx); }
   static dragStart(): IridisUiEvent { return new DragStartIridisUiEvent(); }
   static extractImageFiles(files: File | File[]): IridisUiEvent { return new EffectOnlyIridisUiEvent('EXTRACT_IMAGE', IridisUiEffect.extractImageFiles(files)); }
   static extractSampleImage(): IridisUiEvent { return new EffectOnlyIridisUiEvent('EXTRACT_IMAGE', IridisUiEffect.extractSampleImage()); }
-  static fitDiagram(): IridisUiEvent { return new EffectOnlyIridisUiEvent('DIAGRAM_FIT', IridisUiEffect.fitDiagram()); }
   static navigate(count: number, delta: number): IridisUiEvent { return new NavigateIridisUiEvent(count, delta); }
-  static navigateToTarget(targetId: string): IridisUiEvent { return new EffectOnlyIridisUiEvent('NAVIGATE_TO_TARGET', IridisUiEffect.navigateToTarget(targetId)); }
-  static panDiagram(dx: number, dy: number): IridisUiEvent { return new EffectOnlyIridisUiEvent('DIAGRAM_PAN', IridisUiEffect.panDiagram(dx, dy)); }
   static pinSeedRole(index: number, role: string | undefined): IridisUiEvent { return new EffectOnlyIridisUiEvent('PIN_SEED_ROLE', IridisUiEffect.pinSeedRole(index, role)); }
   static populatePickerFromImage(hexes: string[]): IridisUiEvent { return new EffectOnlyIridisUiEvent('POPULATE_PICKER_FROM_IMAGE', IridisUiEffect.populatePickerFromImage(hexes)); }
   static removeSeed(index: number): IridisUiEvent { return new EffectOnlyIridisUiEvent('REMOVE_SEED', IridisUiEffect.removeSeed(index)); }
-  static resetDiagram(): IridisUiEvent { return new EffectOnlyIridisUiEvent('DIAGRAM_RESET', IridisUiEffect.resetDiagram()); }
   static selectCard(index: number): IridisUiEvent { return new SelectCardIridisUiEvent(index); }
   static selectImageCandidate(hexes: string[], label: string): IridisUiEvent { return new EffectOnlyIridisUiEvent('SELECT_IMAGE_CANDIDATE', IridisUiEffect.selectImageCandidate(hexes, label)); }
   static selectImageMode(): IridisUiEvent { return new SelectImageModeIridisUiEvent(); }
@@ -45,14 +38,10 @@ export abstract class IridisUiEvent {
   static setKMeansImageAlgorithm(): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_IMAGE_ALGORITHM', IridisUiEffect.setImageAlgorithm(IridisUiEffect.kMeansImageAlgorithm())); }
   static setLightFraming(): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_FRAMING', IridisUiEffect.setFraming(IridisUiEffect.lightFraming())); }
   static setMedianCutImageAlgorithm(): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_IMAGE_ALGORITHM', IridisUiEffect.setImageAlgorithm(IridisUiEffect.medianCutImageAlgorithm())); }
-  static setRoleSort(keys: RoleSortKeyType[]): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_ROLE_SORT', IridisUiEffect.setRoleSort(keys)); }
   static setSchema(schemaName: string): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_SCHEMA', IridisUiEffect.setSchema(schemaName)); }
   static setSeed(index: number, hex: string): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_SEED', IridisUiEffect.setSeed(index, hex)); }
   static setSrgbColorSpace(): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_COLOR_SPACE', IridisUiEffect.setColorSpace(IridisUiEffect.srgbColorSpace())); }
   static setWuQuantizeImageAlgorithm(): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_IMAGE_ALGORITHM', IridisUiEffect.setImageAlgorithm(IridisUiEffect.wuQuantizeImageAlgorithm())); }
-  static toggleCvdPreview(cvdType: string): IridisUiEvent { return new EffectOnlyIridisUiEvent('CVD_TOGGLE_PREVIEW', IridisUiEffect.toggleCvdPreview(cvdType)); }
-  static toggleDiagramExpansion(): IridisUiEvent { return new EffectOnlyIridisUiEvent('DIAGRAM_TOGGLE_EXPAND', IridisUiEffect.toggleDiagramExpansion()); }
-  static zoomDiagram(factor: number): IridisUiEvent { return new EffectOnlyIridisUiEvent('DIAGRAM_ZOOM', IridisUiEffect.zoomDiagram(factor)); }
 
   abstract transition(state: IridisUiState): FsmStepInterface<IridisUiState, IridisUiEffect>;
 }

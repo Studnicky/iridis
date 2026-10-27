@@ -4,6 +4,7 @@ import { useNuxtApp } from '#imports';
 
 import { documentPanelId } from './documentPanelId.ts';
 import { PanelAccordionState } from './panelAccordionState.ts';
+import { PresentationControlsComposition } from './presentationControls/PresentationControlsComposition.ts';
 import { sanitizeDocumentAnchorId } from './sanitizeDocumentAnchorId.ts';
 import { STAGE_GROUPS } from './stageGroups.ts';
 import { NavigationTargetInterface } from './types/NavigationTargetInterface.ts';
@@ -39,6 +40,7 @@ class CardIndexOperation {
 /** Mutable navigation coordination owned by one Nuxt app/request. */
 class NavigationTargetsContext {
   readonly #accordionState: PanelAccordionState;
+  readonly #controls: PresentationControlsComposition;
   readonly #documentTargets = VueModule.shallowRef<readonly NavigationTargetInterface[]>([]);
   readonly #stageIndexSetters = new Map<string, (index: number) => void>();
   readonly #targets = VueModule.computed<readonly NavigationTargetInterface[]>(() => {
@@ -54,11 +56,19 @@ class NavigationTargetsContext {
   #pendingDocumentNavigationRequestIdentifier: number | undefined;
   #pendingDocumentTargetIdentifier: string | undefined;
 
-  constructor(accordionState: PanelAccordionState) {
+  constructor(accordionState: PanelAccordionState, controls: PresentationControlsComposition) {
     this.#accordionState = accordionState;
+    this.#controls = controls;
+    controls.store.registerEffectHandlers({
+      'navigateToTarget': (target) => { this.#navigate(target.targetId); }
+    });
   }
 
   readonly activateTarget = (id: string): void => {
+    void this.#controls.dispatch({ 'interaction': 'navigation-target.set', 'navigationTarget': { 'targetId': id } });
+  };
+
+  readonly #navigate = (id: string): void => {
     const target = this.#targets.value.find((candidate) => {
       const result = candidate.id === id;
       return result;
@@ -193,7 +203,7 @@ class NavigationTargetsRegistry {
     const existing = this.#contexts.get(nuxtApp);
     if (existing !== undefined) { return existing; }
 
-    const context = new NavigationTargetsContext(PanelAccordionState.current());
+    const context = new NavigationTargetsContext(PanelAccordionState.current(), PresentationControlsComposition.resolve(nuxtApp));
     this.#contexts.set(nuxtApp, context);
     return context;
   }

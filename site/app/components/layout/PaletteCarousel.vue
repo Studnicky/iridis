@@ -4,6 +4,7 @@ import { colorRecordFactory } from '@studnicky/iridis';
 import { RoleSortableRowEntity } from '~/composables/entities/RoleSortableRowEntity.ts';
 import { useDataLayout } from '~/composables/useDataLayout.ts';
 import { useIridis } from '~/composables/useIridis.ts';
+import { useRoleSortBehaviors } from '~/composables/useRoleSortBehaviors.ts';
 import { roleSchemaByName } from '~/theme/RoleSchemaByName.ts';
 import { AliasColorEntity } from '~/theme/entities/AliasColorEntity.ts';
 import { contrastRatio } from '~/theme/ContrastRatio.ts';
@@ -18,7 +19,8 @@ const TABLE_SHADES = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
 const ALIASES = AliasColorEntity.Values.map((key) => ({ key, 'label': capitalize(key) }));
 
 /** Same sort as every other role listing on the page — an alias's sort row is its base (500-shade) resolved color, the same hex ScaleCard shows as this alias's representative swatch. */
-const { roles, scales, roleSortKeys, schemaName, framing } = useIridis();
+const { roles, scales, schemaName, framing } = useIridis();
+const { roleSortBehaviors } = useRoleSortBehaviors();
 const { dataLayout } = useDataLayout();
 const rendersGrid = computed(() => dataLayout.value.select(true, false, false, false));
 const rendersList = computed(() => dataLayout.value.select(false, true, false, false));
@@ -56,8 +58,7 @@ const sortedAliases = computed(() => {
     const aliasRow = { ...a, ...row };
     return aliasRow;
   });
-  const behaviors = roleSortKeys.value.map((key) => key.behavior);
-  return sortRoleRows(rows, behaviors);
+  return sortRoleRows(rows, roleSortBehaviors.value);
 });
 </script>
 

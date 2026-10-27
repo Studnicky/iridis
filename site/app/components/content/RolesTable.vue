@@ -2,6 +2,8 @@
 import { computed } from 'vue';
 import { useDataLayout } from '~/composables/useDataLayout.ts';
 import { useIridis } from '~/composables/useIridis.ts';
+import { useRoleSortBehaviors } from '~/composables/useRoleSortBehaviors.ts';
+import { useSortedRoleContrastRows } from '~/composables/useSortedRoleContrastRows.ts';
 import { roleSchemaByName } from '~/theme/RoleSchemaByName.ts';
 import { buildRolesComplianceRows } from './roles/buildRolesComplianceRows.ts';
 import { selectDataCardLayout } from './selectDataCardLayout.ts';
@@ -15,7 +17,9 @@ const NA_TOOLTIP = 'Structural role — not a text pairing';
  * showing everything. Sort state is shared (RoleSortControls / roleSortKeys)
  * with every other role listing on the page.
  */
-const { framing, roleSortKeys, schemaName, sortedRoleContrastRows } = useIridis();
+const { framing, schemaName } = useIridis();
+const { roleSortBehaviors } = useRoleSortBehaviors();
+const { sortedRoleContrastRows } = useSortedRoleContrastRows();
 const { dataLayout } = useDataLayout();
 
 /**
@@ -33,7 +37,7 @@ const selectedRoleSchema = computed(() => {
 const displayRoleRows = computed(() => buildRolesComplianceRows.build(
   selectedRoleSchema.value,
   sortedRoleContrastRows.value,
-  roleSortKeys.value
+  roleSortBehaviors.value
 ));
 
 const cardLayoutByMode = {

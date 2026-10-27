@@ -1,17 +1,10 @@
-import type { RoleSortKeyType } from './roleSortKeyType.ts';
-
 abstract class IridisUiEffectHandler {
   abstract addSeed(hex: string | undefined): void;
-  abstract clearCvdPreviews(): void;
   abstract extractImageFiles(files: File | File[]): void;
   abstract extractSampleImage(): void;
-  abstract fitDiagram(): void;
-  abstract navigateToTarget(targetId: string): void;
-  abstract panDiagram(dx: number, dy: number): void;
   abstract pinSeedRole(index: number, role: string | undefined): void;
   abstract populatePickerFromImage(hexes: string[]): void;
   abstract removeSeed(index: number): void;
-  abstract resetDiagram(): void;
   abstract selectImageCandidate(hexes: string[], label: string): void;
   abstract setDisplayP3ColorSpace(): void;
   abstract setSrgbColorSpace(): void;
@@ -30,14 +23,10 @@ abstract class IridisUiEffectHandler {
   abstract setImageHistogramBits(bits: number): void;
   abstract setImageK(k: number): void;
   abstract setImageLightnessRange(range: [number, number][]): void;
-  abstract setRoleSort(keys: RoleSortKeyType[]): void;
   abstract setSchema(schemaName: string): void;
   abstract setSeed(index: number, hex: string): void;
   abstract disableStrictCompliance(): void;
   abstract enableStrictCompliance(): void;
-  abstract toggleCvdPreview(cvdType: string): void;
-  abstract toggleDiagramExpansion(): void;
-  abstract zoomDiagram(factor: number): void;
 }
 
 abstract class ColorSpaceSelection { abstract apply(handler: IridisUiEffectHandler): void; }
@@ -62,16 +51,11 @@ export abstract class IridisUiEffect {
   }
 
   static addSeed(hex: string | undefined): IridisUiEffect { return new AddSeedEffect(hex); }
-  static clearCvdPreviews(): IridisUiEffect { return new ClearCvdPreviewsEffect(); }
   static extractImageFiles(files: File | File[]): IridisUiEffect { return new ExtractImageFilesEffect(files); }
   static extractSampleImage(): IridisUiEffect { return new ExtractSampleImageEffect(); }
-  static fitDiagram(): IridisUiEffect { return new FitDiagramEffect(); }
-  static navigateToTarget(targetId: string): IridisUiEffect { return new NavigateToTargetEffect(targetId); }
-  static panDiagram(dx: number, dy: number): IridisUiEffect { return new PanDiagramEffect(dx, dy); }
   static pinSeedRole(index: number, role: string | undefined): IridisUiEffect { return new PinSeedRoleEffect(index, role); }
   static populatePickerFromImage(hexes: string[]): IridisUiEffect { return new PopulatePickerFromImageEffect(hexes); }
   static removeSeed(index: number): IridisUiEffect { return new RemoveSeedEffect(index); }
-  static resetDiagram(): IridisUiEffect { return new ResetDiagramEffect(); }
   static selectImageCandidate(hexes: string[], label: string): IridisUiEffect { return new SelectImageCandidateEffect(hexes, label); }
   static displayP3ColorSpace(): ColorSpaceSelection { return new DisplayP3ColorSpaceSelection(); }
   static srgbColorSpace(): ColorSpaceSelection { return new SrgbColorSpaceSelection(); }
@@ -95,12 +79,8 @@ export abstract class IridisUiEffect {
   static setImageHistogramBits(bits: number): IridisUiEffect { return new SetImageHistogramBitsEffect(bits); }
   static setImageK(k: number): IridisUiEffect { return new SetImageKEffect(k); }
   static setImageLightnessRange(range: [number, number][]): IridisUiEffect { return new SetImageLightnessRangeEffect(range); }
-  static setRoleSort(keys: RoleSortKeyType[]): IridisUiEffect { return new SetRoleSortEffect(keys); }
   static setSchema(schemaName: string): IridisUiEffect { return new SetSchemaEffect(schemaName); }
   static setSeed(index: number, hex: string): IridisUiEffect { return new SetSeedEffect(index, hex); }
-  static toggleCvdPreview(cvdType: string): IridisUiEffect { return new ToggleCvdPreviewEffect(cvdType); }
-  static toggleDiagramExpansion(): IridisUiEffect { return new ToggleDiagramExpansionEffect(); }
-  static zoomDiagram(factor: number): IridisUiEffect { return new ZoomDiagramEffect(factor); }
 
   abstract execute(handler: IridisUiEffectHandler): void;
 }
@@ -111,7 +91,6 @@ class AddSeedEffect extends IridisUiEffect {
   constructor(hex: string | undefined) { super(); this.#hex = hex; }
   execute(handler: IridisUiEffectHandler): void { handler.addSeed(this.#hex); }
 }
-class ClearCvdPreviewsEffect extends IridisUiEffect { readonly type = 'CVD_CLEAR_PREVIEWS'; execute(handler: IridisUiEffectHandler): void { handler.clearCvdPreviews(); } }
 class ExtractImageFilesEffect extends IridisUiEffect {
   readonly #files: File | File[];
   readonly type = 'EXTRACT_IMAGE_FILES';
@@ -119,18 +98,6 @@ class ExtractImageFilesEffect extends IridisUiEffect {
   execute(handler: IridisUiEffectHandler): void { handler.extractImageFiles(this.#files); }
 }
 class ExtractSampleImageEffect extends IridisUiEffect { readonly type = 'EXTRACT_SAMPLE_IMAGE'; execute(handler: IridisUiEffectHandler): void { handler.extractSampleImage(); } }
-class FitDiagramEffect extends IridisUiEffect { readonly type = 'DIAGRAM_FIT'; execute(handler: IridisUiEffectHandler): void { handler.fitDiagram(); } }
-class NavigateToTargetEffect extends IridisUiEffect {
-  readonly #targetId: string;
-  readonly type = 'NAVIGATE_TO_TARGET';
-  constructor(targetId: string) { super(); this.#targetId = targetId; }
-  execute(handler: IridisUiEffectHandler): void { handler.navigateToTarget(this.#targetId); }
-}
-class PanDiagramEffect extends IridisUiEffect {
-  readonly #dx: number; readonly #dy: number; readonly type = 'DIAGRAM_PAN';
-  constructor(dx: number, dy: number) { super(); this.#dx = dx; this.#dy = dy; }
-  execute(handler: IridisUiEffectHandler): void { handler.panDiagram(this.#dx, this.#dy); }
-}
 class PinSeedRoleEffect extends IridisUiEffect {
   readonly #index: number; readonly #role: string | undefined; readonly type = 'PIN_SEED_ROLE';
   constructor(index: number, role: string | undefined) { super(); this.#index = index; this.#role = role; }
@@ -146,7 +113,6 @@ class RemoveSeedEffect extends IridisUiEffect {
   constructor(index: number) { super(); this.#index = index; }
   execute(handler: IridisUiEffectHandler): void { handler.removeSeed(this.#index); }
 }
-class ResetDiagramEffect extends IridisUiEffect { readonly type = 'DIAGRAM_RESET'; execute(handler: IridisUiEffectHandler): void { handler.resetDiagram(); } }
 class SelectImageCandidateEffect extends IridisUiEffect {
   readonly #hexes: string[]; readonly #label: string; readonly type = 'SELECT_IMAGE_CANDIDATE';
   constructor(hexes: string[], label: string) { super(); this.#hexes = hexes; this.#label = label; }
@@ -220,11 +186,6 @@ class SetImageLightnessRangeEffect extends IridisUiEffect {
   constructor(range: [number, number][]) { super(); this.#range = range; }
   execute(handler: IridisUiEffectHandler): void { handler.setImageLightnessRange(this.#range); }
 }
-class SetRoleSortEffect extends IridisUiEffect {
-  readonly #keys: RoleSortKeyType[]; readonly type = 'SET_ROLE_SORT';
-  constructor(keys: RoleSortKeyType[]) { super(); this.#keys = keys; }
-  execute(handler: IridisUiEffectHandler): void { handler.setRoleSort(this.#keys); }
-}
 class SetSchemaEffect extends IridisUiEffect {
   readonly #schemaName: string; readonly type = 'SET_SCHEMA';
   constructor(schemaName: string) { super(); this.#schemaName = schemaName; }
@@ -234,15 +195,4 @@ class SetSeedEffect extends IridisUiEffect {
   readonly #index: number; readonly #hex: string; readonly type = 'SET_SEED';
   constructor(index: number, hex: string) { super(); this.#index = index; this.#hex = hex; }
   execute(handler: IridisUiEffectHandler): void { handler.setSeed(this.#index, this.#hex); }
-}
-class ToggleCvdPreviewEffect extends IridisUiEffect {
-  readonly #cvdType: string; readonly type = 'CVD_TOGGLE_PREVIEW';
-  constructor(cvdType: string) { super(); this.#cvdType = cvdType; }
-  execute(handler: IridisUiEffectHandler): void { handler.toggleCvdPreview(this.#cvdType); }
-}
-class ToggleDiagramExpansionEffect extends IridisUiEffect { readonly type = 'DIAGRAM_TOGGLE_EXPAND'; execute(handler: IridisUiEffectHandler): void { handler.toggleDiagramExpansion(); } }
-class ZoomDiagramEffect extends IridisUiEffect {
-  readonly #factor: number; readonly type = 'DIAGRAM_ZOOM';
-  constructor(factor: number) { super(); this.#factor = factor; }
-  execute(handler: IridisUiEffectHandler): void { handler.zoomDiagram(this.#factor); }
 }

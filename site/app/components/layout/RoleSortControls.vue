@@ -1,81 +1,77 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { useIridis } from '~/composables/useIridis.ts';
-import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
-import { IridisUiEvent } from '~/composables/types/index.ts';
-import { RoleSortBehavior } from '~/utils/roleSortBehavior.ts';
+import { usePresentationControls } from '~/composables/usePresentationControls.ts';
 import { ROLE_SORT_FIELD_OPTIONS } from '~/utils/roleSortFieldOptions.ts';
 
 /**
  * Shared multi-key sort control — every role listing (Roles table, Resolved
- * roles, Clamps) mounts this SAME component bound to the SAME roleSortKeys
- * state, dispatched through SET_ROLE_SORT. There is exactly one sort order
- * for "the palette" at a time, not a per-card local one that can drift from
- * its neighbours.
+ * roles, Clamps) mounts this SAME component bound to the SAME sort keys held
+ * by the presentation-controls store. There is exactly one sort order for
+ * "the palette" at a time, not a per-card local one that can drift from its
+ * neighbours.
  */
-const { roleSortKeys } = useIridis();
-const { send } = useIridisUiMachine();
+const { dispatch, readModel } = usePresentationControls();
 
+const sortKeys = computed(() => readModel.value.roleSortKeys.map((key) => {
+  const option = ROLE_SORT_FIELD_OPTIONS.find((candidate) => candidate.key === key.field);
+  return { 'descending': key.direction === 'descending', 'field': key.field, 'label': option?.label ?? key.field };
+}));
 const addableOptions = computed(() => ROLE_SORT_FIELD_OPTIONS.filter((option) => {
-  const selected = roleSortKeys.value.some((key) => {
-    const matches = key.behavior.matches(option.value);
-    return matches;
-  });
+  const selected = readModel.value.roleSortKeys.some((key) => key.field === option.key);
   const addable = !selected;
   return addable;
 }));
 const newField = ref<number | undefined>(undefined);
 
+function replaceKeys(roleSortKeys: readonly object[]): void {
+  void dispatch({ 'interaction': 'role-sort.replace', roleSortKeys });
+}
 function addKey(optionIndex: number): void {
   const option = addableOptions.value[optionIndex];
   if (option === undefined) return;
-  const field = option.value;
-  // Clear BEFORE dispatching: addableOptions is derived from roleSortKeys, so
-  // the instant the FSM adds this field, it drops out of :items — if newField
+  // Clear BEFORE dispatching: addableOptions is derived from the stored keys, so
+  // the instant the store adds this field, it drops out of :items — if newField
   // still pointed at it when that happens, AppSelect has no matching item to
   // resolve an index from and falls back to rendering the placeholder
   // instead of a stale selection.
   newField.value = undefined;
-  const behavior = RoleSortBehavior.ascending(field);
-  send(IridisUiEvent.setRoleSort([...roleSortKeys.value, { behavior }]));
+  replaceKeys([...readModel.value.roleSortKeys, { 'direction': 'ascending', 'field': option.key }]);
 }
 function removeKey(index: number): void {
-  send(IridisUiEvent.setRoleSort(roleSortKeys.value.filter((_, keyIndex) => keyIndex !== index)));
+  replaceKeys(readModel.value.roleSortKeys.filter((_, keyIndex) => keyIndex !== index));
 }
 function toggleKeyDirection(index: number): void {
-  const next = roleSortKeys.value.map((key, keyIndex) => {
-    const behavior = keyIndex === index ? key.behavior.toggleDirection() : key.behavior;
-    const result = { behavior };
-    return result;
-  });
-  send(IridisUiEvent.setRoleSort(next));
+  replaceKeys(readModel.value.roleSortKeys.map((key, keyIndex) => {
+    const direction = key.direction === 'ascending' ? 'descending' : 'ascending';
+    return keyIndex === index ? { 'direction': direction, 'field': key.field } : key;
+  }));
 }
 </script>
 
 <template>
   <div class="flex flex-wrap items-center gap-2">
     <UBadge
-      v-for="(key, index) in roleSortKeys"
-      :key="key.behavior.label"
+      v-for="(key, index) in sortKeys"
+      :key="key.field"
       color="neutral"
       variant="soft"
       class="flex items-center gap-1 py-1"
     >
-      <span>{{ index + 1 }}. {{ key.behavior.label }}</span>
+      <span>{{ index + 1 }}. {{ key.label }}</span>
       <button
         type="button"
         class="flex items-center"
-        :aria-label="`Toggle ${key.behavior.label} sort direction`"
-        :aria-pressed="key.behavior.isDescending()"
+        :aria-label="`Toggle ${key.label} sort direction`"
+        :aria-pressed="key.descending"
         @click="toggleKeyDirection(index)"
       >
-        <UIcon :name="key.behavior.isDescending() ? 'i-material-symbols-arrow-downward-rounded' : 'i-material-symbols-arrow-upward-rounded'" />
+        <UIcon :name="key.descending ? 'i-material-symbols-arrow-downward-rounded' : 'i-material-symbols-arrow-upward-rounded'" />
       </button>
       <button
-        v-if="roleSortKeys.length > 1"
+        v-if="sortKeys.length > 1"
         type="button"
         class="ml-0.5 text-muted hover:text-highlighted"
-        :aria-label="`Remove ${key.behavior.label} sort key`"
+        :aria-label="`Remove ${key.label} sort key`"
         @click="removeKey(index)"
       >
         ×

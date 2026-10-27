@@ -13,6 +13,10 @@ const NavigationTestModules = Object.freeze({
   'useNavigation': (await import('../app/composables/useNavigationTargets.ts')).useNavigationTargets
 });
 
+class Settle {
+  static async run(): Promise<void> { await new Promise<void>((resolve) => { setImmediate(resolve); }); }
+}
+
 class ScrollRecorder {
   static readonly identifiers: string[] = [];
 
@@ -111,6 +115,7 @@ await test('document navigation scrolls after Vue commits and the browser reache
   AnimationFrameQueue.flush();
   assert.deepEqual(ScrollRecorder.identifiers, [firstAnchorIdentifier]);
 
+  await Settle.run();
   navigation.activateTarget(secondAnchorIdentifier);
   assert.equal(NavigationTestModules.useAccordion(firstPanelIdentifier).isOpen.value, false);
   assert.equal(NavigationTestModules.useAccordion(secondPanelIdentifier).isOpen.value, true);
@@ -136,6 +141,7 @@ await test('rapid document navigation scrolls only the latest committed target',
 
   navigation.activateTarget('guide-first');
   navigation.activateTarget('guide-latest');
+  await Settle.run();
   assert.equal(NavigationTestModules.useAccordion('doc-/guide/first').isOpen.value, false);
   assert.equal(NavigationTestModules.useAccordion('doc-/guide/latest').isOpen.value, true);
 
@@ -156,7 +162,7 @@ await test('disposing the navigation scope cancels committed and uncommitted doc
   uncommittedNavigation.registerDocumentTargets([{ 'path': '/guide/uncommitted', 'title': 'Uncommitted' }]);
   uncommittedNavigation.activateTarget('guide-uncommitted');
   uncommittedScope.stop();
-  await VueModule.nextTick();
+  await Settle.run();
   assert.equal(AnimationFrameQueue.callbacks.size, 0);
 
   const committedScope = VueModule.effectScope();
@@ -199,6 +205,7 @@ await test('direct stage navigation cancels a pending document scroll and remain
 
   navigation.activateTarget('guide-pending');
   navigation.activateTarget(stage.id);
+  await Settle.run();
   assert.deepEqual(ScrollRecorder.identifiers, [stage.id]);
 
   await VueModule.nextTick();

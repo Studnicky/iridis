@@ -673,6 +673,9 @@ importers:
       '@studnicky/entity':
         specifier: ^15.2.1
         version: 15.2.1
+      '@studnicky/event-bus':
+        specifier: ^15.2.1
+        version: 15.2.1
       '@studnicky/fsm':
         specifier: ^15.2.1
         version: 15.2.1
