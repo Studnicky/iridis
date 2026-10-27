@@ -271,7 +271,6 @@ void test('RelationshipConstraint exposes the resolved relationship domain witho
     'text',
     RelationshipConstraintFixture.candidate(baseline, { 'lightness': baseline.oklch.l + 0.1 })
   ), true);
-  assert.equal(RelationshipConstraint.limitsMovement(input, {}, 'text'), false);
   assert.deepEqual(RelationshipConstraint.relationIds(input, ['text']), ['text-from-source']);
 });
 

@@ -262,15 +262,6 @@ export class RelationshipConstraint {
     Metadata.writeRelationshipResolution(metadata, resolutions);
   }
 
-  static limitsMovement(
-    input: InputEntity.Type,
-    metadata: Record<string, JSONSchema7Type>,
-    roleName: string
-  ): boolean {
-    const result = RelationshipConstraint.domain(input, metadata, roleName)?.baseline !== undefined;
-    return result;
-  }
-
   private static graphContext(
     graphSource: object
   ): RelationshipConstraintGraphContext {
