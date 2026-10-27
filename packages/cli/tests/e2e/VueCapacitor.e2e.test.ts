@@ -1,4 +1,4 @@
-import { type ColorRecordEntity, CssVarName, type PaletteStateInterface } from '@studnicky/iridis';
+import { type ColorRecordEntity, CssVarName, Metadata, type PaletteStateInterface } from '@studnicky/iridis';
 import { CapacitorOutputsEntity } from '@studnicky/iridis-capacitor';
 import { Cli, ConfigLoader } from '@studnicky/iridis-cli';
 import { ComplianceReportEntity, CvdResultSetEntity } from '@studnicky/iridis-contrast';
@@ -67,12 +67,12 @@ class VueCapacitorTestFixture {
   static misorderedPipeline(pipeline: readonly string[]): string[] {
     const result = [...pipeline];
     const resolveIndex = result.indexOf('resolve:roles');
-    const expandIndex = result.indexOf('expand:family');
-    if (resolveIndex < 0 || expandIndex < 0) {
-      throw new Error('Canonical pipeline must contain resolve:roles and expand:family.');
+    const deriveIndex = result.indexOf('derive:roleRelations');
+    if (resolveIndex < 0 || deriveIndex < 0) {
+      throw new Error('Canonical pipeline must contain resolve:roles and derive:roleRelations.');
     }
-    result[resolveIndex] = 'expand:family';
-    result[expandIndex] = 'resolve:roles';
+    result[resolveIndex] = 'derive:roleRelations';
+    result[deriveIndex] = 'resolve:roles';
     return result;
   }
 }
@@ -109,13 +109,15 @@ await test('Vue Capacitor example admits canonical configuration and contrast me
   }
 });
 
-await test('Vue Capacitor pipeline ordering determines onAccent derivation', async () => {
+await test('Vue Capacitor pipeline ordering determines onAccent relationship resolution', async () => {
   const config = await new ConfigLoader().load(VueCapacitorTestFixture.configurationPath());
   const ordered = await VueCapacitorTestFixture.runPipeline(config.pipeline);
-  assert.ok(Object.hasOwn(ordered.roles, 'onAccent'));
+  const orderedResolution = Metadata.relationshipResolution(ordered.metadata).get('onAccent');
+  assert.strictEqual(orderedResolution?.disposition, 'applied');
   const misordered = VueCapacitorTestFixture.misorderedPipeline(config.pipeline);
   const unordered = await VueCapacitorTestFixture.runPipeline(misordered);
-  assert.equal(Object.hasOwn(unordered.roles, 'onAccent'), false);
+  const unorderedResolution = Metadata.relationshipResolution(unordered.metadata).get('onAccent');
+  assert.notStrictEqual(unorderedResolution?.disposition, 'applied');
 });
 
 await test('Vue Capacitor derives a stable high-contrast onAccent role', async () => {

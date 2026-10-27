@@ -399,3 +399,120 @@ void test('hue-offset rejects degrees and modeId together at structural admissio
     'target': 'accent'
   }), false);
 });
+
+void test('hue-target admits a bounded absolute hue and rejects values outside its authored domain', () => {
+  const relationship = {
+    'clamp': 90,
+    'hue': 120,
+    'id': 'semantic',
+    'operation': 'hue-target',
+    'priority': 0,
+    'relaxability': 'fixed',
+    'source': 'brand',
+    'target': 'success'
+  };
+
+  assert.equal(RoleRelationshipEntity.validate(relationship), true);
+  assert.equal(RoleRelationshipEntity.validate({ ...relationship, 'hue': 361 }), false);
+  assert.equal(RoleRelationshipEntity.validate({ ...relationship, 'clamp': 181 }), false);
+});
+
+void test('hue-target permits an omitted source for a target-own resolved candidate', () => {
+  assert.equal(RoleRelationshipEntity.validate({
+    'hue': 120,
+    'id': 'semantic-self',
+    'operation': 'hue-target',
+    'priority': 0,
+    'relaxability': 'fixed',
+    'target': 'success'
+  }), true);
+});
+
+void test('role-schema intake observes mutations to caller-owned schemas on the next admission', () => {
+  const source = {
+    'name': 'mutable-schema',
+    'roles': [{ 'lightnessRange': [0.2, 0.4], 'name': 'brand' }]
+  };
+  const first = RoleSchemaEntity.intake(source);
+  const brand = source.roles[0];
+  assert.notEqual(brand, undefined, 'mutable schema exposes its brand role');
+  if (brand === undefined) {
+    throw new Error('mutable schema is missing its brand role');
+  }
+  brand.lightnessRange[0] = 0.3;
+  const second = RoleSchemaEntity.intake(source);
+
+  assert.equal(first.roles[0]?.lightnessRange?.[0], 0.2);
+  assert.equal(second.roles[0]?.lightnessRange?.[0], 0.3);
+  assert.notStrictEqual(first, second);
+});
+
+void test('role-relationship graph intake observes caller-owned graph changes on the next admission', () => {
+  const source = {
+    'groups': [{
+      'anchor': 'brand',
+      'defaultMode': 'base',
+      'id': 'family',
+      'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'base' }], 'id': 'base' }],
+      'name': 'Family',
+      'relationships': [{ 'id': 'accent', 'operation': 'alias', 'priority': 0, 'relaxability': 'fixed', 'source': 'brand', 'target': 'accent' }]
+    }]
+  };
+  const first = RoleRelationshipGraphEntity.intake(source);
+  const family = source.groups[0];
+  assert.notEqual(family, undefined, 'mutable graph exposes its relationship group');
+  if (family === undefined) {
+    throw new Error('mutable graph is missing its relationship group');
+  }
+  family.relationships.push({ 'id': 'warning', 'operation': 'alias', 'priority': 1, 'relaxability': 'fixed', 'source': 'brand', 'target': 'warning' });
+  const second = RoleRelationshipGraphEntity.intake(source);
+
+  assert.equal(first.groups[0]?.relationships.length, 1);
+  assert.equal(second.groups[0]?.relationships.length, 2);
+  assert.notStrictEqual(first, second);
+});
+
+void test('relationship integrity revalidates caller-owned graph changes', () => {
+  const source = {
+    'name': 'mutable-integrity',
+    'relationshipGraph': {
+      'groups': [{
+        'anchor': 'brand',
+        'defaultMode': 'base',
+        'id': 'family',
+        'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'base' }], 'id': 'base' }],
+        'name': 'Family',
+        'relationships': [{ 'id': 'accent', 'operation': 'alias', 'priority': 0, 'relaxability': 'fixed', 'source': 'brand', 'target': 'accent' }]
+      }]
+    },
+    'roles': [{ 'name': 'accent' }, { 'name': 'brand' }, { 'name': 'warning' }]
+  };
+  const first = RoleSchemaEntity.intake(source);
+  assert.deepEqual(RoleRelationshipGraphIntegrity.validate(first), []);
+  const family = source.relationshipGraph.groups[0];
+  assert.notEqual(family, undefined, 'mutable integrity graph exposes its relationship group');
+  if (family === undefined) {
+    throw new Error('mutable integrity graph is missing its relationship group');
+  }
+  family.relationships.push({ 'id': 'warning', 'operation': 'alias', 'priority': 1, 'relaxability': 'fixed', 'source': 'brand', 'target': 'accent' });
+  const second = RoleSchemaEntity.intake(source);
+  const errors = RoleRelationshipGraphIntegrity.validate(second);
+
+  assert.equal(errors[0]?.path, 'relationshipGraph.groups[0].relationships[1].target');
+  assert.equal(errors[0]?.message, 'must be derived by one relationship in the graph');
+});
+
+void test('relationship-resolution metadata copies entries at its write boundary', () => {
+  const entry = RelationshipResolutionEntity.create({
+    'disposition': 'applied',
+    'groupId': 'family',
+    'operation': 'alias',
+    'relationshipId': 'accent',
+    'sources': ['brand']
+  });
+  const metadata: Record<string, JSONSchema7Type> = {};
+  Metadata.writeRelationshipResolution(metadata, new Map([['accent', entry]]));
+  Reflect.set(entry, 'groupId', 'mutated');
+
+  assert.equal(Metadata.relationshipResolutionForRole(metadata, 'accent')?.groupId, 'family');
+});

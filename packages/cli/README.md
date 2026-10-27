@@ -65,7 +65,7 @@ The config is validated against `CliConfigSchema`. Required top-level keys:
   "pipeline": [
     "intake:any",
     "resolve:roles",
-    "expand:family",
+    "derive:roleRelations",
     "enforce:compliance",
     "derive:variant",
     "report:compliance",

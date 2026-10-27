@@ -1,4 +1,3 @@
-import type { DerivationConfigEntity } from '../entities/DerivationConfigEntity.ts';
 import type { RoleSortKeyType } from './roleSortKeyType.ts';
 
 abstract class IridisUiEffectHandler {
@@ -19,7 +18,6 @@ abstract class IridisUiEffectHandler {
   abstract setContrastStrictness(strictness: number): void;
   abstract setCvdMode(cvdMode: string): void;
   abstract setNonMandatoryLevel(nonMandatoryLevel: string): void;
-  abstract setDerivationConfig(config: DerivationConfigEntity.Type): void;
   abstract setDarkFraming(): void;
   abstract setLightFraming(): void;
   abstract setDeltaEImageAlgorithm(): void;
@@ -35,9 +33,7 @@ abstract class IridisUiEffectHandler {
   abstract setRoleSort(keys: RoleSortKeyType[]): void;
   abstract setSchema(schemaName: string): void;
   abstract setSeed(index: number, hex: string): void;
-  abstract disableSemanticHues(): void;
   abstract disableStrictCompliance(): void;
-  abstract enableSemanticHues(): void;
   abstract enableStrictCompliance(): void;
   abstract toggleCvdPreview(cvdType: string): void;
   abstract toggleDiagramExpansion(): void;
@@ -55,9 +51,6 @@ class DeltaEImageAlgorithmSelection extends ImageAlgorithmSelection { apply(hand
 class KMeansImageAlgorithmSelection extends ImageAlgorithmSelection { apply(handler: IridisUiEffectHandler): void { handler.setKMeansImageAlgorithm(); } }
 class MedianCutImageAlgorithmSelection extends ImageAlgorithmSelection { apply(handler: IridisUiEffectHandler): void { handler.setMedianCutImageAlgorithm(); } }
 class WuQuantizeImageAlgorithmSelection extends ImageAlgorithmSelection { apply(handler: IridisUiEffectHandler): void { handler.setWuQuantizeImageAlgorithm(); } }
-abstract class SemanticHuesSelection { abstract apply(handler: IridisUiEffectHandler): void; }
-class SemanticHuesDisabledSelection extends SemanticHuesSelection { apply(handler: IridisUiEffectHandler): void { handler.disableSemanticHues(); } }
-class SemanticHuesEnabledSelection extends SemanticHuesSelection { apply(handler: IridisUiEffectHandler): void { handler.enableSemanticHues(); } }
 
 /** A concrete side effect emitted by IridisUiMachine and executed through the UI capability port. */
 export abstract class IridisUiEffect {
@@ -88,7 +81,6 @@ export abstract class IridisUiEffect {
   static disableStrictCompliance(): IridisUiEffect { return new DisableStrictComplianceEffect(); }
   static enableStrictCompliance(): IridisUiEffect { return new EnableStrictComplianceEffect(); }
   static setNonMandatoryLevel(nonMandatoryLevel: string): IridisUiEffect { return new SetNonMandatoryLevelEffect(nonMandatoryLevel); }
-  static setDerivationConfig(config: DerivationConfigEntity.Type): IridisUiEffect { return new SetDerivationConfigEffect(config); }
   static darkFraming(): FramingSelection { return new DarkFramingSelection(); }
   static lightFraming(): FramingSelection { return new LightFramingSelection(); }
   static setFraming(selection: FramingSelection): IridisUiEffect { return new SetFramingEffect(selection); }
@@ -106,9 +98,6 @@ export abstract class IridisUiEffect {
   static setRoleSort(keys: RoleSortKeyType[]): IridisUiEffect { return new SetRoleSortEffect(keys); }
   static setSchema(schemaName: string): IridisUiEffect { return new SetSchemaEffect(schemaName); }
   static setSeed(index: number, hex: string): IridisUiEffect { return new SetSeedEffect(index, hex); }
-  static semanticHuesDisabled(): SemanticHuesSelection { return new SemanticHuesDisabledSelection(); }
-  static semanticHuesEnabled(): SemanticHuesSelection { return new SemanticHuesEnabledSelection(); }
-  static setSemanticHues(selection: SemanticHuesSelection): IridisUiEffect { return new SetSemanticHuesEffect(selection); }
   static toggleCvdPreview(cvdType: string): IridisUiEffect { return new ToggleCvdPreviewEffect(cvdType); }
   static toggleDiagramExpansion(): IridisUiEffect { return new ToggleDiagramExpansionEffect(); }
   static zoomDiagram(factor: number): IridisUiEffect { return new ZoomDiagramEffect(factor); }
@@ -191,11 +180,6 @@ class SetNonMandatoryLevelEffect extends IridisUiEffect {
   constructor(nonMandatoryLevel: string) { super(); this.#nonMandatoryLevel = nonMandatoryLevel; }
   execute(handler: IridisUiEffectHandler): void { handler.setNonMandatoryLevel(this.#nonMandatoryLevel); }
 }
-class SetDerivationConfigEffect extends IridisUiEffect {
-  readonly #config: DerivationConfigEntity.Type; readonly type = 'SET_DERIVATION_CONFIG';
-  constructor(config: DerivationConfigEntity.Type) { super(); this.#config = config; }
-  execute(handler: IridisUiEffectHandler): void { handler.setDerivationConfig(this.#config); }
-}
 class SetFramingEffect extends IridisUiEffect {
   readonly #selection: FramingSelection; readonly type = 'SET_FRAMING';
   constructor(selection: FramingSelection) { super(); this.#selection = selection; }
@@ -250,11 +234,6 @@ class SetSeedEffect extends IridisUiEffect {
   readonly #index: number; readonly #hex: string; readonly type = 'SET_SEED';
   constructor(index: number, hex: string) { super(); this.#index = index; this.#hex = hex; }
   execute(handler: IridisUiEffectHandler): void { handler.setSeed(this.#index, this.#hex); }
-}
-class SetSemanticHuesEffect extends IridisUiEffect {
-  readonly #selection: SemanticHuesSelection; readonly type = 'SET_SEMANTIC_HUES_ENABLED';
-  constructor(selection: SemanticHuesSelection) { super(); this.#selection = selection; }
-  execute(handler: IridisUiEffectHandler): void { this.#selection.apply(handler); }
 }
 class ToggleCvdPreviewEffect extends IridisUiEffect {
   readonly #cvdType: string; readonly type = 'CVD_TOGGLE_PREVIEW';

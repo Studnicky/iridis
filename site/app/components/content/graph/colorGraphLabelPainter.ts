@@ -5,29 +5,7 @@ import { colorRecordFactory } from '@studnicky/iridis';
 import { contrastRatio } from '~/theme/ContrastRatio.ts';
 
 import type { ColorGraphCategoryVisibility } from './ColorGraphCategoryVisibility.ts';
-import type { ColorGraphNodeCategory } from './ColorGraphNodeCategory.ts';
-
-class ColorGraphPointMeta {
-  public readonly algorithm: string | null;
-  public readonly category: ColorGraphNodeCategory;
-  public readonly hex: string;
-  public readonly labelSuffix: string;
-  public readonly name: string;
-
-  public constructor(
-    algorithm: string | null,
-    category: ColorGraphNodeCategory,
-    hex: string,
-    labelSuffix: string,
-    name: string
-  ) {
-    this.algorithm = algorithm;
-    this.category = category;
-    this.hex = hex;
-    this.labelSuffix = labelSuffix;
-    this.name = name;
-  }
-}
+import type { ColorGraphPointMeta } from './ColorGraphPointMeta.ts';
 
 export const colorGraphLabelPainter = class ColorGraphLabelPainter {
   public static backgroundColorFromTheme(): [number, number, number, number] {
@@ -116,7 +94,7 @@ export const colorGraphLabelPainter = class ColorGraphLabelPainter {
     if (screenPosition === null) {return;}
     const [screenX, screenY] = screenPosition;
     if (screenX < 0 || screenY < 0 || screenX > width || screenY > height) {return;}
-    const label = meta.algorithm !== null ? `${meta.name} · ${meta.algorithm}` : meta.name;
+    const label = meta.relationship === null ? meta.name : `${meta.name} · ${meta.relationship.operation}`;
     const text = `${label}${meta.labelSuffix}`;
     const textWidth = context.measureText(text).width;
     const pillWidth = textWidth + padX * 2;

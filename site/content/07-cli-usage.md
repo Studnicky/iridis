@@ -46,8 +46,8 @@ A config requires `input`, `pipeline`, and `output`. Optional `enable*` flags dy
   "pipeline": [
     "intake:any",
     "resolve:roles",
-    "expand:family",
-    "enforce:contrast",
+    "derive:roleRelations",
+    "enforce:compliance",
     "emit:cssVars"
   ],
   "output": {

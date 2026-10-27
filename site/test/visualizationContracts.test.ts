@@ -57,7 +57,7 @@ await test('viewer actions, viewport status, and modal close reasons retain fini
 });
 
 class ColorGraphRoleFixture {
-  public readonly algorithmInfo = null;
+  public readonly relationship = null;
   public readonly c = 0;
   public readonly candidates: [] = [];
   public readonly clamp = null;

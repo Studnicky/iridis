@@ -21,8 +21,7 @@ Every task registered by the core engine and by each official plugin, grouped by
 | `clamp:oklch` | `colors`, `input.roles` | `colors` | — | Clamps each color's OKLCH lightness and chroma into role-defined (or default) ranges. |
 | `clamp:count` | `colors`, `input.maxColors`, `input.bypass` | `colors` | — | Reduces colors to `maxColors` through weighted median-cut clustering when exceeded. |
 | `resolve:roles` | `colors`, `input.roles`, `metadata` | `roles`, `metadata` | — | Assigns colors to schema roles by hint match then OKLCH distance, then nudges into declared ranges. |
-| `derive:roleRelations` | `roles`, `input.roles`, `metadata` | `roles`, `metadata['core:relationshipResolution']` | — | Resolves each authored relationship target before family expansion and records typed per-role relationship resolution metadata. |
-| `expand:family` | `roles`, `input.roles`, `metadata` | `roles` | — | Derives missing roles with `derivedFrom` set, applying OKLCH deltas from the source role. |
+| `derive:roleRelations` | `roles`, `input.roles`, `metadata` | `roles`, `metadata['core:relationshipResolution']` | — | Resolves each authored relationship target and records typed per-role relationship resolution metadata. |
 | `enforce:contrast` | `roles`, `input.roles`, `input.contrast` | `roles`, `metadata['core:contrastReport']` | — | Core stage over the shared contrast policy: enforces every declared contrast pair, including `minRatio` and optional `maxRatio` bounds, moves only derived endpoints, preserves stated roles, and writes the typed `{compliant, pairs}` object to `core:contrastReport`. |
 | `derive:variant` | `roles`, `metadata['core:variantConfig']` | `variants` | — | Produces light/dark variants by transforming all roles. |
 | `emit:json` | `colors`, `roles`, `variants` | `outputs['core:json']` | — | Writes `outputs['core:json']` with `{colors, roles, variants}` flattened to hex strings. |
@@ -50,7 +49,7 @@ Every task registered by the core engine and by each official plugin, grouped by
 | Task | Reads | Writes | Requires | Description |
 |---|---|---|---|---|
 | `vscode:seedRoles` | `input.colors`, `runtime.framing` | `colors` | — | Validates the `{ tier, framing, roles }` palette body, requires matching framing, and creates named seed records for the selected tier's exact key set. |
-| `vscode:deriveUiRoles` | `roles`, `metadata.core:roleProvenance` | `roles` | `expand:family` | Derives missing UI extension roles from the resolved vocabulary and preserves caller-stated role values. |
+| `vscode:deriveUiRoles` | `roles`, `metadata.core:roleProvenance` | `roles` | `derive:roleRelations` | Derives missing UI extension roles from the resolved vocabulary and preserves caller-stated role values. |
 | `vscode:expandTokens` | `roles`, `runtime.framing`, `variants` | `metadata.vscode:baseTokens` | — | Derives syntax and TextMate base tokens from the resolved framing surface. |
 | `vscode:applyModifiers` | `metadata.vscode:baseTokens`, `roles`, `runtime.framing`, `variants` | `metadata.vscode:semanticTokenRules` | `vscode:expandTokens` | Creates semantic-token rules and applies background contrast enforcement. |
 | `emit:vscodeSemanticRules` | `metadata.vscode:semanticTokenRules`, `metadata.vscode:baseTokens` | `outputs.vscode:semanticTokenRules` | `vscode:applyModifiers` | Shapes semantic rules for VS Code’s semantic-token customisation map. |

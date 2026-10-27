@@ -11,17 +11,15 @@ under `https://studnicky.dev/iridis#`. Each `ColorRecord` becomes an
 `iridis:oklchL/C/H` predicates. When `record.displayP3` is populated the same
 subject also carries `iridis:displayP3R/G/B` triples as `xsd:decimal` values.
 
-Roles carry their actual resolution, not just their final color: `iridis:derivedFrom`
-(this role's color is a hue-rotated offset of another role's, per ExpandFamily),
-`iridis:pinned` / `iridis:synthesized` (booleans reflecting this run's own
-resolution metadata), `iridis:intent` (the schema's canonical ontology hook),
-`iridis:lightnessRangeMin/Max`, `iridis:chromaRangeMin/Max`, `iridis:hueClamp`
-(the schema's declared bounds), and `iridis:clampedFrom` (the seed color this
-run actually nudged into range, when one was).
+Roles carry their actual resolution, not just their final color: `iridis:pinned` /
+`iridis:synthesized` reflect run provenance, `iridis:intent` records the schema
+ontology hook, `iridis:lightnessRangeMin/Max` and `iridis:chromaRangeMin/Max`
+record declared bounds, and `iridis:clampedFrom` identifies a seed color nudged
+into range during this run.
 
 ## Relationship graph provenance
 
-An authored `relationshipGraph` is projected as linked graph, group, mode, variant, relationship, and tolerance resources. `iridis:relationshipSource` and `iridis:relationshipTarget` support reverse traversal from a source role to every derived target. A resolved role links to its `iridis:RelationshipResolution`, which identifies the authored relationship, group, selected mode, source roles, baseline and resolved colors, disposition, and any allowed deviation. Operation parameters remain queryable through their relationship resource.
+An authored `relationshipGraph` is projected as linked graph, group, mode, variant, relationship, and tolerance resources. `iridis:relationshipSource` and `iridis:relationshipTarget` support reverse traversal from a source role to every derived target. A resolved role links to its `iridis:RelationshipResolution`, which identifies the authored relationship, group, selected mode, source roles, baseline and resolved colors, disposition, and any allowed deviation. Relationship resources expose exact operation parameters; a `hue-target` relationship emits `iridis:hueTarget` and `iridis:hueClamp` as `xsd:double` literals.
 
 ## Install
 
@@ -58,7 +56,7 @@ export function generateReasoningGraph(roleSchema: RoleSchemaEntity.Type) {
   engine.pipeline([
     'intake:any',
     'resolve:roles',
-    'expand:family',
+    'derive:roleRelations',
     'enforce:compliance',
     'reason:annotate',
     'reason:serialize',

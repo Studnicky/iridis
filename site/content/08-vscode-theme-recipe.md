@@ -60,7 +60,7 @@ engine.adopt(vscodePlugin);
 engine.pipeline([
   'vscode:seedRoles',
   'resolve:roles',
-  'expand:family',
+  'derive:roleRelations',
   'vscode:deriveUiRoles',
   'enforce:contrast',
   'derive:variant',
@@ -98,7 +98,7 @@ writeFileSync(
 |---|---|
 | `vscode:seedRoles` | Validates the structured palette and creates role-hinted seed records. |
 | `resolve:roles` | Assigns and pins supplied role seeds. |
-| `expand:family` | Fills missing schema roles through their derivation rules. |
+| `derive:roleRelations` | Resolves schema-authored role relationships. |
 | `vscode:deriveUiRoles` | Derives missing UI extension roles and preserves supplied ones. |
 | `enforce:contrast` | Enforces every declared minimum and maximum WCAG contrast bound. |
 | `derive:variant` | Produces configured role variants for consumers that request them. |

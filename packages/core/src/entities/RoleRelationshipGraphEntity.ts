@@ -22,7 +22,16 @@ export namespace RoleRelationshipGraphEntity {
 
   export type Type = NominalSchemaType<typeof Schema>;
 
+  class GraphIntake {
+    static readonly #intake = EntityCompiler.compileIntake<Type>(Schema);
+
+    static intake(value: object): Type {
+      const result = GraphIntake.#intake(value);
+      return result;
+    }
+  }
+
   export const validate = EntityCompiler.compile<Type>(Schema);
-  export const intake = EntityCompiler.compileIntake<Type>(Schema);
+  export const intake = GraphIntake.intake;
   export const create = EntityCompiler.compileCreate<Type, CanonicalShapeType<typeof Schema>>(Schema);
 }

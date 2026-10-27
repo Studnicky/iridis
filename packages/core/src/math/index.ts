@@ -19,6 +19,7 @@ export { gamutMapSrgb     } from './GamutMapSrgb.ts';
 export { hexToRgb         } from './HexToRgb.ts';
 export { hslToRgb         } from './HslToRgb.ts';
 export { HueIntervalBounds } from './HueIntervalBounds.ts';
+export { hueResolutionChroma } from './HueResolutionChroma.ts';
 export { hueShift         } from './HueShift.ts';
 export { lighten          } from './Lighten.ts';
 export { linearToSrgb     } from './LinearToSrgb.ts';

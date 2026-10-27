@@ -48,6 +48,20 @@ export namespace RoleRelationshipEntity {
       },
       {
         'additionalProperties': false,
+        'allOf': [relaxabilityConstraint],
+        'properties': {
+          ...sharedProperties,
+          'clamp': { 'maximum': 180, 'minimum': 0, 'type': 'number' },
+          'hue': { 'maximum': 360, 'minimum': 0, 'type': 'number' },
+          'operation': { 'const': 'hue-target', 'type': 'string' },
+          'source': { 'minLength': 1, 'type': 'string' },
+          'target': { 'minLength': 1, 'type': 'string' }
+        },
+        'required': ['hue', 'id', 'operation', 'priority', 'relaxability', 'target'],
+        'type': 'object'
+      },
+      {
+        'additionalProperties': false,
         'allOf': [
           relaxabilityConstraint,
           {

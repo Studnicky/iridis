@@ -62,23 +62,67 @@ const endpoints = (role: Role): readonly Endpoint[] => {
   ];
 };
 
-const rootFor = (role: Role, roles: ReadonlyMap<string, Role>, seen: ReadonlySet<string> = new Set<string>()): string => {
-  if (seen.has(role.name)) throw new Error(`Hue relationship cycle includes "${role.name}".`);
-  if (role.derivedFrom === undefined || role.derivedFrom.length === 0) return role.name;
-  const next = new Set(seen);
-  next.add(role.name);
-  return rootFor(roleFor(roles, role.derivedFrom), roles, next);
+const relationshipsByTarget = (schema: RoleSchemaEntity.Type): ReadonlyMap<string, NonNullable<RoleSchemaEntity.Type['relationshipGraph']>['groups'][number]['relationships'][number]> => {
+  const result = new Map<string, NonNullable<RoleSchemaEntity.Type['relationshipGraph']>['groups'][number]['relationships'][number]>();
+  for (const group of schema.relationshipGraph?.groups ?? []) {
+    for (const relationship of group.relationships) {
+      result.set(relationship.target, relationship);
+    }
+  }
+  return result;
 };
 
-const hueFor = (role: Role, roles: ReadonlyMap<string, Role>, roots: ReadonlyMap<string, number>): number => {
-  const sourceHue = role.derivedFrom === undefined || role.derivedFrom.length === 0
-    ? roots.get(role.name)
-    : hueFor(roleFor(roles, role.derivedFrom), roles, roots);
-  if (sourceHue === undefined) throw new Error(`Root hue for "${role.name}" is absent.`);
-  if (role.hue !== undefined) {
-    return RoleGeometry.hueTowards(sourceHue, role.hue, role.hueClamp ?? RoleGeometry.DEFAULT_HUE_CLAMP);
+const sourceFor = (role: Role, relationships: ReadonlyMap<string, NonNullable<RoleSchemaEntity.Type['relationshipGraph']>['groups'][number]['relationships'][number]>): string | undefined => {
+  const relationship = relationships.get(role.name);
+  if (relationship === undefined) return undefined;
+  if (relationship.operation === 'alpha-overlay' || relationship.operation === 'oklch-interpolate') return undefined;
+  return relationship.source;
+};
+
+const rootFor = (
+  role: Role,
+  roles: ReadonlyMap<string, Role>,
+  relationships: ReadonlyMap<string, NonNullable<RoleSchemaEntity.Type['relationshipGraph']>['groups'][number]['relationships'][number]>,
+  seen: ReadonlySet<string> = new Set<string>()
+): string => {
+  if (seen.has(role.name)) throw new Error(`Hue relationship cycle includes "${role.name}".`);
+  const source = sourceFor(role, relationships);
+  if (source === undefined) return role.name;
+  const next = new Set(seen);
+  next.add(role.name);
+  return rootFor(roleFor(roles, source), roles, relationships, next);
+};
+
+const degreesFor = (
+  schema: RoleSchemaEntity.Type,
+  relationship: Extract<NonNullable<RoleSchemaEntity.Type['relationshipGraph']>['groups'][number]['relationships'][number], { readonly 'operation': 'hue-offset' }>
+): number => {
+  if (relationship.degrees !== undefined) return relationship.degrees;
+  for (const group of schema.relationshipGraph?.groups ?? []) {
+    if (!group.relationships.some((candidate) => candidate.id === relationship.id)) continue;
+    const modeId = relationship.modeId ?? group.defaultMode;
+    const mode = group.modes.find((candidate) => candidate.id === modeId);
+    const variant = mode?.hueOffsets.find((candidate) => candidate.variantId === relationship.variantId);
+    if (variant !== undefined) return variant.degrees;
   }
-  return ((sourceHue + (role.hueOffset ?? 0)) % 360 + 360) % 360;
+  throw new Error(`Hue offset relationship "${relationship.id}" lacks degrees.`);
+};
+
+const hueFor = (
+  role: Role,
+  roles: ReadonlyMap<string, Role>,
+  schema: RoleSchemaEntity.Type,
+  relationships: ReadonlyMap<string, NonNullable<RoleSchemaEntity.Type['relationshipGraph']>['groups'][number]['relationships'][number]>,
+  roots: ReadonlyMap<string, number>
+): number => {
+  const relationship = relationships.get(role.name);
+  const source = sourceFor(role, relationships);
+  const sourceHue = source === undefined ? roots.get(role.name) : hueFor(roleFor(roles, source), roles, schema, relationships, roots);
+  if (sourceHue === undefined) throw new Error(`Root hue for "${role.name}" is absent.`);
+  if (relationship === undefined || relationship.operation === 'alias' || relationship.operation === 'alpha-overlay' || relationship.operation === 'oklch-interpolate') return sourceHue;
+  if (relationship.operation === 'hue-offset') return ((sourceHue + degreesFor(schema, relationship)) % 360 + 360) % 360;
+  if (relationship.operation === 'hue-target') return RoleGeometry.hueTowards(sourceHue, relationship.hue, relationship.clamp ?? RoleGeometry.DEFAULT_HUE_CLAMP);
+  return ((sourceHue + (relationship.hueOffset ?? 0)) % 360 + 360) % 360;
 };
 
 const samples = (sameRoot: boolean): readonly number[] => {
@@ -112,10 +156,12 @@ const verify = (
   foreground: Role,
   background: Role,
   roles: ReadonlyMap<string, Role>,
+  schema: RoleSchemaEntity.Type,
+  relationships: ReadonlyMap<string, NonNullable<RoleSchemaEntity.Type['relationshipGraph']>['groups'][number]['relationships'][number]>,
   requirement: ContrastPolicy.RequirementInterface
 ): Verification => {
-  const foregroundRoot = rootFor(foreground, roles);
-  const backgroundRoot = rootFor(background, roles);
+  const foregroundRoot = rootFor(foreground, roles, relationships);
+  const backgroundRoot = rootFor(background, roles, relationships);
   const sameRoot = foregroundRoot === backgroundRoot;
   let allPass = true;
   let anyPass = false;
@@ -127,8 +173,8 @@ const verify = (
       const value = passes(
         foreground,
         background,
-        hueFor(foreground, roles, roots),
-        hueFor(background, roles, roots),
+        hueFor(foreground, roles, schema, relationships, roots),
+        hueFor(background, roles, schema, relationships, roots),
         requirement
       );
       allPass &&= value;
@@ -153,6 +199,7 @@ for (const [schemaName, schemaPair] of Object.entries(roleSchemaByName)) {
       roles.set(role.name, role);
       records[role.name] = colorRecordFactory.fromOklch(0.5, 0, 0);
     }
+    const relationships = relationshipsByTarget(schema);
     for (const configuration of configurations) {
       const options = ContrastOptionsEntity.intake(configuration);
       const input = InputEntity.intake({ colors: [], contrast: options, roles: schema });
@@ -172,7 +219,7 @@ for (const [schemaName, schemaPair] of Object.entries(roleSchemaByName)) {
           (candidate) => candidate.foreground === pair.foreground && candidate.background === pair.background
         );
         if (requirement === undefined) throw new Error(`Requirement for "${pair.foreground}/${pair.background}" is absent.`);
-        const result = verify(roleFor(roles, pair.foreground), roleFor(roles, pair.background), roles, requirement);
+        const result = verify(roleFor(roles, pair.foreground), roleFor(roles, pair.background), roles, schema, relationships, requirement);
         const valid = pair.reachability === 'always-reachable'
           ? result.allPass
           : pair.reachability === 'never-reachable'
@@ -342,7 +389,8 @@ const verifyRelationshipCertificates = (): { readonly 'certificates': number; re
     'contrastPairs': [
       { 'background': 'background', 'foreground': 'alias-target', 'minimumContrastRatio': 4.5 },
       { 'background': 'background', 'foreground': 'offset-target', 'minimumContrastRatio': 4.5 },
-      { 'background': 'background', 'foreground': 'delta-target', 'minimumContrastRatio': 4.5 }
+      { 'background': 'background', 'foreground': 'delta-target', 'minimumContrastRatio': 4.5 },
+      { 'background': 'background', 'foreground': 'target-hue', 'minimumContrastRatio': 4.5 }
     ],
     'name': 'graph-domain-certificate-fixture',
     'relationshipGraph': {
@@ -353,9 +401,12 @@ const verifyRelationshipCertificates = (): { readonly 'certificates': number; re
         'modes': [{ 'hueOffsets': [{ 'degrees': 180, 'variantId': 'opposite' }], 'id': 'opposite' }],
         'name': 'Derived',
         'relationships': [
-          { 'id': 'alias', 'operation': 'alias', 'priority': 0, 'relaxability': 'fixed', 'source': 'source', 'target': 'alias-target' },
-          { 'id': 'offset', 'operation': 'hue-offset', 'priority': 1, 'relaxability': 'fixed', 'source': 'source', 'target': 'offset-target', 'variantId': 'opposite' },
-          { 'id': 'delta', 'lightnessOffset': 0.1, 'operation': 'oklch-delta', 'priority': 2, 'relaxability': 'fixed', 'source': 'source', 'target': 'delta-target' }
+          { 'clamp': 180, 'hue': 0, 'id': 'background-hue', 'operation': 'hue-target', 'priority': 0, 'relaxability': 'fixed', 'target': 'background' },
+          { 'clamp': 180, 'hue': 120, 'id': 'source-hue', 'operation': 'hue-target', 'priority': 1, 'relaxability': 'fixed', 'target': 'source' },
+          { 'id': 'alias', 'operation': 'alias', 'priority': 2, 'relaxability': 'fixed', 'source': 'source', 'target': 'alias-target' },
+          { 'id': 'offset', 'operation': 'hue-offset', 'priority': 3, 'relaxability': 'fixed', 'source': 'source', 'target': 'offset-target', 'variantId': 'opposite' },
+          { 'id': 'delta', 'lightnessOffset': 0.1, 'operation': 'oklch-delta', 'priority': 4, 'relaxability': 'fixed', 'source': 'source', 'target': 'delta-target' },
+          { 'clamp': 90, 'hue': 25, 'id': 'target-hue', 'operation': 'hue-target', 'priority': 5, 'relaxability': 'fixed', 'source': 'source', 'target': 'target-hue' }
         ]
       }]
     },
@@ -364,7 +415,8 @@ const verifyRelationshipCertificates = (): { readonly 'certificates': number; re
       RoleDefinitionEntity.intake({ 'chromaRange': [0.01, 0.01], 'lightnessRange': [0.85, 0.85], 'name': 'source' }),
       RoleDefinitionEntity.intake({ 'chromaRange': [0.01, 0.01], 'lightnessRange': [0.85, 0.85], 'name': 'alias-target' }),
       RoleDefinitionEntity.intake({ 'chromaRange': [0.01, 0.01], 'lightnessRange': [0.85, 0.85], 'name': 'offset-target' }),
-      RoleDefinitionEntity.intake({ 'chromaRange': [0.01, 0.01], 'lightnessRange': [0.95, 0.95], 'name': 'delta-target' })
+      RoleDefinitionEntity.intake({ 'chromaRange': [0.01, 0.01], 'lightnessRange': [0.95, 0.95], 'name': 'delta-target' }),
+      RoleDefinitionEntity.intake({ 'chromaRange': [0.01, 0.01], 'lightnessRange': [0.85, 0.85], 'name': 'target-hue' })
     ]
   });
   const graphPairs = ContrastFeasibility.analyzeSchema(
@@ -374,10 +426,10 @@ const verifyRelationshipCertificates = (): { readonly 'certificates': number; re
   for (let index = 0; index < graphPairs.length; index += 1) {
     const pair = graphPairs[index];
     if (pair?.reachability !== 'always-reachable' || pair.sampled !== undefined) {
-      throw new Error('Graph alias, hue-offset, and OKLCH delta targets require continuous certificates.');
+      throw new Error('Graph alias, hue-offset, OKLCH delta, and hue-target relationships require continuous certificates.');
     }
   }
-  return { 'certificates': 5, 'indeterminate': 1 };
+  return { 'certificates': 6, 'indeterminate': 1 };
 };
 
 const relationship = verifyRelationshipCertificates();

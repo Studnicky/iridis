@@ -25,7 +25,7 @@ class StatedSelectionTask implements TaskInterface {
     'description': 'Seeds a caller-stated UI role for DeriveVscodeUiRoles coverage.',
     'name': 'test:statedSelection',
     'reads': ['metadata.core:roleProvenance', 'roles'],
-    'requires': ['expand:family'],
+    'requires': ['derive:roleRelations'],
     'writes': ['metadata.core:roleProvenance', 'roles']
   });
 
@@ -93,14 +93,14 @@ class DeriveVscodeUiRolesFixture {
 
   static run(roles: RoleSchemaEntity.Type): PaletteStateInterface {
     const engine = DeriveVscodeUiRolesFixture.engine();
-    engine.pipeline(['intake:hex', 'resolve:roles', 'expand:family', 'vscode:deriveUiRoles']);
+    engine.pipeline(['intake:hex', 'resolve:roles', 'derive:roleRelations', 'vscode:deriveUiRoles']);
     const result = engine.run(DeriveVscodeUiRolesFixture.input(roles));
     return result;
   }
 
   static runWithStatedSelection(roles: RoleSchemaEntity.Type): PaletteStateInterface {
     const engine = DeriveVscodeUiRolesFixture.engineWithStatedSelection();
-    engine.pipeline(['intake:hex', 'resolve:roles', 'expand:family', 'test:statedSelection', 'vscode:deriveUiRoles']);
+    engine.pipeline(['intake:hex', 'resolve:roles', 'derive:roleRelations', 'test:statedSelection', 'vscode:deriveUiRoles']);
     const result = engine.run(DeriveVscodeUiRolesFixture.input(roles));
     return result;
   }

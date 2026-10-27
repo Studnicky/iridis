@@ -21,6 +21,7 @@ import { contrastApca } from '../../math/ContrastApca.ts';
 import { contrastWcag21 } from '../../math/ContrastWcag21.ts';
 import { ensureContrast } from '../../math/EnsureContrast.ts';
 import { RelationshipConstraint } from '../../model/RelationshipConstraint.ts';
+import { WeakIdentityMemo } from '../../model/WeakIdentityMemo.ts';
 import { Metadata } from '../../types/metadata.ts';
 import { contrastCoordinateCounters } from './ContrastCoordinateCounters.ts';
 import { ContrastPolicy } from './ContrastPolicy.ts';
@@ -204,8 +205,9 @@ class ContrastProvenance {
 }
 
 class ContrastRangeCache {
-  static readonly #values = new WeakMap<
-    PaletteStateInterface['input'],
+  static readonly #empty = new Map<string, ContrastPolicy.RoleRangeInterface>();
+  static readonly #values = new WeakIdentityMemo<
+    NonNullable<PaletteStateInterface['input']['roles']>,
     ReadonlyMap<string, ContrastPolicy.RoleRangeInterface>
   >();
 
@@ -215,11 +217,7 @@ class ContrastRangeCache {
     coordinate: Readonly<{ 'c': number; 'l': number }>
   ): boolean {
     const range = ContrastRangeCache.range(input, roleName);
-    const result =
-      (range.chromaRange === undefined ||
-        (coordinate.c >= range.chromaRange[0] && coordinate.c <= range.chromaRange[1])) &&
-      (range.lightnessRange === undefined ||
-        (coordinate.l >= range.lightnessRange[0] && coordinate.l <= range.lightnessRange[1]));
+    const result = ContrastPolicy.allowsRange(range, coordinate);
     return result;
   }
 
@@ -235,28 +233,82 @@ class ContrastRangeCache {
   private static values(
     input: PaletteStateInterface['input']
   ): ReadonlyMap<string, ContrastPolicy.RoleRangeInterface> {
-    const cached = ContrastRangeCache.#values.get(input);
-    if (cached !== undefined) {
-      return cached;
+    const roles = input.roles;
+    if (roles === undefined) {
+      return ContrastRangeCache.#empty;
     }
-    const values = new Map<string, ContrastPolicy.RoleRangeInterface>();
-    const definitions = input.roles?.roles ?? [];
-    for (let index = 0; index < definitions.length; index += 1) {
-      const definition = definitions[index];
-      if (definition === undefined) {
+    const result = ContrastRangeCache.#values.get(roles, () => {
+      const values = new Map<string, ContrastPolicy.RoleRangeInterface>();
+      const definitions = roles.roles ?? [];
+      for (let index = 0; index < definitions.length; index += 1) {
+        const definition = definitions[index];
+        if (definition !== undefined) {
+          values.set(definition.name, {
+            ...(definition.chromaRange === undefined
+              ? {}
+              : { 'chromaRange': definition.chromaRange }),
+            ...(definition.lightnessRange === undefined
+              ? {}
+              : { 'lightnessRange': definition.lightnessRange })
+          });
+        }
+      }
+      return values;
+    });
+    return result;
+  }
+}
+
+class RelationshipCandidateDomain {
+  readonly #alphas: ReadonlyMap<string, number> | undefined;
+  readonly #domains: ReadonlyMap<string, ReturnType<typeof RelationshipConstraint.domain>> | undefined;
+
+  private constructor(options: Readonly<{
+    'alphas'?: ReadonlyMap<string, number>;
+    'domains'?: ReadonlyMap<string, ReturnType<typeof RelationshipConstraint.domain>>;
+  }>) {
+    this.#alphas = options.alphas;
+    this.#domains = options.domains;
+  }
+
+  static constrained(
+    state: PaletteStateInterface,
+    roleNames: readonly string[],
+    initial: ReadonlyMap<string, ColorRecordEntity.Type>
+  ): RelationshipCandidateDomain {
+    const alphas = new Map<string, number>();
+    const domains = new Map<string, ReturnType<typeof RelationshipConstraint.domain>>();
+    for (let index = 0; index < roleNames.length; index += 1) {
+      const roleName = roleNames[index];
+      const record = roleName === undefined ? undefined : initial.get(roleName);
+      if (roleName === undefined || record === undefined) {
         continue;
       }
-      values.set(definition.name, {
-        ...(definition.chromaRange === undefined
-          ? {}
-          : { 'chromaRange': definition.chromaRange }),
-        ...(definition.lightnessRange === undefined
-          ? {}
-          : { 'lightnessRange': definition.lightnessRange })
-      });
+      alphas.set(roleName, record.alpha);
+      domains.set(
+        roleName,
+        RelationshipConstraint.domain(state.input, state.metadata, roleName)
+      );
     }
-    ContrastRangeCache.#values.set(input, values);
-    return values;
+    return new RelationshipCandidateDomain({ 'alphas': alphas, 'domains': domains });
+  }
+
+  static unconstrained(): RelationshipCandidateDomain {
+    return new RelationshipCandidateDomain({});
+  }
+
+  allows(roleName: string, coordinate: ColorCoordinate): boolean {
+    const domains = this.#domains;
+    const alpha = this.#alphas?.get(roleName);
+    if (domains === undefined || alpha === undefined) {
+      return true;
+    }
+    const result = RelationshipConstraint.allowsDomain(
+      domains.get(roleName),
+      alpha,
+      coordinate
+    );
+    return result;
   }
 }
 
@@ -455,11 +507,54 @@ class ContrastExecution {
   ): void {
     const roleNames = ContrastExecution.componentRoleNames(component);
     const initial = ContrastExecution.componentRecords(roles, roleNames);
-    const coordinates = ContrastExecution.componentCoordinates(initial, roleNames);
     const preferenceCoordinates = ContrastExecution.preferenceCoordinates(preferences, roleNames);
+    const relationshipDomain = state.input.roles?.relationshipGraph === undefined
+      ? RelationshipCandidateDomain.unconstrained()
+      : RelationshipCandidateDomain.constrained(state, roleNames, initial);
+    const unconstrained = ContrastExecution.optimizeComponentCoordinates(
+      state,
+      preferenceCoordinates,
+      component,
+      roleNames,
+      initial,
+      RelationshipCandidateDomain.unconstrained()
+    );
+    const bestCoordinates = ContrastExecution.allowsRelationshipCoordinates(
+      roleNames,
+      unconstrained,
+      relationshipDomain
+    )
+      ? unconstrained
+      : ContrastExecution.optimizeComponentCoordinates(
+        state,
+        preferenceCoordinates,
+        component,
+        roleNames,
+        initial,
+        relationshipDomain
+      );
+    ContrastExecution.restoreComponent(
+      roles,
+      state,
+      roleNames,
+      initial,
+      bestCoordinates,
+      relationshipDomain
+    );
+  }
+
+  private static optimizeComponentCoordinates(
+    state: PaletteStateInterface,
+    preferences: ReadonlyMap<string, ColorCoordinate>,
+    component: readonly ContrastPolicy.RequirementInterface[],
+    roleNames: readonly string[],
+    initial: ReadonlyMap<string, ColorRecordEntity.Type>,
+    candidateDomain: RelationshipCandidateDomain
+  ): ReadonlyMap<string, ColorCoordinate> {
+    const coordinates = ContrastExecution.componentCoordinates(initial, roleNames);
     let best = ContrastExecution.coordinateScore(
       coordinates,
-      preferenceCoordinates,
+      preferences,
       component,
       roleNames
     );
@@ -470,10 +565,11 @@ class ContrastExecution {
       const score = ContrastExecution.optimizePass(
         coordinates,
         state,
-        preferenceCoordinates,
+        preferences,
         component,
         roleNames,
-        best
+        best,
+        candidateDomain
       );
       if (ContrastCoordinateScore.compare(score, best) >= 0) {
         break;
@@ -481,7 +577,7 @@ class ContrastExecution {
       best = score;
       bestCoordinates = new Map(coordinates);
     }
-    ContrastExecution.restoreComponent(roles, state, roleNames, initial, bestCoordinates);
+    return bestCoordinates;
   }
 
   private static componentCoordinates(
@@ -529,7 +625,8 @@ class ContrastExecution {
     preferences: ReadonlyMap<string, ColorCoordinate>,
     component: readonly ContrastPolicy.RequirementInterface[],
     roleNames: readonly string[],
-    initialScore: ContrastCoordinateScore
+    initialScore: ContrastCoordinateScore,
+    candidateDomain: RelationshipCandidateDomain
   ): ContrastCoordinateScore {
     let score = initialScore;
     for (let index = 0; index < roleNames.length; index += 1) {
@@ -549,7 +646,8 @@ class ContrastExecution {
         roleNames,
         roleName,
         current,
-        score
+        score,
+        candidateDomain
       );
       if (selected !== undefined) {
         coordinates.set(roleName, selected);
@@ -585,12 +683,31 @@ class ContrastExecution {
     return coordinates;
   }
 
+  private static allowsRelationshipCoordinates(
+    roleNames: readonly string[],
+    coordinates: ReadonlyMap<string, ColorCoordinate>,
+    candidateDomain: RelationshipCandidateDomain
+  ): boolean {
+    for (let index = 0; index < roleNames.length; index += 1) {
+      const roleName = roleNames[index];
+      const coordinate = roleName === undefined ? undefined : coordinates.get(roleName);
+      if (roleName === undefined || coordinate === undefined) {
+        continue;
+      }
+      if (!candidateDomain.allows(roleName, coordinate)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   private static restoreComponent(
     roles: PaletteRoleState,
     state: PaletteStateInterface,
     roleNames: readonly string[],
     initial: ReadonlyMap<string, ColorRecordEntity.Type>,
-    bestCoordinates: ReadonlyMap<string, ColorCoordinate>
+    bestCoordinates: ReadonlyMap<string, ColorCoordinate>,
+    candidateDomain: RelationshipCandidateDomain
   ): void {
     for (let index = 0; index < roleNames.length; index += 1) {
       const roleName = roleNames[index];
@@ -602,21 +719,30 @@ class ContrastExecution {
       if (original === undefined || coordinate === undefined) {
         continue;
       }
-      const resolved = ContrastExecution.sameCoordinate(original, coordinate)
-        ? original
-        : colorRecordFactory.fromCoordinate(
-          coordinate,
-          { 'alpha': original.alpha, 'hints': original.hints, 'origin': original }
-        );
-      if (!RelationshipConstraint.allows(state.input, state.metadata, roleName, resolved)) {
+      if (!candidateDomain.allows(roleName, coordinate)) {
         continue;
       }
+      const resolved = ContrastExecution.recordAtCoordinate(original, coordinate);
       roles.set(roleName, resolved);
       if (!ContrastMeasurement.sameRecord(original, resolved)) {
         ContrastProvenance.recordAdjustment(state, roleName, original.hex, resolved.hex);
         RelationshipConstraint.recordDeviation(state.input, state.metadata, roleName, resolved);
       }
     }
+  }
+
+  private static recordAtCoordinate(
+    original: ColorRecordEntity.Type,
+    coordinate: ColorCoordinate
+  ): ColorRecordEntity.Type {
+    if (ContrastExecution.sameCoordinate(original, coordinate)) {
+      return original;
+    }
+    const result = colorRecordFactory.fromCoordinate(
+      coordinate,
+      { 'alpha': original.alpha, 'hints': original.hints, 'origin': original }
+    );
+    return result;
   }
 
   private static sameCoordinate(
@@ -692,9 +818,15 @@ class ContrastExecution {
     roleNames: readonly string[],
     roleName: string,
     current: ColorCoordinate,
-    baseline: ContrastCoordinateScore
+    baseline: ContrastCoordinateScore,
+    candidateDomain: RelationshipCandidateDomain
   ): ColorCoordinate | undefined {
-    const candidates = ContrastExecution.coordinateCandidates(state, roleName, current);
+    const candidates = ContrastExecution.coordinateCandidates(
+      state,
+      roleName,
+      current,
+      candidateDomain
+    );
     let selected: ColorCoordinate | undefined;
     let selectedScore: ContrastCoordinateScore | undefined;
     for (let index = 0; index < candidates.length; index += 1) {
@@ -727,7 +859,8 @@ class ContrastExecution {
   private static coordinateCandidates(
     state: PaletteStateInterface,
     roleName: string,
-    current: ColorCoordinate
+    current: ColorCoordinate,
+    candidateDomain: RelationshipCandidateDomain
   ): readonly ColorCoordinate[] {
     const range = ContrastRangeCache.range(state.input, roleName);
     const lightnessRange = range.lightnessRange ?? [current.l, current.l] as const;
@@ -747,7 +880,7 @@ class ContrastExecution {
         }
         const candidate = ColorCoordinate.fromOklch(lightness, chroma, current.h);
         if (ContrastRangeCache.allows(state.input, roleName, candidate) &&
-          ContrastExecution.allowsRelationshipCandidate(state, roleName, candidate)) {
+          candidateDomain.allows(roleName, candidate)) {
           result.push(candidate);
         }
       }
@@ -1185,37 +1318,11 @@ class ContrastExecution {
     }
     const relationIds = RelationshipConstraint.relationIds(
       state.input,
-      state.metadata,
       [entry.pair.foreground, entry.pair.background]
     );
     const result = relationIds.length === 0
       ? entry
       : PendingContrastEntryEntity.create({ ...entry, 'relationIds': relationIds });
-    return result;
-  }
-
-  private static allowsRelationshipCandidate(
-    state: PaletteStateInterface,
-    roleName: string,
-    coordinate: ColorCoordinate
-  ): boolean {
-    if (state.input.roles?.relationshipGraph === undefined) {
-      return true;
-    }
-    const role = state.roles[roleName];
-    if (role === undefined) {
-      return true;
-    }
-    const candidate = colorRecordFactory.fromCoordinate(
-      coordinate,
-      { 'alpha': role.alpha, 'hints': role.hints, 'origin': role }
-    );
-    const result = RelationshipConstraint.allows(
-      state.input,
-      state.metadata,
-      roleName,
-      candidate
-    );
     return result;
   }
 

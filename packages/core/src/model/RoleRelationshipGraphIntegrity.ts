@@ -38,7 +38,7 @@ export class RoleRelationshipGraphIntegrity {
         this.#validateGroup(context, admittedGroup, groupIndex);
       }
     }
-    return context.errors;
+    return [...context.errors];
   }
 
   static #validateGroup(

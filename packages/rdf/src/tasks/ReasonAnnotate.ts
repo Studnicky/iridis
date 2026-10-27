@@ -9,6 +9,8 @@ import {
   ColorRecordEntity,
   contrastWcag21,
   Metadata,
+  RelationshipHueDegrees,
+  RelationshipSources,
   RelationshipToleranceEntity,
   RoleRelationshipEntity,
   RoleRelationshipGraphEntity,
@@ -140,7 +142,6 @@ class ReasonAnnotate implements TaskInterface {
       }
       const roleNode = DataFactory.namedNode(Iri.role(roleName));
       const decimalNode = DataFactory.namedNode(XSD_IRI.DECIMAL);
-      if (definition.derivedFrom !== undefined) {store.addQuad(DataFactory.quad(roleNode, DataFactory.namedNode(iridisVocab.derivedFrom), DataFactory.namedNode(Iri.role(definition.derivedFrom))));}
       if (definition.intent !== undefined) {store.addQuad(DataFactory.quad(roleNode, DataFactory.namedNode(iridisVocab.intent), DataFactory.literal(definition.intent, DataFactory.namedNode(XSD_IRI.STRING))));}
       if (definition.lightnessRange !== undefined) {
         store.addQuad(DataFactory.quad(roleNode, DataFactory.namedNode(iridisVocab.leastPermittedLightness), DataFactory.literal(definition.lightnessRange[0].toFixed(4), decimalNode)));
@@ -150,7 +151,6 @@ class ReasonAnnotate implements TaskInterface {
         store.addQuad(DataFactory.quad(roleNode, DataFactory.namedNode(iridisVocab.leastPermittedChroma), DataFactory.literal(definition.chromaRange[0].toFixed(4), decimalNode)));
         store.addQuad(DataFactory.quad(roleNode, DataFactory.namedNode(iridisVocab.greatestPermittedChroma), DataFactory.literal(definition.chromaRange[1].toFixed(4), decimalNode)));
       }
-      if (definition.hueClamp !== undefined) {store.addQuad(DataFactory.quad(roleNode, DataFactory.namedNode(iridisVocab.hueClamp), DataFactory.literal(definition.hueClamp.toFixed(2), decimalNode)));}
       return;
     }
   }
@@ -258,7 +258,7 @@ class ReasonAnnotate implements TaskInterface {
     store.addQuad(DataFactory.quad(relationshipNode, DataFactory.namedNode(iridisVocab.relationshipOperation), DataFactory.literal(relationship.operation, DataFactory.namedNode(XSD_IRI.STRING))));
     store.addQuad(DataFactory.quad(relationshipNode, DataFactory.namedNode(iridisVocab.relationshipPriority), DataFactory.literal(String(relationship.priority), DataFactory.namedNode(XSD_IRI.INTEGER))));
     store.addQuad(DataFactory.quad(relationshipNode, DataFactory.namedNode(iridisVocab.relationshipRelaxability), DataFactory.literal(relationship.relaxability, DataFactory.namedNode(XSD_IRI.STRING))));
-    const sources = ReasonAnnotate.relationshipSources(relationship);
+    const sources = RelationshipSources.names(relationship);
     for (let sourceIndex = 0; sourceIndex < sources.length; sourceIndex += 1) {
       const source = sources[sourceIndex];
       if (source !== undefined) {
@@ -277,6 +277,26 @@ class ReasonAnnotate implements TaskInterface {
     }
   }
 
+  private static emitHueOffsetParameters(
+    store: Store,
+    schemaName: string,
+    group: RoleRelationshipGroupEntity.Type,
+    relationshipNode: ReturnType<typeof DataFactory.namedNode>,
+    relationship: RoleRelationshipEntity.Type
+  ): void {
+    if (relationship.operation !== 'hue-offset') {
+      return;
+    }
+    if (relationship.degrees !== undefined) {
+      store.addQuad(DataFactory.quad(relationshipNode, DataFactory.namedNode(iridisVocab.hueDegrees), ReasonAnnotate.authoredNumber(relationship.degrees)));
+    }
+    if (relationship.variantId !== undefined) {
+      const modeId = RelationshipHueDegrees.modeId(group, relationship);
+      const variantNode = DataFactory.namedNode(Iri.harmonyVariant(schemaName, group.id, modeId, relationship.variantId));
+      store.addQuad(DataFactory.quad(relationshipNode, DataFactory.namedNode(iridisVocab.harmonyVariant), variantNode));
+    }
+  }
+
   private static emitRelationshipParameters(
     store: Store,
     schemaName: string,
@@ -285,13 +305,13 @@ class ReasonAnnotate implements TaskInterface {
     relationship: RoleRelationshipEntity.Type
   ): void {
     if (relationship.operation === 'hue-offset') {
-      if (relationship.degrees !== undefined) {
-        store.addQuad(DataFactory.quad(relationshipNode, DataFactory.namedNode(iridisVocab.hueDegrees), ReasonAnnotate.authoredNumber(relationship.degrees)));
-      }
-      if (relationship.variantId !== undefined) {
-        const modeId = relationship.modeId ?? group.defaultMode;
-        const variantNode = DataFactory.namedNode(Iri.harmonyVariant(schemaName, group.id, modeId, relationship.variantId));
-        store.addQuad(DataFactory.quad(relationshipNode, DataFactory.namedNode(iridisVocab.harmonyVariant), variantNode));
+      ReasonAnnotate.emitHueOffsetParameters(store, schemaName, group, relationshipNode, relationship);
+      return;
+    }
+    if (relationship.operation === 'hue-target') {
+      store.addQuad(DataFactory.quad(relationshipNode, DataFactory.namedNode(iridisVocab.hueTarget), ReasonAnnotate.authoredNumber(relationship.hue)));
+      if (relationship.clamp !== undefined) {
+        store.addQuad(DataFactory.quad(relationshipNode, DataFactory.namedNode(iridisVocab.hueClamp), ReasonAnnotate.authoredNumber(relationship.clamp)));
       }
       return;
     }
@@ -314,17 +334,6 @@ class ReasonAnnotate implements TaskInterface {
     if (relationship.operation === 'alpha-overlay') {
       store.addQuad(DataFactory.quad(relationshipNode, DataFactory.namedNode(iridisVocab.overlayAlpha), ReasonAnnotate.authoredNumber(relationship.alpha)));
     }
-  }
-
-  private static relationshipSources(relationship: RoleRelationshipEntity.Type): readonly string[] {
-    if ('source' in relationship) {
-      const result = relationship.operation === 'oklch-interpolate'
-        ? [relationship.source, relationship.toward]
-        : [relationship.source];
-      return result;
-    }
-    const result = [relationship.base, relationship.overlay];
-    return result;
   }
 
   private static emitTolerance(

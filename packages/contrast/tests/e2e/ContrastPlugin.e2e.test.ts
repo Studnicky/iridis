@@ -94,7 +94,7 @@ class StrictComplianceScenario {
     const result = [
       'intake:hex',
       'resolve:roles',
-      'expand:family',
+      'derive:roleRelations',
       'enforce:compliance',
       'derive:variant',
       'report:compliance',
@@ -186,7 +186,7 @@ await test('canonical compliance emits an admissible zero-pair report', () => {
   engine.pipeline([
     'intake:hex',
     'resolve:roles',
-    'expand:family',
+    'derive:roleRelations',
     'enforce:compliance',
     'derive:variant',
     'report:compliance'
@@ -246,7 +246,7 @@ await test('canonical compliance records an already compliant pair as resolved',
   engine.pipeline([
     'intake:hex',
     'resolve:roles',
-    'expand:family',
+    'derive:roleRelations',
     'enforce:compliance',
     'derive:variant',
     'report:compliance'
@@ -335,7 +335,7 @@ await test('canonical compliance corrects a failing AAA pair to seven to one', (
     }
   });
   const previewEngine = ComplianceTestEngine.create();
-  previewEngine.pipeline(['intake:hex', 'resolve:roles', 'expand:family']);
+  previewEngine.pipeline(['intake:hex', 'resolve:roles', 'derive:roleRelations']);
   const preview = previewEngine.run(input);
   const initialText = preview.roles.text;
   const initialBackground = preview.roles.background;
@@ -346,7 +346,7 @@ await test('canonical compliance corrects a failing AAA pair to seven to one', (
   engine.pipeline([
     'intake:hex',
     'resolve:roles',
-    'expand:family',
+    'derive:roleRelations',
     'enforce:compliance',
     'derive:variant',
     'report:compliance'
@@ -367,7 +367,7 @@ await test('canonical compliance solves a non-background APCA pair at Lc sixty',
   engine.pipeline([
     'intake:hex',
     'resolve:roles',
-    'expand:family',
+    'derive:roleRelations',
     'enforce:compliance',
     'derive:variant',
     'report:compliance'
@@ -430,7 +430,7 @@ await test('canonical compliance preserves its terminal report through variant d
   engine.pipeline([
     'intake:hex',
     'resolve:roles',
-    'expand:family',
+    'derive:roleRelations',
     'enforce:compliance',
     'derive:variant',
     'report:compliance'
@@ -515,7 +515,7 @@ await test('canonical compliance applies AAA and APCA targets to every declared 
     engine.pipeline([
       'intake:hex',
       'resolve:roles',
-      'expand:family',
+      'derive:roleRelations',
       'enforce:compliance',
       'derive:variant',
       'report:compliance'
@@ -609,7 +609,7 @@ await test('terminal problem pairs carry an exact feasibility proof when schema 
   engine.pipeline([
     'intake:hex',
     'resolve:roles',
-    'expand:family',
+    'derive:roleRelations',
     'enforce:compliance',
     'derive:variant',
     'report:compliance'
@@ -625,10 +625,22 @@ await test('terminal problem pairs carry an exact feasibility proof when schema 
           'minimumContrastRatio': 4.5
         }],
         'name': 'fixed-hue-feasibility-proof',
+        'relationshipGraph': {
+          'groups': [{
+            'anchor': 'text',
+            'defaultMode': 'fixed',
+            'id': 'fixed-hues',
+            'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'fixed' }], 'id': 'fixed' }],
+            'name': 'Fixed hues',
+            'relationships': [
+              { 'clamp': 180, 'hue': 120, 'id': 'text-hue', 'operation': 'hue-target', 'priority': 0, 'relaxability': 'fixed', 'target': 'text' },
+              { 'clamp': 180, 'hue': 120, 'id': 'background-hue', 'operation': 'hue-target', 'priority': 1, 'relaxability': 'fixed', 'target': 'background' }
+            ]
+          }]
+        },
         'roles': [
           {
             'chromaRange': [0, 0.05],
-            'hue': 120,
             'intent': 'text',
             'lightnessRange': [0.45, 0.46],
             'name': 'text',
@@ -636,7 +648,6 @@ await test('terminal problem pairs carry an exact feasibility proof when schema 
           },
           {
             'chromaRange': [0, 0.05],
-            'hue': 120,
             'intent': 'background',
             'lightnessRange': [0.5, 0.51],
             'name': 'background',

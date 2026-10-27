@@ -1,6 +1,5 @@
 import type { FsmStepInterface } from '@studnicky/fsm/browser';
 
-import type { DerivationConfigEntity } from '../entities/DerivationConfigEntity.ts';
 import type { RoleSortKeyType } from './roleSortKeyType.ts';
 
 import { IridisUiEffect } from './iridisUiEffect.ts';
@@ -36,7 +35,6 @@ export abstract class IridisUiEvent {
   static setCvdMode(cvdMode: string): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_CVD_MODE', IridisUiEffect.setCvdMode(cvdMode)); }
   static setNonMandatoryLevel(nonMandatoryLevel: string): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_NON_MANDATORY_LEVEL', IridisUiEffect.setNonMandatoryLevel(nonMandatoryLevel)); }
   static setDarkFraming(): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_FRAMING', IridisUiEffect.setFraming(IridisUiEffect.darkFraming())); }
-  static setDerivationConfig(config: DerivationConfigEntity.Type): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_DERIVATION_CONFIG', IridisUiEffect.setDerivationConfig(config)); }
   static setDeltaEImageAlgorithm(): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_IMAGE_ALGORITHM', IridisUiEffect.setImageAlgorithm(IridisUiEffect.deltaEImageAlgorithm())); }
   static setImageChromaRange(range: [number, number][]): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_IMAGE_CHROMA_RANGE', IridisUiEffect.setImageChromaRange(range)); }
   static setImageDeltaECap(cap: number): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_IMAGE_DELTA_E_CAP', IridisUiEffect.setImageDeltaECap(cap)); }
@@ -50,8 +48,6 @@ export abstract class IridisUiEvent {
   static setRoleSort(keys: RoleSortKeyType[]): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_ROLE_SORT', IridisUiEffect.setRoleSort(keys)); }
   static setSchema(schemaName: string): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_SCHEMA', IridisUiEffect.setSchema(schemaName)); }
   static setSeed(index: number, hex: string): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_SEED', IridisUiEffect.setSeed(index, hex)); }
-  static setSemanticHuesDisabled(): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_SEMANTIC_HUES_ENABLED', IridisUiEffect.setSemanticHues(IridisUiEffect.semanticHuesDisabled())); }
-  static setSemanticHuesEnabled(): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_SEMANTIC_HUES_ENABLED', IridisUiEffect.setSemanticHues(IridisUiEffect.semanticHuesEnabled())); }
   static setSrgbColorSpace(): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_COLOR_SPACE', IridisUiEffect.setColorSpace(IridisUiEffect.srgbColorSpace())); }
   static setWuQuantizeImageAlgorithm(): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_IMAGE_ALGORITHM', IridisUiEffect.setImageAlgorithm(IridisUiEffect.wuQuantizeImageAlgorithm())); }
   static toggleCvdPreview(cvdType: string): IridisUiEvent { return new EffectOnlyIridisUiEvent('CVD_TOGGLE_PREVIEW', IridisUiEffect.toggleCvdPreview(cvdType)); }

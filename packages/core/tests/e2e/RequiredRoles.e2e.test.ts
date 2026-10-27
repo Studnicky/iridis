@@ -56,24 +56,16 @@ await test('required role keeps an achromatic input within a neutral chroma rang
   assert.ok(role.oklch.c >= 0 && role.oklch.c <= 0.02);
 });
 
-await test('required role applies a positive hue offset with wraparound', () => {
-  const state = RequiredRolesHarness.runAny(
-    [{ 'c': 0.1, 'h': 350, 'l': 0.5 }],
-    RoleDefinitionEntity.intake({ 'hueOffset': 20, 'name': 'anchor', 'required': true })
-  );
-  const role = state.roles.anchor;
-  assert.ok(role !== undefined);
-  assert.ok(Math.abs(role.oklch.h - 10) < 0.01);
+await test('required role rejects an undeclared numeric control', () => {
+  assert.throws(() => {
+    RoleDefinitionEntity.intake({ 'deprecatedNumericControl': 20, 'name': 'anchor', 'required': true });
+  });
 });
 
-await test('required role applies a negative hue offset', () => {
-  const state = RequiredRolesHarness.runAny(
-    [{ 'c': 0.1, 'h': 200, 'l': 0.5 }],
-    RoleDefinitionEntity.intake({ 'hueOffset': -30, 'name': 'anchor', 'required': true })
-  );
-  const role = state.roles.anchor;
-  assert.ok(role !== undefined);
-  assert.ok(Math.abs(role.oklch.h - 170) < 0.5);
+await test('required role rejects an undeclared source control', () => {
+  assert.throws(() => {
+    RoleDefinitionEntity.intake({ 'deprecatedSourceControl': 'brand', 'name': 'anchor', 'required': true });
+  });
 });
 
 await test('required role applies lightness and chroma constraints together', () => {
@@ -97,7 +89,6 @@ await test('required role synthesizes a constrained color and records provenance
     [],
     RoleDefinitionEntity.intake({
       'chromaRange': [0.1, 0.15],
-      'hueOffset': 200,
       'lightnessRange': [0.6, 0.8],
       'name': 'synth',
       'required': true
@@ -108,7 +99,6 @@ await test('required role synthesizes a constrained color and records provenance
   assert.ok(role !== undefined);
   assert.ok(role.oklch.l >= 0.6 && role.oklch.l <= 0.8);
   assert.ok(role.oklch.c >= 0.1 && role.oklch.c <= 0.15);
-  assert.ok(Math.abs(role.oklch.h - 200) < 0.01);
   assert.strictEqual(provenance?.origin, 'synthesized');
   assert.match(role.hex, RequiredRolesHarness.hexPattern);
   assert.ok(role.rgb.r >= 0 && role.rgb.r <= 1);
@@ -119,7 +109,6 @@ await test('required role synthesizes an achromatic point-range color', () => {
     [],
     RoleDefinitionEntity.intake({
       'chromaRange': [0, 0],
-      'hueOffset': 0,
       'lightnessRange': [0.5, 0.5],
       'name': 'synth',
       'required': true

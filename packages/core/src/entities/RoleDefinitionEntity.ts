@@ -14,12 +14,7 @@ export namespace RoleDefinitionEntity {
         'minItems': 2,
         'type': 'array'
       },
-      'chromaScale':    { 'minimum': 0, 'type': 'number' },
-      'derivedFrom':    { 'type': 'string' },
       'description':    { 'type': 'string' },
-      'hue':            { 'type': 'number' },
-      'hueClamp':       { 'type': 'number' },
-      'hueOffset':      { 'type': 'number' },
       'intent': {
         'enum': [
           'text',
@@ -34,7 +29,6 @@ export namespace RoleDefinitionEntity {
           'onButton'
         ]
       },
-      'lightnessOffset': { 'maximum': 1, 'minimum': -1, 'type': 'number' },
       'lightnessRange': {
         'items': { 'type': 'number' },
         'maxItems': 2,

@@ -57,11 +57,6 @@ class EngineE2eFixture {
           'lightnessRange': [0.4, 0.8],
           'name': 'secondary',
           'required': false
-        }),
-        RoleDefinitionEntity.intake({
-          'chromaRange': [0.01, 0.08],
-          'derivedFrom': 'primary',
-          'name': 'primary-muted'
         })
       ]
     });
@@ -107,7 +102,7 @@ void test('Engine.e2e :: cell-1 :: full pipeline populates every state surface',
   engine.pipeline([
     'intake:hex',
     'resolve:roles',
-    'expand:family',
+    'derive:roleRelations',
     'enforce:contrast',
     'derive:variant',
     'emit:json'
@@ -117,21 +112,21 @@ void test('Engine.e2e :: cell-1 :: full pipeline populates every state surface',
     'roles': EngineE2eFixture.createSimpleRoles()
   }));
   assert.ok(state.colors.length >= 1);
-  assert.ok(Object.hasOwn(state.roles, 'primary-muted'));
+  assert.ok(Object.hasOwn(state.roles, 'primary'));
   assert.ok(Object.hasOwn(state.variants, 'dark'));
   assert.ok(Object.hasOwn(state.variants, 'light'));
   assert.ok(EngineE2eFixture.containsColorArray(state.outputs['core:json']));
 });
 
-void test('Engine.e2e :: cell-1 :: one seed expands the derived family role', () => {
+void test('Engine.e2e :: cell-1 :: one seed resolves every authored role', () => {
   const engine = EngineE2eFixture.createEngine();
-  engine.pipeline(['intake:hex', 'resolve:roles', 'expand:family']);
+  engine.pipeline(['intake:hex', 'resolve:roles', 'derive:roleRelations']);
   const state = engine.run(InputEntity.intake({
     'colors': ['#6366f1'],
     'roles': EngineE2eFixture.createSimpleRoles()
   }));
   assert.ok(state.colors.length >= 1);
-  assert.ok(Object.hasOwn(state.roles, 'primary-muted'));
+  assert.ok(Object.hasOwn(state.roles, 'primary'));
 });
 
 void test('Engine.e2e :: cell-2 :: intake:any dispatches hex values', () => {
@@ -349,4 +344,21 @@ void test('Engine.e2e :: cell-8 :: tasks observe runtime framing', () => {
     'runtime': { 'framing': 'light' }
   }));
   assert.strictEqual(observedFraming, 'light');
+});
+
+void test('Engine.e2e :: memoized role schemas reject mutation without contaminating later runs', () => {
+  const engine = EngineE2eFixture.createEngine();
+  engine.pipeline(['intake:hex', 'resolve:roles']);
+  const input = InputEntity.create({
+    'colors': ['#5b21b6'],
+    'roles': EngineE2eFixture.createSimpleRoles()
+  });
+  const first = engine.run(input);
+  const role = first.input.roles?.roles[0];
+  assert.notStrictEqual(role, undefined);
+  assert.throws(() => {
+    Object.defineProperty(role, 'name', { 'value': 'changed' });
+  });
+  const second = engine.run(input);
+  assert.strictEqual(second.input.roles?.roles[0]?.name, 'primary');
 });

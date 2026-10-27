@@ -2,14 +2,12 @@ import type { PaletteStateInterface } from '@studnicky/iridis';
 
 import { contrastApca, contrastWcag21, InputEntity } from '@studnicky/iridis';
 import { ComplianceReportEntity } from '@studnicky/iridis-contrast';
-import { JsonValue } from '@studnicky/types/node';
 
 import type { PinRequest } from './PinRequest.ts';
 
 import { COLOR_PIPELINE } from '../../app/composables/colorPipeline.ts';
 import { ContrastConfigFor } from '../../app/composables/contrastConfigFor.ts';
 import { createColorEngine } from '../../app/composables/createColorEngine.ts';
-import { DerivationConfigEntity } from '../../app/composables/entities/DerivationConfigEntity.ts';
 import { VARIANT_CONFIG } from '../../app/composables/variantConfig.ts';
 import { SeedInputEntity } from '../../app/theme/types/SeedInputEntity.ts';
 import { CvdBudgetDiagnostics } from './CvdBudgetDiagnostics.ts';
@@ -64,9 +62,7 @@ export class PinRun {
         'colors': colors,
         'contrast': ContrastConfigFor.forOptions(request.options),
         'metadata': {
-          'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
-          'derivation:config': JsonValue.from(DerivationConfigEntity.defaultValue),
-          'derivation:semanticHuesEnabled': true
+          'core:variantConfig': VARIANT_CONFIG
         },
         'roles': request.roles,
         'runtime': request.runtime

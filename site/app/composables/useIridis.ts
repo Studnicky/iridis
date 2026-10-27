@@ -2,8 +2,8 @@
  * Shared iridis engine state. Two mutually-exclusive modes — a color picker and
  * an image extractor — each with its own palette; switching modes swaps which
  * palette themes the page. Every color (roles and tonal scales) is produced
- * by engine.run(): scales come from derive:variant tonal steps, semantic hues
- * from hueOffset on the schema roles. The projector only reads those hexes.
+ * by engine.run(): scales come from derive:variant tonal steps and roles follow
+ * the authored relationship graph. The projector only reads those hexes.
  */
 
 import type { ComplianceReportEntity, ContrastFeasibilityReportEntity, CvdMatrixEntity, CvdResultSetEntity } from '@studnicky/iridis-contrast';
@@ -11,12 +11,12 @@ import type { ClusterStrategyInterface, GalleryCandidateOutputEntity } from '@st
 import type { GalleryHistogramSlotInterface } from '@studnicky/iridis-image/types';
 import type { ViteHotContext } from 'vite/types/hot.d.ts';
 
+import { RoleRelationshipGraphEntity } from '@studnicky/iridis';
 import { ClusterDispatcher } from '@studnicky/iridis-image';
 import * as VueModule from 'vue';
 
 import { useNuxtApp, useRuntimeConfig, useState } from '#imports';
 
-import type { DerivationRelationEntity } from './entities/DerivationRelationEntity.ts';
 import type { PaletteSnapshotEntity } from './entities/PaletteSnapshotEntity.ts';
 import type { WorkerEnvelopeEntity } from './entities/WorkerEnvelopeEntity.ts';
 import type { WorkerReplyEntity } from './entities/WorkerReplyEntity.ts';
@@ -39,7 +39,6 @@ import { AccessibilityBlockers } from './accessibilityBlockers.ts';
 import { BrowserWorkerPort } from './browserWorkerPort.ts';
 import { IRIDIS_CONSTANTS } from './constants/IridisConstants.ts';
 import { CvdModeEntity } from './entities/CvdModeEntity.ts';
-import { DerivationConfigEntity } from './entities/DerivationConfigEntity.ts';
 import { ExtractionSettingsEntity } from './entities/ExtractionSettingsEntity.ts';
 import { FramingEntity } from './entities/FramingEntity.ts';
 import { ModeEntity } from './entities/ModeEntity.ts';
@@ -175,68 +174,52 @@ class IridisContextFactory {
     const nonMandatoryLevel = VueModule.ref<NonMandatoryLevelEntity.Type>(NonMandatoryLevelEntity.defaultValue);
     const colorSpace = VueModule.ref<'srgb' | 'displayP3'>('srgb');
 
-    /**
- * Color derivation configuration — a hue-algorithm choice per derivedFrom
- * relation (keyed by the child role's own name). Passed through metadata to
- * the derive:roleRelations/derive:semanticHues pipeline tasks, which write
- * the resolved overrides those relations consult; changing it re-runs the
- * whole pipeline via the FSM's schedule(), the same as any other palette
- * parameter — never recomputed and reapplied client-side.
- */
-    const derivationConfig = VueModule.ref<DerivationConfigEntity.Type>(DerivationConfigEntity.defaultValue);
-
-    /** Merges a single relation's config into `derivationConfig` and re-runs the pipeline — the ONLY way a relation changes; the resolved hue is always recomputed by derive:roleRelations, never written directly here. */
-    class RelationUpdateOperation {
-      static run(roleName: string, relation: DerivationRelationEntity.Type): void {
-        const patch: Record<string, DerivationRelationEntity.Type> = {};
-        Object.defineProperty(patch, roleName, { 'configurable': true, 'enumerable': true, 'value': relation, 'writable': true });
-        relationsUpdate(patch);
+    class RelationshipGraphSelection {
+      static fromCurrentSchema(): RoleRelationshipGraphEntity.Type | undefined {
+        const pair = roleSchemaByName[schemaName.value];
+        const definition = framing.value === 'dark' ? pair.dark : pair.light;
+        const graph = definition.relationshipGraph;
+        const result = graph === undefined ? undefined : RoleRelationshipGraphEntity.intake(structuredClone(graph));
+        return result;
       }
-    }
 
-    const relationUpdate = RelationUpdateOperation.run;
-
-    /**
- * Merges a whole batch of relations into `derivationConfig` in a SINGLE
- * dispatch — required (not just an optimization) for a multi-child bulk
- * change like "apply this algorithm to every child in a hub": the FSM's
- * `EffectInterpreter.send()` is async, so firing one `send()` per relation
- * in a tight synchronous loop races — only the first lands before the
- * interpreter is busy processing it, and the rest are silently dropped.
- * One dispatch carrying every changed relation sidesteps the race entirely.
- */
-    class RelationsUpdateOperation {
-      static run(newRelations: Record<string, DerivationRelationEntity.Type>): void {
-        const updated = DerivationConfigEntity.create({ 'relations': { ...derivationConfig.value.relations, ...newRelations } });
-        sendUiEvent(IridisUiEvent.setDerivationConfig(updated));
+      static reset(): void {
+        relationshipGraph.value = RelationshipGraphSelection.fromCurrentSchema();
       }
-    }
 
-    const relationsUpdate = RelationsUpdateOperation.run;
-
-    /**
- * Whether `derive:semanticHues` runs at all — when off, success/warning/
- * error/info keep whatever hue their own relation (or the schema default)
- * gives them, with no built-in nudge toward their intent's conventional
- * meaning. Passed through metadata; the task itself checks this and is a
- * full no-op when disabled, same as any other palette parameter.
- */
-    const semanticHuesEnabled = VueModule.ref(true);
-    class SemanticHuesEnabledSetOperation {
-      static run(nextState: boolean | string): void {
-        if (nextState === true) {
-          sendUiEvent(IridisUiEvent.setSemanticHuesEnabled());
-          return;
+      static selectMode(groupId: string, modeId: string): void {
+        const graph = relationshipGraph.value;
+        if (graph === undefined) {
+          throw new RangeError('The selected schema has no relationship graph');
         }
-        if (nextState === false) {
-          sendUiEvent(IridisUiEvent.setSemanticHuesDisabled());
-          return;
+        const selectedGroup = graph.groups.find((group) => {
+          const result = group.id === groupId;
+          return result;
+        });
+        if (selectedGroup === undefined) {
+          throw new RangeError(`Relationship graph has no group "${groupId}"`);
         }
-        throw new TypeError('Semantic hue state must be boolean');
+        const selectedMode = selectedGroup.modes.find((mode) => {
+          const result = mode.id === modeId;
+          return result;
+        });
+        if (selectedMode === undefined) {
+          throw new RangeError(`Relationship group "${groupId}" has no mode "${modeId}"`);
+        }
+        const groups = graph.groups.map((group) => {
+          const result = group.id === groupId ? { ...group, 'defaultMode': selectedMode.id } : group;
+          return result;
+        });
+        relationshipGraph.value = RoleRelationshipGraphEntity.intake({ 'groups': groups });
+        schedule();
+        scheduleSchemaFeasibility();
       }
     }
 
-    const semanticHuesEnabledSet = SemanticHuesEnabledSetOperation.run;
+    const relationshipGraph = VueModule.shallowRef<RoleRelationshipGraphEntity.Type | undefined>(
+      RelationshipGraphSelection.fromCurrentSchema()
+    );
+    const selectRelationshipMode = RelationshipGraphSelection.selectMode;
 
     /**
  * Visual CVD preview — purely a display-time filter over whatever the engine
@@ -404,16 +387,7 @@ class IridisContextFactory {
       return result;
     });
 
-    /**
- * Role names a seed can actually be pinned to for the active schema+framing —
- * restricted to IRIDIS_CONSTANTS.USED_ROLE_NAMES so the list matches roles the demo page really
- * renders somewhere distinct (a Nuxt UI alias, a --ui-* CSS var, a syntax-*
- * token color), not just whatever the schema happens to declare. Both
- * independently-resolved roles (background/text/brand/muted/error) AND
- * schema-derived ones (success/warning/info/accent-alt/syntax-*) work now —
- * pin:derivedRoles (in the pipeline between resolve:roles and expand:family)
- * overrides ExpandFamily's hue-rotation for whichever role a seed is pinned to.
- */
+    /** Selects demo-rendered role names that accept exact seed pins through the canonical relationship resolver. */
     const pinnableRoles = VueModule.computed<string[]>(() => {
       const schema = (() => {
         const pair = roleSchemaByName[schemaName.value];
@@ -544,13 +518,12 @@ class IridisContextFactory {
         const result = PaletteResolveRequestEntity.create({
           'colorSpace': colorSpace.value,
           'cvdMode': cvdMode.value,
-          'derivationConfig': VueModule.toRaw(derivationConfig.value),
           'enableStrictCompliance': enableStrictCompliance.value,
           'framing': pendingFraming ?? framing.value,
           'nonMandatoryLevel': nonMandatoryLevel.value,
+          ...(relationshipGraph.value === undefined ? {} : { 'relationshipGraph': relationshipGraph.value }),
           'schemaName': schemaName.value,
           'seeds': PaletteResolve.seeds(seeds),
-          'semanticHuesEnabled': semanticHuesEnabled.value,
           'strictness': contrastStrictness.value
         });
         return result;
@@ -970,14 +943,13 @@ class IridisContextFactory {
         void CombineNowRunOperation.send(WorkerMessageEntity.create({
           'colorSpace': colorSpace.value,
           'cvdMode': cvdMode.value,
-          'derivationConfig': VueModule.toRaw(derivationConfig.value),
           'enableStrictCompliance': enableStrictCompliance.value,
           'framing': framing.value,
           'hexes': combinedHexes,
           'kind': 'combine',
           'nonMandatoryLevel': nonMandatoryLevel.value,
+          ...(relationshipGraph.value === undefined ? {} : { 'relationshipGraph': relationshipGraph.value }),
           'schemaName': schemaName.value,
-          'semanticHuesEnabled': semanticHuesEnabled.value,
           'settings': ExtractionSettingsOperation.from(defaultEntrySettings()),
           'strictness': contrastStrictness.value
         }));
@@ -1210,16 +1182,16 @@ class IridisContextFactory {
     }
 
     class PaletteParameterOperation {
-      static disableSemanticHues(): void { semanticHuesEnabled.value = false; schedule(); }
       static disableStrictCompliance(): void { enableStrictCompliance.value = false; schedule(); }
-      static enableSemanticHues(): void { semanticHuesEnabled.value = true; schedule(); }
       static enableStrictCompliance(): void { enableStrictCompliance.value = true; schedule(); }
       static setContrastStrictness(strictness: number): void { contrastStrictness.value = strictness; schedule(); }
       static setCvdMode(nextCvdMode: string): void { cvdMode.value = CvdModeEntity.intake(nextCvdMode); schedule(); }
       static setNonMandatoryLevel(nextLevel: string): void { nonMandatoryLevel.value = NonMandatoryLevelEntity.intake(nextLevel); schedule(); }
-      static setDarkFraming(): void { pendingFraming = FramingEntity.intake('dark'); run(); }
+      static setDarkFraming(): void {
+        pendingFraming = FramingEntity.intake('dark');
+        run();
+      }
       static setDeltaEImageAlgorithm(): void { imgStrategy.value = ClusterDispatcher.resolve('delta-e'); scheduleCombine(); }
-      static setDerivationConfig(config: DerivationConfigEntity.Type): void { derivationConfig.value = config; schedule(); }
       static setDisplayP3ColorSpace(): void { colorSpace.value = 'displayP3'; schedule(); }
       static setImageChromaRange(range: [number, number][]): void { imgChromaRange.value = range; scheduleCombine(); }
       static setImageDeltaECap(cap: number): void { imgDeltaECap.value = cap; scheduleCombine(); }
@@ -1228,10 +1200,18 @@ class IridisContextFactory {
       static setImageK(k: number): void { imgK.value = k; scheduleCombine(); }
       static setImageLightnessRange(range: [number, number][]): void { imgLightnessRange.value = range; scheduleCombine(); }
       static setKMeansImageAlgorithm(): void { imgStrategy.value = ClusterDispatcher.resolve('k-means'); scheduleCombine(); }
-      static setLightFraming(): void { pendingFraming = FramingEntity.intake('light'); run(); }
+      static setLightFraming(): void {
+        pendingFraming = FramingEntity.intake('light');
+        run();
+      }
       static setMedianCutImageAlgorithm(): void { imgStrategy.value = ClusterDispatcher.resolve('median-cut'); scheduleCombine(); }
       static setRoleSort(keys: RoleSortKeyType[]): void { roleSortKeys.value = keys; }
-      static setSchema(nextSchemaName: string): void { schemaName.value = SchemaNameEntity.intake(nextSchemaName); schedule(); scheduleCombine(); }
+      static setSchema(nextSchemaName: string): void {
+        schemaName.value = SchemaNameEntity.intake(nextSchemaName);
+        RelationshipGraphSelection.reset();
+        schedule();
+        scheduleCombine();
+      }
       static setSrgbColorSpace(): void { colorSpace.value = 'srgb'; schedule(); }
       static setWuQuantizeImageAlgorithm(): void { imgStrategy.value = ClusterDispatcher.resolve('wu-quantize'); scheduleCombine(); }
     }
@@ -1317,9 +1297,7 @@ class IridisContextFactory {
     registerEffectHandlers({
       'addSeed': SeedMutationOperation.add,
       'clearCvdPreviews': CvdPreviewOperation.clear,
-      'disableSemanticHues': PaletteParameterOperation.disableSemanticHues,
       'disableStrictCompliance': PaletteParameterOperation.disableStrictCompliance,
-      'enableSemanticHues': PaletteParameterOperation.enableSemanticHues,
       'enableStrictCompliance': PaletteParameterOperation.enableStrictCompliance,
       'extractImageFiles': ImageEffectExtractionOperation.files,
       'extractSampleImage': ImageEffectExtractionOperation.sample,
@@ -1335,7 +1313,6 @@ class IridisContextFactory {
       'setCvdMode': PaletteParameterOperation.setCvdMode,
       'setDarkFraming': PaletteParameterOperation.setDarkFraming,
       'setDeltaEImageAlgorithm': PaletteParameterOperation.setDeltaEImageAlgorithm,
-      'setDerivationConfig': PaletteParameterOperation.setDerivationConfig,
       'setDisplayP3ColorSpace': PaletteParameterOperation.setDisplayP3ColorSpace,
       'setImageChromaRange': PaletteParameterOperation.setImageChromaRange,
       'setImageDeltaECap': PaletteParameterOperation.setImageDeltaECap,
@@ -1419,8 +1396,8 @@ class IridisContextFactory {
         void addUploadedImages([logoUrl()], ['Sample']);
         // framing is intentionally absent here — its swap is dispatched directly by
         // the framing setters via run(), not through this debounce.
-        stopWatches.push(VueModule.watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, cvdMode, enableStrictCompliance, nonMandatoryLevel, colorSpace, mode, derivationConfig, semanticHuesEnabled], schedule, { 'deep': true }));
-        stopWatches.push(VueModule.watch([schemaName, contrastStrictness, cvdMode, enableStrictCompliance, nonMandatoryLevel, derivationConfig, semanticHuesEnabled], scheduleSchemaFeasibility, { 'deep': true }));
+        stopWatches.push(VueModule.watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, cvdMode, enableStrictCompliance, nonMandatoryLevel, colorSpace, mode, relationshipGraph], schedule, { 'deep': true }));
+        stopWatches.push(VueModule.watch([schemaName, contrastStrictness, cvdMode, enableStrictCompliance, nonMandatoryLevel, relationshipGraph], scheduleSchemaFeasibility, { 'deep': true }));
         scheduleSchemaFeasibility();
         stopWatches.push(VueModule.watch([schemaName, imgStrategy, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange], scheduleCombine, { 'deep': true }));
       }
@@ -1434,13 +1411,13 @@ class IridisContextFactory {
         }
         ConsumerLifecycleOperation.register();
         const result = {
-          'accessibilityBlockers': accessibilityBlockers, 'activeSeeds': activeSeeds, 'addUploadedImages': addUploadedImages, 'candidates': candidates, 'colorSpace': colorSpace, 'combineLocked': combineLocked, 'contrastReport': contrastReport, 'contrastStrictness': contrastStrictness, 'cvdMode': cvdMode,          'cvdPreviewTypes': cvdPreviewTypes, 'derivationConfig': derivationConfig, 'diagramIsExpanded': diagramIsExpanded, 'diagramScale': diagramScale,
+          'accessibilityBlockers': accessibilityBlockers, 'activeSeeds': activeSeeds, 'addUploadedImages': addUploadedImages, 'candidates': candidates, 'colorSpace': colorSpace, 'combineLocked': combineLocked, 'contrastReport': contrastReport, 'contrastStrictness': contrastStrictness, 'cvdMode': cvdMode,          'cvdPreviewTypes': cvdPreviewTypes, 'diagramIsExpanded': diagramIsExpanded, 'diagramScale': diagramScale,
           'diagramTranslateX': diagramTranslateX, 'diagramTranslateY': diagramTranslateY,
           'effectiveHexesFor': effectiveHexesFor, 'enableStrictCompliance': enableStrictCompliance, 'error': error, 'framing': framing,
           'histogram': histogram,
           'imageSeeds': imageSeeds, 'imgChromaRange': imgChromaRange, 'imgDeltaECap': imgDeltaECap,
           'imgHarmonize': imgHarmonize, 'imgHistogramBits': imgHistogramBits, 'imgK': imgK, 'imgLightnessRange': imgLightnessRange, 'imgStrategy': imgStrategy, 'mode': mode, 'nonMandatoryLevel': nonMandatoryLevel, 'paletteRevision': paletteRevision, 'pickerSeeds': pickerSeeds,
-          'pinnableRoles': pinnableRoles, 'rejectedPinRoles': rejectedPinRoles, 'removeUploadedImage': removeUploadedImage, 'reRunCombine': reRunCombine, 'resolving': resolving, 'roleClamps': roleClamps, 'roleDistances': roleDistances,
+          'pinnableRoles': pinnableRoles, 'rejectedPinRoles': rejectedPinRoles, 'relationshipGraph': relationshipGraph, 'removeUploadedImage': removeUploadedImage, 'reRunCombine': reRunCombine, 'resolving': resolving, 'roleClamps': roleClamps, 'roleDistances': roleDistances,
           'roles': roles, 'rolesDerived': rolesDerived,
           'roleSortKeys': roleSortKeys, 'rolesPinned': rolesPinned, 'rolesSynthesized': rolesSynthesized,
           'roleViews': roleViews,
@@ -1449,7 +1426,7 @@ class IridisContextFactory {
           'schemaFeasibilityChecking': schemaFeasibilityChecking, 'schemaFeasibilityReport': schemaFeasibilityReport,
           'schemaName': schemaName,
           'selectedCandidateLabel': selectedCandidateLabel,
-          'selectEntryCandidate': selectEntryCandidate, 'semanticHuesEnabled': semanticHuesEnabled, 'send': sendUiEvent, 'setSemanticHuesEnabled': semanticHuesEnabledSet, 'sortedRoleContrastRows': sortedRoleContrastRows, 'updateRelation': relationUpdate, 'updateRelations': relationsUpdate,
+          'selectEntryCandidate': selectEntryCandidate, 'selectRelationshipMode': selectRelationshipMode, 'send': sendUiEvent, 'sortedRoleContrastRows': sortedRoleContrastRows,
           'updateUploadedImageSetting': uploadedImageSettingUpdate, 'uploadedImages': uploadedImages
         };
         return result;

@@ -367,7 +367,6 @@ function onDocsClick(e: MouseEvent): void {
             <RefinePaletteCard v-else-if="item.key === 'palette'" />
             <CvdVision v-else-if="item.key === 'cvd'" />
             <SchemaComplianceCard v-else-if="item.key === 'schemaCompliance'" />
-            <DerivationRelations v-else-if="item.key === 'derivationRelations'" />
             <RolesTable v-else-if="item.key === 'rolesTable'" />
             <ResolvedRoles v-else-if="item.key === 'roles'" />
             <PairingPreview v-else-if="item.key === 'pairingPreview'" />
@@ -395,7 +394,6 @@ function onDocsClick(e: MouseEvent): void {
             />
             <PipelineExplainer v-else-if="item.key === 'pipeline'" />
             <SchemaTree v-else-if="item.key === 'schema'" />
-            <HueDerivation v-else-if="item.key === 'hueDerivation'" />
             <RoleClamps v-else-if="item.key === 'clamps'" />
             <LiveComponents v-else-if="item.key === 'components'" />
             <InteractablesShowcase v-else-if="item.key === 'interactables'" />

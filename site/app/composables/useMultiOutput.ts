@@ -88,19 +88,18 @@ class ActivateOperation {
   static run(): void {
     if (activated) {return;}
     activated = true;
-    const { activeSeeds, colorSpace, contrastStrictness, cvdMode, derivationConfig, enableStrictCompliance, framing, nonMandatoryLevel, schemaName, semanticHuesEnabled } = useIridis();
+    const { activeSeeds, colorSpace, contrastStrictness, cvdMode, enableStrictCompliance, framing, nonMandatoryLevel, relationshipGraph, schemaName } = useIridis();
     function generate(): void {
       try {
         const input = PaletteResolve.input(PaletteResolveRequestEntity.create({
           'colorSpace': colorSpace.value,
           'cvdMode': cvdMode.value,
-          'derivationConfig': VueModule.toRaw(derivationConfig.value),
           'enableStrictCompliance': enableStrictCompliance.value,
           'framing': framing.value,
           'nonMandatoryLevel': nonMandatoryLevel.value,
+          ...(relationshipGraph.value === undefined ? {} : { 'relationshipGraph': relationshipGraph.value }),
           'schemaName': schemaName.value,
           'seeds': PaletteResolve.seeds(activeSeeds.value),
-          'semanticHuesEnabled': semanticHuesEnabled.value,
           'strictness': contrastStrictness.value
         }));
         const request = MultiOutputRequestEntity.create({ 'input': input });
@@ -118,7 +117,7 @@ class ActivateOperation {
     }
     const schedule = debounce(generate, 120);
     generate();
-    VueModule.watch([activeSeeds, framing, schemaName, contrastStrictness, cvdMode, enableStrictCompliance, nonMandatoryLevel, derivationConfig, semanticHuesEnabled, colorSpace], schedule, { 'deep': true });
+    VueModule.watch([activeSeeds, framing, schemaName, contrastStrictness, cvdMode, enableStrictCompliance, nonMandatoryLevel, relationshipGraph, colorSpace], schedule, { 'deep': true });
   }
 }
 

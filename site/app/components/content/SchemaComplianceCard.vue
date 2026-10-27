@@ -9,17 +9,10 @@ import { buildSchemaFeasibilityRows } from './schema/buildSchemaFeasibilityRows.
 import { ContrastChoiceModels } from './contrastChoiceModels.ts';
 import SchemaSelector from './SchemaSelector.vue';
 
-/**
- * Schema & Compliance — role-count schema, color space, and contrast
- * strictness. A Refine-stage carousel card: it configures how the engine
- * resolves and validates roles, the same stage that assigns them (Palette).
- * All CVD auto-correct/preview controls live in the CVD vision card instead
- * — not duplicated here. Per-relation hue-derivation algorithms live in
- * their own Derivation Relations card (see DerivationRelations.vue).
- */
+/** Configures the schema, relationship modes, color space, and contrast policy. */
 const {
   schemaName, contrastStrictness, cvdMode, enableStrictCompliance, nonMandatoryLevel, colorSpace,
-  contrastReport, schemaFeasibilityChecking, schemaFeasibilityReport
+  contrastReport, relationshipGraph, schemaFeasibilityChecking, schemaFeasibilityReport, selectRelationshipMode
 } = useIridis();
 const { send } = useIridisUiMachine();
 const { activateTarget } = useNavigationTargets();
@@ -36,6 +29,11 @@ const stageSummaries = computed(() => {
 
 const feasibilityRows = computed(() => {
   const result = buildSchemaFeasibilityRows.build(schemaFeasibilityReport.value);
+  return result;
+});
+
+const relationshipGroups = computed(() => {
+  const result = relationshipGraph.value?.groups ?? [];
   return result;
 });
 
@@ -59,6 +57,10 @@ function updateEnableStrictCompliance(value: boolean): void {
 function updateNonMandatoryLevel(value: string): void {
   send(IridisUiEvent.setNonMandatoryLevel(value));
 }
+
+function updateRelationshipMode(groupId: string, modeId: string): void {
+  selectRelationshipMode(groupId, modeId);
+}
 </script>
 
 <template>
@@ -73,6 +75,20 @@ function updateNonMandatoryLevel(value: string): void {
           <SchemaSelector
             :model-value="schemaName"
             @update:model-value="send(IridisUiEvent.setSchema($event))"
+          />
+        </SectionIntro>
+
+        <SectionIntro
+          v-for="group in relationshipGroups.filter((group) => group.modes.length > 1)"
+          :key="group.id"
+          :title="group.name"
+          body="Selects the authored harmony mode for this relationship group."
+        >
+          <AppSelect
+            :model-value="group.defaultMode"
+            :items="group.modes.map((mode) => ({ label: mode.id, value: mode.id }))"
+            class="w-full"
+            @update:model-value="updateRelationshipMode(group.id, $event)"
           />
         </SectionIntro>
 

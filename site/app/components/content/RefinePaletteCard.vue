@@ -19,9 +19,8 @@ import { buildRefinePaletteModel } from './refine/buildRefinePaletteModel.ts';
  *
  * "Pin to role" lets a seed claim any role this page actually renders
  * somewhere — a Nuxt UI alias (success/warning/info/etc.), a --ui-* CSS var,
- * or a syntax-* token color — including schema-derived roles that would
- * otherwise be hue-rotated from brand by ExpandFamily (pin:derivedRoles
- * overrides that; see PinDerivedRoles.ts). pinnableRoles is restricted to
+ * or a syntax-* token color — including roles resolved by the authored
+ * relationship graph. A stated role remains exact. pinnableRoles is restricted to
  * USED_ROLE_NAMES so a pin can never silently do nothing.
  */
 const { accessibilityBlockers, activeSeeds, pinnableRoles, mode, rejectedPinRoles } = useIridis();

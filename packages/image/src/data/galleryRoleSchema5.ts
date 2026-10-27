@@ -72,8 +72,7 @@ export const galleryRoleSchema5 = RoleSchemaEntity.create({
     },
     {
       'chromaRange':    [0.0, 0.0],
-      'derivedFrom':    'canvas',
-      'description':    'Auto-derived: white when canvas is dark, black when canvas is light',
+      'description':    'White when canvas is dark, black when canvas is light',
       'intent':         'text',
       'lightnessRange': [0.0, 1.0],
       'name':           'text',

@@ -21,7 +21,6 @@ import { COLOR_PIPELINE } from '../../../site/app/composables/colorPipeline.ts';
 import { ContrastConfigFor } from '../../../site/app/composables/contrastConfigFor.ts';
 import { createColorEngine } from '../../../site/app/composables/createColorEngine.ts';
 import { ContrastConfigOptionsEntity } from '../../../site/app/composables/entities/ContrastConfigOptionsEntity.ts';
-import { DerivationConfigEntity } from '../../../site/app/composables/entities/DerivationConfigEntity.ts';
 import { VARIANT_CONFIG } from '../../../site/app/composables/variantConfig.ts';
 import { roleSchemaByName } from '../../../site/app/theme/RoleSchemaByName.ts';
 import { SeedInputEntity } from '../../../site/app/theme/types/SeedInputEntity.ts';
@@ -81,9 +80,7 @@ class PaletteInput {
       'colors': colors,
       'contrast': ContrastConfigFor.forOptions(benchmarkCase.options),
       'metadata': {
-        'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
-        'derivation:config': JsonValue.from(DerivationConfigEntity.defaultValue),
-        'derivation:semanticHuesEnabled': true
+        'core:variantConfig': JsonValue.from(VARIANT_CONFIG)
       },
       'roles': roles,
       'runtime': runtime
@@ -162,11 +159,8 @@ class SweepRun {
     const authoredEngine = createColorEngine();
     authoredEngine.pipeline([
       'intake:hexHint',
-      'derive:semanticHues',
       'resolve:roles',
-      'pin:derivedRoles',
-      'derive:roleRelations',
-      'expand:family'
+      'derive:roleRelations'
     ]);
     const authored = authoredEngine.run(input);
     const engine = createColorEngine();
@@ -248,16 +242,17 @@ class SeedReference {
     authored: PaletteStateInterface,
     roleName: string
   ): boolean {
-    const definition = authored.input.roles?.roles.find((role) => {
-      const result = role.name === roleName;
-      return result;
-    });
-    const result =
-      definition?.derivedFrom !== undefined ||
-      definition?.hue !== undefined ||
-      definition?.hueOffset !== undefined ||
-      Metadata.hueTargetOverrides(authored.metadata)?.[roleName] !== undefined;
-    return result;
+    const groups = authored.input.roles?.relationshipGraph?.groups ?? [];
+    for (let groupIndex = 0; groupIndex < groups.length; groupIndex += 1) {
+      const relationships = groups[groupIndex]?.relationships ?? [];
+      for (let relationshipIndex = 0; relationshipIndex < relationships.length; relationshipIndex += 1) {
+        const relationship = relationships[relationshipIndex];
+        if (relationship?.target === roleName) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   private static closestSeed(

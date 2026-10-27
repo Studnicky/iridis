@@ -4,9 +4,11 @@ import {
   coreTasks,
   Engine,
   InputEntity,
-  RoleSchemaEntity
+  RoleSchemaEntity,
+  TaskManifestEntity
 } from '@studnicky/iridis';
 import { iridisVocab, rdfPlugin } from '@studnicky/iridis-rdf';
+import { colorRecordFactory } from '@studnicky/iridis/math';
 import { DataFactory, Parser, Store } from 'n3';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -104,6 +106,59 @@ class RelationshipGraphRdfFixture {
     return result;
   }
 
+  static runStatedHueOffset(): Store {
+    const engine = new Engine();
+    for (let taskIndex = 0; taskIndex < coreTasks.length; taskIndex += 1) {
+      const task = coreTasks[taskIndex];
+      if (task !== undefined) {
+        engine.tasks.register(task);
+      }
+    }
+    engine.adopt(rdfPlugin);
+    engine.tasks.hook({
+      'manifest': TaskManifestEntity.create({ 'name': 'seed:stated-hue-offset', 'phase': 'onRunStart' }),
+      'name': 'seed:stated-hue-offset',
+      'run': (state: PaletteStateInterface): void => {
+        state.colors.push(
+          colorRecordFactory.fromHex('#7c3aed', { 'hints': { 'role': 'brand' } }),
+          colorRecordFactory.fromHex('#00ff00', { 'hints': { 'role': 'accent' } })
+        );
+      }
+    });
+    engine.pipeline(['resolve:roles', 'derive:roleRelations', 'reason:annotate']);
+    const state = engine.run(InputEntity.intake({
+      'colors': [],
+      'roles': RoleSchemaEntity.intake({
+        'name': 'stated-hue-mode',
+        'relationshipGraph': {
+          'groups': [{
+            'anchor': 'brand',
+            'defaultMode': 'analogous',
+            'id': 'brand-family',
+            'modes': [
+              { 'hueOffsets': [{ 'degrees': 30, 'variantId': 'near' }], 'id': 'analogous' },
+              { 'hueOffsets': [{ 'degrees': 120, 'variantId': 'near' }], 'id': 'triadic' }
+            ],
+            'name': 'Brand family',
+            'relationships': [{
+              'id': 'accent-offset',
+              'modeId': 'triadic',
+              'operation': 'hue-offset',
+              'priority': 0,
+              'relaxability': 'fixed',
+              'source': 'brand',
+              'target': 'accent',
+              'variantId': 'near'
+            }]
+          }]
+        },
+        'roles': [{ 'name': 'brand' }, { 'name': 'accent' }]
+      })
+    }));
+    const result = RelationshipGraphRdfFixture.graph(state);
+    return result;
+  }
+
   private static graph(state: PaletteStateInterface): Store {
     const serialized = state.outputs['rdf:reasoningGraph'];
     if (typeof serialized !== 'string') {
@@ -113,6 +168,18 @@ class RelationshipGraphRdfFixture {
     return result;
   }
 }
+
+void test('reason:annotate preserves an explicit hue-offset mode for a stated target', () => {
+  const graph = RelationshipGraphRdfFixture.runStatedHueOffset();
+  const resolution = DataFactory.namedNode('https://studnicky.dev/iridis/role/accent/relationship-resolution');
+  const triadic = DataFactory.namedNode('https://studnicky.dev/iridis/relationship-graph/stated-hue-mode/group/brand-family/mode/triadic');
+
+  assert.strictEqual(
+    graph.countQuads(resolution, DataFactory.namedNode(iridisVocab.resolutionMode), triadic, null),
+    1,
+    'stated target resolution retains the relationship mode rather than the group default'
+  );
+});
 
 void test('reason:annotate projects authored relationship graphs and resolved role explanations', () => {
   const graph = RelationshipGraphRdfFixture.run();
@@ -191,10 +258,11 @@ void test('reason:annotate projects authored relationship graphs and resolved ro
     'tolerance retains the exact authored number'
   );
 
+  const double = DataFactory.namedNode('http://www.w3.org/2001/XMLSchema#double');
+
   const deltaRelationship = DataFactory.namedNode('https://studnicky.dev/iridis/relationship-graph/relationship%2Frdf%20%231/group/brand%2Ffamily%20%231/relationship/brand-delta');
   const interpolationRelationship = DataFactory.namedNode('https://studnicky.dev/iridis/relationship-graph/relationship%2Frdf%20%231/group/brand%2Ffamily%20%231/relationship/brand-background-interpolate');
   const overlayRelationship = DataFactory.namedNode('https://studnicky.dev/iridis/relationship-graph/relationship%2Frdf%20%231/group/brand%2Ffamily%20%231/relationship/brand-overlay');
-  const double = DataFactory.namedNode('http://www.w3.org/2001/XMLSchema#double');
 
   assert.strictEqual(
     graph.countQuads(deltaRelationship, DataFactory.namedNode(iridisVocab.lightnessOffset), DataFactory.literal('0.08', double), null),

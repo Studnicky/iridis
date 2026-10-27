@@ -988,7 +988,7 @@ class UnhappyScenarioData {
           engine.pipeline([
             'intake:hex',
             'resolve:roles',
-            'expand:family',
+            'derive:roleRelations',
             'enforce:contrast',
             'derive:variant',
             'vscode:applyModifiers'
@@ -1016,7 +1016,7 @@ class UnhappyScenarioData {
           engine.pipeline([
             'intake:hex',
             'resolve:roles',
-            'expand:family',
+            'derive:roleRelations',
             'enforce:contrast',
             'derive:variant',
             'vscode:expandTokens',
@@ -1045,7 +1045,7 @@ class UnhappyScenarioData {
           engine.pipeline([
             'intake:hex',
             'resolve:roles',
-            'expand:family',
+            'derive:roleRelations',
             'enforce:contrast',
             'derive:variant',
             'vscode:expandTokens',
@@ -1076,7 +1076,7 @@ class UnhappyScenarioData {
           engine.pipeline([
             'intake:hex',
             'resolve:roles',
-            'expand:family',
+            'derive:roleRelations',
             'vscode:deriveUiRoles',
             'enforce:contrast',
             'derive:variant',

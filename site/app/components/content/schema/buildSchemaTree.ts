@@ -1,16 +1,19 @@
-import type { RoleSchemaEntity } from '@studnicky/iridis/model';
+import type { RoleSchemaEntity } from '@studnicky/iridis';
+
+import { RoleRelationshipEntity } from '@studnicky/iridis';
 
 import type { RoleHexMapType } from '~/composables/types/index.ts';
 import type { RoleSortKeyType } from '~/composables/types/roleSortKeyType.ts';
 import type { RoleSortFieldBehaviorInterface } from '~/utils/roleSortFieldBehaviorInterface.ts';
 
 import { RoleSortableRowEntity } from '~/composables/entities/RoleSortableRowEntity.ts';
+import { RelationshipSource } from '~/composables/RelationshipSource.ts';
 import { sortRoleRows } from '~/utils/sortRoleRows.ts';
 
 class SchemaTreeLeaf {
   public readonly c: number;
   public readonly compliance: string;
-  public readonly derivedFrom: string | undefined;
+  public readonly relationshipSource: string | undefined;
   public readonly h: number;
   public readonly hex: string;
   public readonly l: number;
@@ -22,11 +25,11 @@ class SchemaTreeLeaf {
   public constructor(
     row: RoleSortableRowEntity.Type,
     tierLabel: string,
-    options: { readonly 'derivedFrom': string | undefined }
+    options: { readonly 'relationshipSource': string | undefined }
   ) {
     this.c = row.c;
     this.compliance = row.compliance;
-    this.derivedFrom = options.derivedFrom;
+    this.relationshipSource = options.relationshipSource;
     this.h = row.h;
     this.hex = row.hex;
     this.l = row.l;
@@ -50,6 +53,22 @@ class SchemaTreeTier {
 }
 
 export const buildSchemaTree = class SchemaTreeBuilder {
+  private static relationshipSources(schema: RoleSchemaEntity.Type): ReadonlyMap<string, string | undefined> {
+    const sources = new Map<string, string | undefined>();
+    const groups = schema.relationshipGraph?.groups ?? [];
+    for (let groupIndex = 0; groupIndex < groups.length; groupIndex += 1) {
+      const relationships = groups[groupIndex]?.relationships ?? [];
+      for (let relationshipIndex = 0; relationshipIndex < relationships.length; relationshipIndex += 1) {
+        const relationship = relationships[relationshipIndex];
+        if (relationship === undefined) {
+          continue;
+        }
+        sources.set(relationship.target, RelationshipSource.label(RoleRelationshipEntity.intake(relationship)));
+      }
+    }
+    return sources;
+  }
+
   private static createTier(
     schema: RoleSchemaEntity.Type,
     label: string,
@@ -61,6 +80,7 @@ export const buildSchemaTree = class SchemaTreeBuilder {
     }
   ): SchemaTreeTier {
     const leafRows = new Map<string, SchemaTreeLeaf>();
+    const relationshipSources = SchemaTreeBuilder.relationshipSources(schema);
     const sortableRows: RoleSortableRowEntity.Type[] = [];
     for (let roleIndex = 0; roleIndex < schema.roles.length; roleIndex += 1) {
       const role = schema.roles[roleIndex];
@@ -78,7 +98,9 @@ export const buildSchemaTree = class SchemaTreeBuilder {
         'name': role.name,
         'ratio': row?.ratio ?? 1
       });
-      const leaf = new SchemaTreeLeaf(sortableRow, label, { 'derivedFrom': role.derivedFrom });
+      const leaf = new SchemaTreeLeaf(sortableRow, label, {
+        'relationshipSource': relationshipSources.get(role.name)
+      });
       leafRows.set(role.name, leaf);
       sortableRows.push(sortableRow);
     }

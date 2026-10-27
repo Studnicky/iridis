@@ -9,8 +9,8 @@ import { buildSchemaTree } from './schema/buildSchemaTree.ts';
  * The iridis-4 ⊂ 8 ⊂ 12 ⊂ 16 ⊂ 32 schema hierarchy as a tree: each tier node
  * expands to the roles it ADDS over the previous tier (not the cumulative
  * set — every tier after 4 re-exports its parent's roles verbatim). Each leaf
- * shows whether that role is independently resolved from a seed or hue-derived
- * from another role (ExpandFamily) by default — pinning a seed to it in
+ * shows whether that role is independently resolved from a seed or related
+ * by the authored relationship graph — pinning a seed to it in
  * PaletteControls overrides either path — plus its live hex if resolved.
  */
 const { roles, framing, schemaName, roleSortKeys, sortedRoleContrastRows } = useIridis();
@@ -52,7 +52,7 @@ const tree = computed(() => {
   <UCard>
     <SectionIntro
       class="mb-3"
-      body="Each tier adds roles over the last. &quot;resolved&quot; competes for a seed by default; &quot;← source&quot; is hue-derived — pin either one in Palette to override it."
+      body="Each tier adds roles over the last. &quot;resolved&quot; competes for a seed by default; &quot;← source&quot; follows an authored relationship — pin either one in Palette to override it."
     />
     <RoleSortControls class="mb-3" />
     <UTree :items="tree">
@@ -61,7 +61,7 @@ const tree = computed(() => {
           :label="item.label"
           :is-leaf="buildSchemaTree.isLeaf(item)"
           :hex="buildSchemaTree.isLeaf(item) ? item.hex : undefined"
-          :derived-from="buildSchemaTree.isLeaf(item) ? item.derivedFrom : undefined"
+          :relationship-source="buildSchemaTree.isLeaf(item) ? item.relationshipSource : undefined"
         />
       </template>
     </UTree>

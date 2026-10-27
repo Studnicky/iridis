@@ -1,5 +1,6 @@
 export type * from '../types/index.ts';
 export { ColorRecordSchema }    from './ColorRecordSchema.ts';
+export { CompositeKey }          from './CompositeKey.ts';
 export { CssVarName }           from './CssVarName.ts';
 export { FramingSurface }       from './FramingSurface.ts';
 export { InputSchema }          from './InputSchema.ts';
@@ -9,6 +10,8 @@ export { PaletteStateSchema }   from './PaletteStateSchema.ts';
 export { PluginSchema }         from './PluginSchema.ts';
 export { RelationshipConstraint } from './RelationshipConstraint.ts';
 export { RelationshipConstraintDomain } from './RelationshipConstraintDomain.ts';
+export { RelationshipHueDegrees } from './RelationshipHueDegrees.ts';
+export { RelationshipSources } from './RelationshipSources.ts';
 export { RoleSchemaSchema }     from './RoleSchemaSchema.ts';
 export { TaskManifestSchema }   from './TaskManifestSchema.ts';
 export { Validator } from './Validator.ts';

@@ -34,6 +34,7 @@ import { TaskManifestEntity } from '../../src/entities/TaskManifestEntity.ts';
 import { colorRecordFactory } from '../../src/math/ColorRecordFactory.ts';
 import { coreTasks } from '../../src/tasks/index.ts';
 import { intakeP3 } from '../../src/tasks/intake/IntakeP3.ts';
+import { Metadata } from '../../src/types/metadata.ts';
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -64,6 +65,7 @@ class TestEngineFixture {
       ...(contrastPairs === undefined ? {} : { 'contrastPairs': contrastPairs }),
       ...(schema.description === undefined ? {} : { 'description': schema.description }),
       'name': schema.name,
+      ...(schema.relationshipGraph === undefined ? {} : { 'relationshipGraph': schema.relationshipGraph }),
       'roles': roles
     });
     return result;
@@ -617,7 +619,7 @@ class RoleResolutionFixture {
       if (task !== undefined) {engine.tasks.register(task);}
     }
     engine.tasks.hook(new RoleSeedTask(seeds));
-    engine.pipeline(['resolve:roles', 'expand:family']);
+    engine.pipeline(['resolve:roles', 'derive:roleRelations']);
     const result = engine.run(TestEngineFixture.input([], TestEngineFixture.admitRoleSchema(schema)));
     return result;
   }
@@ -632,12 +634,22 @@ class RoleResolutionFixture {
   }
 }
 
-void test('a hinted derived role is pinned, nudged, and preserved by family expansion', () => {
+void test('a stated graph target remains exact', () => {
   const state = RoleResolutionFixture.run({
-    'name': 'hinted-derived',
+    'name': 'stated-target',
+    'relationshipGraph': {
+      'groups': [{
+        'anchor': 'root',
+        'defaultMode': 'default',
+        'id': 'family',
+        'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'base' }], 'id': 'default' }],
+        'name': 'Family',
+        'relationships': [{ 'id': 'accent', 'operation': 'alias', 'priority': 1, 'relaxability': 'fixed', 'source': 'root', 'target': 'accent' }]
+      }]
+    },
     'roles': [
       { 'name': 'root', 'required': true },
-      { 'derivedFrom': 'root', 'hueOffset': 30, 'name': 'accent' }
+      { 'name': 'accent' }
     ]
   }, [
     RoleResolutionFixture.seed('root', 0.60, 0.10, 240),
@@ -648,47 +660,70 @@ void test('a hinted derived role is pinned, nudged, and preserved by family expa
     const result = color.hints?.role === 'accent';
     return result;
   });
-  assert.strictEqual(accent, statedSeed, 'the hinted derived role retains the original record');
+  assert.strictEqual(accent, statedSeed);
   assert.deepStrictEqual(state.metadata['core:roleProvenance'], {
     'accent': { 'adjustments': [], 'origin': 'stated' },
     'root': { 'adjustments': [], 'origin': 'stated' }
   });
 });
 
-void test('direct and derived hue offsets are signed relative deltas, including wrap and chains', () => {
+void test('graph hue offsets compose across source relationships', () => {
   const state = RoleResolutionFixture.run({
     'name': 'relative-hue-offsets',
+    'relationshipGraph': {
+      'groups': [{
+        'anchor': 'root',
+        'defaultMode': 'default',
+        'id': 'family',
+        'modes': [{ 'hueOffsets': [{ 'degrees': -30, 'variantId': 'near' }], 'id': 'default' }],
+        'name': 'Family',
+        'relationships': [
+          { 'degrees': -30, 'id': 'derived', 'operation': 'hue-offset', 'priority': 1, 'relaxability': 'fixed', 'source': 'root', 'target': 'derived' },
+          { 'degrees': 50, 'id': 'chained', 'operation': 'hue-offset', 'priority': 2, 'relaxability': 'fixed', 'source': 'derived', 'target': 'chained' }
+        ]
+      }]
+    },
     'roles': [
       { 'name': 'root', 'required': true },
-      { 'hueOffset': -30, 'name': 'direct', 'required': true },
-      { 'derivedFrom': 'root', 'hueOffset': -30, 'name': 'derived' },
-      { 'derivedFrom': 'derived', 'hueOffset': 50, 'name': 'chained' }
+      { 'name': 'derived' },
+      { 'name': 'chained' }
     ]
-  }, [
-    RoleResolutionFixture.seed('root', 0.60, 0.10, 350),
-    RoleResolutionFixture.seed('direct', 0.60, 0.10, 350)
-  ]);
-  const direct = state.roles.direct;
+  }, [RoleResolutionFixture.seed('root', 0.60, 0.10, 350)]);
   const derived = state.roles.derived;
   const chained = state.roles.chained;
-  assert.ok(direct !== undefined && derived !== undefined && chained !== undefined, 'every direct and derived role resolves');
-  assert.ok(Math.abs(direct.oklch.h - 350) < 0.001, `caller-stated direct hue remains 350°, got ${direct.oklch.h}`);
-  assert.ok(Math.abs(derived.oklch.h - 320) < 0.001, `derived hue is 320°, got ${derived.oklch.h}`);
-  assert.ok(Math.abs(chained.oklch.h - 10) < 0.001, `chained hue wraps to 10°, got ${chained.oklch.h}`);
+  assert.ok(derived !== undefined && chained !== undefined);
+  assert.ok(Math.abs(derived.oklch.h - 320) < 0.001);
+  assert.ok(Math.abs(chained.oklch.h - 10) < 0.001);
+  assert.strictEqual(state.roles.root, state.colors[0]);
+  assert.deepStrictEqual(state.metadata['core:roleProvenance'], {
+    'chained': { 'adjustments': [], 'origin': 'derived' },
+    'derived': { 'adjustments': [], 'origin': 'derived' },
+    'root': { 'adjustments': [], 'origin': 'stated' }
+  });
 });
 
-void test('relative lightness and chroma derivation clamps each source-relative coordinate to the role range', () => {
+void test('oklch-delta applies source-relative lightness and chroma inside target ranges', () => {
   const state = RoleResolutionFixture.run({
     'name': 'relative-lightness-chroma',
+    'relationshipGraph': {
+      'groups': [{
+        'anchor': 'root',
+        'defaultMode': 'default',
+        'id': 'family',
+        'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'base' }], 'id': 'default' }],
+        'name': 'Family',
+        'relationships': [{ 'chromaScale': 2, 'id': 'surface', 'lightnessOffset': 0.30, 'operation': 'oklch-delta', 'priority': 1, 'relaxability': 'fixed', 'source': 'root', 'target': 'surface' }]
+      }]
+    },
     'roles': [
       { 'name': 'root', 'required': true },
-      { 'chromaRange': [0.05, 0.25], 'chromaScale': 2, 'derivedFrom': 'root', 'lightnessOffset': 0.30, 'lightnessRange': [0.65, 0.75], 'name': 'surface' }
+      { 'chromaRange': [0.05, 0.25], 'lightnessRange': [0.65, 0.75], 'name': 'surface' }
     ]
   }, [RoleResolutionFixture.seed('root', 0.60, 0.20, 100)]);
   const surface = state.roles.surface;
-  assert.ok(surface !== undefined, 'the source-relative role resolves');
-  assert.ok(Math.abs(surface.oklch.l - 0.75) < 0.001, `surface lightness clamps to 0.75, got ${surface.oklch.l}`);
-  assert.ok(Math.abs(surface.oklch.c - 0.25) < 0.001, `surface chroma clamps to 0.25, got ${surface.oklch.c}`);
+  assert.ok(surface !== undefined);
+  assert.ok(Math.abs(surface.oklch.l - 0.75) < 0.001);
+  assert.ok(Math.abs(surface.oklch.c - 0.25) < 0.001);
 });
 
 void test('a conformant Display-P3 role seed retains verbatim P3 metadata when role intent is applied', () => {
@@ -721,4 +756,77 @@ void test('a conformant Display-P3 role seed retains verbatim P3 metadata when r
   assert.ok(accent !== undefined, 'the hinted Display-P3 role resolves');
   assert.deepStrictEqual(accent.displayP3, p3Candidate.displayP3, 'verbatim Display-P3 channels are preserved');
   assert.deepStrictEqual(accent.hints, hintedP3.hints, 'input intent remains exact');
+});
+
+void test('resolve roles retains a graph target baseline before relationship derivation', () => {
+  const engine = TestEngineFixture.freshEngine(['resolve:roles']);
+  const root = RoleResolutionFixture.seed('root', 0.60, 0.10, 240);
+  engine.tasks.hook(new RoleSeedTask([root]));
+  const schema = TestEngineFixture.admitRoleSchema({
+    'name': 'graph-target-baseline',
+    'relationshipGraph': {
+      'groups': [{
+        'anchor': 'root',
+        'defaultMode': 'default',
+        'id': 'family',
+        'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'base' }], 'id': 'default' }],
+        'name': 'Family',
+        'relationships': [{
+          'id': 'derived',
+          'operation': 'alias',
+          'priority': 1,
+          'relaxability': 'fixed',
+          'source': 'root',
+          'target': 'derived'
+        }]
+      }]
+    },
+    'roles': [
+      { 'name': 'root', 'required': true },
+      { 'name': 'derived', 'required': true }
+    ]
+  });
+  const state = engine.run(TestEngineFixture.input([], schema));
+  assert.strictEqual(state.roles.root, root);
+  assert.ok(state.roles.derived !== undefined, 'the relationship target retains a pre-derivation candidate');
+  assert.deepStrictEqual(state.metadata['core:roleProvenance'], {
+    'derived': { 'adjustments': [], 'origin': 'derived' },
+    'root': { 'adjustments': [], 'origin': 'stated' }
+  });
+});
+
+void test('resolve roles preserves a required target when its graph source cannot resolve', () => {
+  const engine = TestEngineFixture.freshEngine(['resolve:roles', 'derive:roleRelations']);
+  const schema = TestEngineFixture.admitRoleSchema({
+    'name': 'unresolvable-graph-source',
+    'relationshipGraph': {
+      'groups': [{
+        'anchor': 'source',
+        'defaultMode': 'default',
+        'id': 'family',
+        'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'base' }], 'id': 'default' }],
+        'name': 'Family',
+        'relationships': [{
+          'id': 'derived',
+          'operation': 'alias',
+          'priority': 1,
+          'relaxability': 'fixed',
+          'source': 'source',
+          'target': 'target'
+        }]
+      }]
+    },
+    'roles': [
+      { 'name': 'source' },
+      { 'lightnessRange': [0.4, 0.6], 'name': 'target', 'required': true }
+    ]
+  });
+  const state = engine.run(TestEngineFixture.input([], schema));
+  const target = state.roles.target;
+  assert.ok(target !== undefined, 'the required target remains resolved when its relationship source is absent');
+  const provenance = Metadata.roleProvenance(state.metadata).get('target');
+  const resolution = Metadata.relationshipResolution(state.metadata).get('target');
+  assert.strictEqual(provenance?.origin, 'synthesized');
+  assert.strictEqual(resolution?.disposition, 'unresolved');
+  assert.strictEqual(resolution?.blockedReason, 'missing-source');
 });

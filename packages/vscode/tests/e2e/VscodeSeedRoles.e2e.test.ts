@@ -95,7 +95,7 @@ class VscodeSeedRolesFixture {
     engine.pipeline([
       'vscode:seedRoles',
       'resolve:roles',
-      'expand:family',
+      'derive:roleRelations',
       'vscode:deriveUiRoles',
       'enforce:contrast',
       'derive:variant',

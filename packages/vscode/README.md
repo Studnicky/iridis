@@ -32,7 +32,7 @@ engine.adopt(contrastPlugin);
 engine.pipeline([
   'vscode:seedRoles',
   'resolve:roles',
-  'expand:family',
+  'derive:roleRelations',
   'vscode:deriveUiRoles',
   'enforce:compliance',
   'derive:variant',
@@ -73,6 +73,8 @@ const themeJson = state.outputs['vscode:themeJson'];
 Use `VSCODE_ROLE_SCHEMAS_64.dark` or `.light` for the declared framing. The schemas are explicit dark and light role definitions; light themes are generated through the light schema, not by inverting a dark output. `VSCODE_ROLE_SCHEMAS_16` exports a compact view of the same canonical definitions. The selected seed tier declares its exact caller-supplied role keys.
 
 The schema declares WCAG pairs for foreground, muted text, syntax roles, status colours, `onAccent`, links, and chrome foreground. It also declares bounded pairs for `surface` and `accent`. The VS Code plugin consumes the same engine and the same `input.contrast` configuration as every other output. `enforce:compliance` applies the selected standard to these pairs and adjusts derived roles; a pair whose endpoints are both caller-stated is reported without changing either colour.
+
+The relationship graph resolves through `derive:roleRelations` immediately after `resolve:roles`; VS Code derivation tasks consume the resulting roles.
 
 ## Tasks
 

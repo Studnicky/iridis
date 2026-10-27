@@ -85,7 +85,7 @@ await StylesheetCellsSevenToNineScenarioSuite.run();
 
 // ---------------------------------------------------------------------------
 // Golden fixture: locks the full emit:cssVars output for a stable seed +
-// role schema running through intake:hex → resolve:roles → expand:family →
+// role schema running through intake:hex → resolve:roles → derive:roleRelations →
 // enforce:contrast → emit:cssVars. Any drift in role math, contrast
 // enforcement, or CSS serialisation flips this test. Regenerate via
 // UPDATE_GOLDENS=1 after an intentional behaviour change.
@@ -103,9 +103,9 @@ const GOLDEN_ROLES = RoleSchemaEntity.intake({
   'description': undefined,
   'name':  'golden-cssvars',
   'roles': [
-    { 'chromaRange': [0.00, 0.03], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': 'background', 'lightnessRange': [0.05, 0.15], 'name': 'background', 'required': true },
-    { 'chromaRange': [0.00, 0.03], 'derivedFrom': undefined, 'description': undefined,       'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': 'text', 'lightnessRange': [0.90, 0.99], 'name': 'foreground', 'required': true },
-    { 'chromaRange': [0.15, 0.25],     'derivedFrom': undefined, 'description': undefined,     'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': 'accent', 'lightnessRange': [0.55, 0.70], 'name': 'accent', 'required': true }
+    { 'chromaRange': [0.00, 0.03], 'description': undefined, 'intent': 'background', 'lightnessRange': [0.05, 0.15], 'name': 'background', 'required': true },
+    { 'chromaRange': [0.00, 0.03], 'description': undefined, 'intent': 'text', 'lightnessRange': [0.90, 0.99], 'name': 'foreground', 'required': true },
+    { 'chromaRange': [0.15, 0.25], 'description': undefined, 'intent': 'accent', 'lightnessRange': [0.55, 0.70], 'name': 'accent', 'required': true }
   ]
 });
 
@@ -114,7 +114,7 @@ await test('emit:cssVars :: golden :: stable seed + role schema matches locked C
   engine.pipeline([
     'intake:hex',
     'resolve:roles',
-    'expand:family',
+    'derive:roleRelations',
     'enforce:contrast',
     'emit:cssVars'
   ]);

@@ -46,7 +46,7 @@ export function generateStylesheet(roleSchema: RoleSchemaEntity.Type) {
   engine.pipeline([
     'intake:any',
     'resolve:roles',
-    'expand:family',
+    'derive:roleRelations',
     'enforce:compliance',
     'derive:variant',
     'emit:cssVars',

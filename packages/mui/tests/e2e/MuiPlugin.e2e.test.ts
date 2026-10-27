@@ -31,6 +31,8 @@ import {
   InputEntity,
   lighten,
   RoleDefinitionEntity,
+  RoleRelationshipEntity,
+  RoleRelationshipGraphEntity,
   RoleSchemaEntity
 } from '@studnicky/iridis';
 import { muiPlugin } from '@studnicky/iridis-mui';
@@ -93,11 +95,11 @@ class MuiTestFixture {
   }
 
   static hexPipeline(extra: readonly string[] = []): readonly string[] {
-    return ['intake:hex', 'resolve:roles', ...extra, 'emit:muiTheme'];
+    return ['intake:hex', 'resolve:roles', 'derive:roleRelations', ...extra, 'emit:muiTheme'];
   }
 
   static oklchPipeline(extra: readonly string[] = []): readonly string[] {
-    return ['intake:oklch', 'resolve:roles', ...extra, 'emit:muiTheme'];
+    return ['intake:oklch', 'resolve:roles', 'derive:roleRelations', ...extra, 'emit:muiTheme'];
   }
 }
 
@@ -253,7 +255,7 @@ class MuiParallelResolve {
     roles:  RoleSchemaEntity.Type
   ): Record<string, ColorRecordEntity.Type> {
     const engine = MuiTestFixture.bareEngine();
-    const state = MuiTestFixture.run(engine, [intake, 'resolve:roles'], colors, roles, undefined, undefined);
+    const state = MuiTestFixture.run(engine, [intake, 'resolve:roles', 'derive:roleRelations'], colors, roles, undefined, undefined);
     return state.roles;
   }
 
@@ -263,7 +265,7 @@ class MuiParallelResolve {
     metadata: InputEntity.Type['metadata']
   ): Record<string, Record<string, ColorRecordEntity.Type>> {
     const engine = MuiTestFixture.bareEngine();
-    const state = MuiTestFixture.run(engine, ['intake:hex', 'resolve:roles', 'derive:variant'], colors, roles, metadata, undefined);
+    const state = MuiTestFixture.run(engine, ['intake:hex', 'resolve:roles', 'derive:roleRelations', 'derive:variant'], colors, roles, metadata, undefined);
     return state.variants;
   }
 }
@@ -292,15 +294,8 @@ await test('Mui plugin scenario matrix', async () => {
   }
 
   /**
- * `resolve:roles` picks, per role, the candidate color with the smallest
- * OKLCH distance to that role's declared constraints; a role with no
- * `chromaRange`/`lightnessRange`/`hueOffset` scores every candidate at
- * distance 0, so (since the loop only replaces on a strictly smaller
- * distance) the *first* color in `state.colors` wins every undifferentiated
- * role. To get one distinct, independently-verifiable color per role for
- * the family-assembly assertions below, every role here carries a unique
- * `hueOffset` and is paired with an `intake:oklch` color at that exact hue,
- * so each role's own candidate is the unique zero-distance match.
+ * Role resolution selects candidates before relationship derivation assigns
+ * the semantic hues used by the family-assembly assertions below.
  */
   const ROLE_HUES: Readonly<Record<string, number>> = {
     'accent-alt':  30,
@@ -317,21 +312,41 @@ await test('Mui plugin scenario matrix', async () => {
   };
 
   class OklchRoleFixture {
-    static role(name: string): RoleDefinitionEntity.Type {
-      const hue = ROLE_HUES[name];
-      if (hue === undefined) {throw new Error(`OklchRoleFixture: no hue registered for role '${name}'`);}
-      const role = RoleDefinitionEntity.create({
-        'hueOffset': hue,
-        'name':      name,
-        'required':  true
-      });
-      return role;
-    }
-
     static schema(schemaName: string, names: readonly string[]): RoleSchemaEntity.Type {
-      const roles = names.map((name) => { const result = OklchRoleFixture.role(name); return result; });
+      const anchor = names[0];
+      if (anchor === undefined) {throw new Error('OklchRoleFixture requires one role');}
+      const roles: RoleDefinitionEntity.Type[] = [];
+      const relationships: RoleRelationshipGraphEntity.Type['groups'][number]['relationships'][number][] = [];
+      const nameCount = names.length;
+      for (let index = 0; index < nameCount; index += 1) {
+        const name = names[index];
+        if (name === undefined) {continue;}
+        const hue = ROLE_HUES[name];
+        if (hue === undefined) {throw new Error(`OklchRoleFixture: no hue registered for role '${name}'`);}
+        roles.push(PlainRoleFixture.role(name));
+        relationships.push(RoleRelationshipEntity.create({
+          'clamp': 180,
+          'hue': hue,
+          'id': `hue-${name}`,
+          'operation': 'hue-target',
+          'priority': index,
+          'relaxability': 'fixed',
+          'target': name
+        }));
+      }
+      const relationshipGraph = RoleRelationshipGraphEntity.intake({
+        'groups': [{
+          'anchor': anchor,
+          'defaultMode': 'default',
+          'id': 'test-hues',
+          'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'default' }], 'id': 'default' }],
+          'name': 'Test hues',
+          'relationships': relationships
+        }]
+      });
       const schema = RoleSchemaEntity.create({
-        'name':  schemaName,
+        'name': schemaName,
+        'relationshipGraph': relationshipGraph,
         'roles': roles
       });
       return schema;

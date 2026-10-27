@@ -60,7 +60,9 @@ export class CvdProbeScenarioSuite {
       await test('CVD refinement moves a derived background when the foreground is stated', CvdProbeScenarioSuite.statedForeground);
       await test('CVD refinement does not move a derived endpoint outside its role range', CvdProbeScenarioSuite.rangeBoundedMover);
       await test('CVD refinement rejects fixed relationship candidates without changing CVD blocker attribution', CvdProbeScenarioSuite.fixedRelationship);
-      await test('CVD refinement records a tolerant relationship deviation after an accepted correction', CvdProbeScenarioSuite.tolerantRelationship);
+      await test('CVD refinement finds a terminal correction inside a tolerant relationship domain', CvdProbeScenarioSuite.tolerantRelationship);
+      await test('CVD refinement retains an unconstrained result when the relationship domain admits it', CvdProbeScenarioSuite.unconstrainedAdmissibleRelationship);
+      await test('CVD refinement retains a valid peer correction when an unchanged relationship target serializes through hex', CvdProbeScenarioSuite.unchangedRelationshipTarget);
       await test('CVD refinement moves a derived foreground when the background is stated', CvdProbeScenarioSuite.statedBackground);
       await test('CVD refinement blocks a pair when both semantic endpoints are stated', CvdProbeScenarioSuite.statedBoth);
       await test('CVD terminal compliance reports a CVD-only stated-both block', CvdProbeScenarioSuite.terminalStatedBoth);
@@ -736,9 +738,9 @@ export class CvdProbeScenarioSuite {
   private static tolerantRelationship(): void {
     const state = CvdProbeScenarioSuite.relationshipState({
       'alpha': 1,
-      'chroma': 0.5,
-      'hue': 360,
-      'lightness': 1
+      'chroma': 0.1,
+      'hue': 5,
+      'lightness': 0.36
     });
     const original = CvdProbeScenarioSuite.statedPairRoles().background;
     const cvd = ContrastMetadataAssertionPort.cvd(state);
@@ -762,6 +764,149 @@ export class CvdProbeScenarioSuite {
         (deviation?.hue ?? 0) > 0 ||
         (deviation?.lightness ?? 0) > 0,
       '[cvd-relationship-tolerant] accepted correction records its relationship deviation'
+    );
+    assert.ok(
+      (deviation?.chroma ?? Number.POSITIVE_INFINITY) <= 0.1 &&
+        (deviation?.hue ?? Number.POSITIVE_INFINITY) <= 5 &&
+        (deviation?.lightness ?? Number.POSITIVE_INFINITY) <= 0.36,
+      '[cvd-relationship-tolerant] only terminal corrections inside the relationship domain are committed'
+    );
+  }
+
+  private static unconstrainedAdmissibleRelationship(): void {
+    const original = CvdProbeScenarioSuite.statedPairRoles();
+    const pair = CvdProbeScenarioSuite.pair('text', 'background');
+    const unconstrained = ContrastTestPort.runCorrectedCvd(
+      original,
+      [pair],
+      new RecordingLogger(),
+      ['text']
+    );
+    const constrained = CvdProbeScenarioSuite.relationshipState({
+      'alpha': 1,
+      'chroma': 0.5,
+      'hue': 180,
+      'lightness': 1
+    });
+    assert.strictEqual(
+      constrained.roles.background?.hex,
+      unconstrained.roles.background?.hex,
+      '[cvd-relationship-admissible] a relationship domain that admits the unconstrained terminal keeps it unchanged'
+    );
+  }
+  private static unchangedRelationshipTarget(): void {
+    const brand = colorRecordFactory.fromOklch(0.4, 0.14, 0);
+    const onBrand = colorRecordFactory.fromOklch(0.985, 0.01, 0);
+    const background = colorRecordFactory.fromOklch(0.96, 0.02, 89.87556309590241);
+    const syntaxKeyword = colorRecordFactory.fromOklch(0.455, 0.23, 0);
+    const input = InputEntity.intake({
+      'colors': [],
+      'contrast': { 'cvdMode': 'nudge', 'level': 'AAA' },
+      'roles': {
+        'contrastPairs': [
+          ContrastPairEntity.create({
+            'background': 'brand',
+            'foreground': 'on-brand',
+            'minimumContrastRatio': 7
+          }),
+          ContrastPairEntity.create({
+            'background': 'bg-soft',
+            'foreground': 'syntax-keyword',
+            'minimumContrastRatio': 7
+          })
+        ],
+        'name': 'cvd-unchanged-relationship-target',
+        'relationshipGraph': {
+          'groups': [{
+            'anchor': 'brand',
+            'defaultMode': 'default',
+            'id': 'palette',
+            'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'base' }], 'id': 'default' }],
+            'name': 'Palette',
+            'relationships': [
+              {
+                'id': 'on-brand',
+                'operation': 'alias',
+                'priority': 0,
+                'relaxability': 'tolerant',
+                'source': 'brand',
+                'target': 'on-brand',
+                'tolerance': { 'alpha': 1, 'chroma': 0.5, 'hue': 5, 'lightness': 1 }
+              },
+              {
+                'id': 'syntax-keyword',
+                'operation': 'alias',
+                'priority': 1,
+                'relaxability': 'tolerant',
+                'source': 'brand',
+                'target': 'syntax-keyword',
+                'tolerance': { 'alpha': 1, 'chroma': 0.5, 'hue': 5, 'lightness': 1 }
+              }
+            ]
+          }]
+        },
+        'roles': [
+          { 'name': 'background', 'required': true },
+          { 'name': 'bg-soft', 'required': true },
+          { 'name': 'brand', 'required': true },
+          { 'name': 'on-brand', 'required': true },
+          { 'name': 'syntax-keyword', 'required': true }
+        ]
+      }
+    });
+    const state: PaletteStateInterface = {
+      'colors': [],
+      'input': input,
+      'metadata': {},
+      'outputs': {},
+      'roles': {
+        'background': background,
+        'bg-soft': background,
+        'brand': brand,
+        'on-brand': onBrand,
+        'syntax-keyword': syntaxKeyword
+      },
+      'runtime': RuntimeOptionsEntity.intake({
+        'colorSpace': 'srgb',
+        'extra': {},
+        'framing': 'light'
+      }),
+      'variants': {}
+    };
+    Metadata.writeRoleProvenance(state.metadata, new Map([
+      ['bg-soft', RoleProvenanceEntity.create({ 'adjustments': [], 'origin': 'stated' })],
+      ['brand', RoleProvenanceEntity.create({ 'adjustments': [], 'origin': 'stated' })],
+      ['on-brand', RoleProvenanceEntity.create({ 'adjustments': [], 'origin': 'derived' })],
+      ['syntax-keyword', RoleProvenanceEntity.create({ 'adjustments': [], 'origin': 'derived' })]
+    ]));
+    Metadata.writeRelationshipResolution(state.metadata, new Map([
+      ['on-brand', RelationshipResolutionEntity.create({
+        'after': onBrand,
+        'disposition': 'applied',
+        'groupId': 'palette',
+        'operation': 'alias',
+        'relationshipId': 'on-brand',
+        'sources': ['brand']
+      })],
+      ['syntax-keyword', RelationshipResolutionEntity.create({
+        'after': colorRecordFactory.fromOklch(0.49, 0.23, 0),
+        'disposition': 'applied',
+        'groupId': 'palette',
+        'operation': 'alias',
+        'relationshipId': 'syntax-keyword',
+        'sources': ['brand']
+      })]
+    ]));
+    enforceCvdSimulate.run(state, { 'logger': new RecordingLogger(), 'startedAt': Date.now() });
+    assert.notStrictEqual(
+      state.roles['syntax-keyword']?.hex,
+      syntaxKeyword.hex,
+      '[cvd-unchanged-relationship-target] unchanged on-brand does not roll back a valid syntax correction'
+    );
+    assert.strictEqual(
+      state.roles['on-brand']?.hex,
+      onBrand.hex,
+      '[cvd-unchanged-relationship-target] unchanged relation target retains its authored color'
     );
   }
 
@@ -955,13 +1100,17 @@ export class CvdProbeScenarioSuite {
     ], new RecordingLogger());
     const foreground = state.roles.A;
     const terminalBackground = state.roles.B;
-    assert.ok(foreground !== undefined && terminalBackground !== undefined, '[cvd-dependency-rollback] terminal roles present');
-    assert.ok(contrastWcag21.apply(foreground, terminalBackground) + 1e-12 >= contrastWcag21.apply(originalRoles.A, originalRoles.B), '[cvd-dependency-rollback] baseline preserved');
+    const backgroundC = state.roles.C;
+    assert.ok(foreground !== undefined && terminalBackground !== undefined && backgroundC !== undefined, '[cvd-dependency-rollback] terminal roles present');
+    assert.strictEqual(foreground.hex, originalRoles.A.hex, '[cvd-dependency-rollback] unchanged dependent foreground remains original');
+    assert.ok(contrastWcag21.apply(terminalBackground, backgroundC) + 1e-12 >= contrastWcag21.apply(originalRoles.B, originalRoles.C), '[cvd-dependency-rollback] surviving correction preserves its own terminal baseline');
     assert.strictEqual(foreground.hex, '#03160d', '[cvd-dependency-rollback] restored A');
-    assert.strictEqual(terminalBackground.hex, '#bbb2fe', '[cvd-dependency-rollback] restored B');
+    assert.notStrictEqual(terminalBackground.hex, originalRoles.B.hex, '[cvd-dependency-rollback] valid B correction survives A restoration');
     assert.notStrictEqual(state.roles.D?.hex, originalRoles.D.hex, '[cvd-dependency-rollback] independent correction preserved');
     const cvd = ContrastMetadataAssertionPort.cvd(state);
-    assert.ok(cvd !== undefined && cvd.warnings.length > 0, '[cvd-dependency-rollback] unresolved result remains truthful');
+    assert.ok(cvd !== undefined, '[cvd-dependency-rollback] metadata remains present');
+    assert.strictEqual(cvd.warnings.length, 0, '[cvd-dependency-rollback] surviving terminal corrections clear their own CVD evidence');
+    assert.deepStrictEqual(cvd.corrections.map((correction) => { return correction.foreground; }), ['B', 'D'], '[cvd-dependency-rollback] invalid A restoration does not discard valid peer corrections');
   }
 
   private static emittedHex(): void {

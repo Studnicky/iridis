@@ -3,7 +3,7 @@ defineProps<{
   label: string;
   hex?: string;
   isLeaf?: boolean;
-  derivedFrom?: string;
+  relationshipSource?: string;
 }>();
 </script>
 
@@ -17,11 +17,11 @@ defineProps<{
     <span class="font-mono text-xs">{{ label }}</span>
     <UBadge
       v-if="isLeaf"
-      :color="derivedFrom ? 'neutral' : 'success'"
+      :color="relationshipSource ? 'neutral' : 'success'"
       variant="soft"
       size="xs"
     >
-      {{ derivedFrom ? `← ${derivedFrom}` : 'resolved' }}
+      {{ relationshipSource ? `← ${relationshipSource}` : 'resolved' }}
     </UBadge>
   </span>
 </template>

@@ -14,8 +14,11 @@ import { RelationshipResolutionEntity } from '../../src/entities/RelationshipRes
 import { RoleProvenanceEntity } from '../../src/entities/RoleProvenanceEntity.ts';
 import { RoleSchemaEntity } from '../../src/entities/RoleSchemaEntity.ts';
 import { TaskManifestEntity } from '../../src/entities/TaskManifestEntity.ts';
+import { ColorCoordinate } from '../../src/math/ColorCoordinate.ts';
 import { colorRecordFactory } from '../../src/math/ColorRecordFactory.ts';
+import { hueResolutionChroma } from '../../src/math/index.ts';
 import { RelationshipConstraint } from '../../src/model/RelationshipConstraint.ts';
+import { RelationshipConstraintDomain } from '../../src/model/RelationshipConstraintDomain.ts';
 import { coreTasks } from '../../src/tasks/index.ts';
 import { Metadata } from '../../src/types/metadata.ts';
 
@@ -53,6 +56,28 @@ class RelationshipConstraintFixture {
         }]
       },
       'roles': [{ 'name': 'background' }, { 'name': 'source' }, { 'name': 'text' }]
+    });
+    const result = InputEntity.intake({ 'colors': [], 'roles': roles });
+    return result;
+  }
+
+  static inputWithoutRelationship(
+    options: Readonly<{
+      'minimumContrastRatio'?: number;
+      'tolerance'?: Readonly<Record<string, number>>;
+    }> = {}
+  ): InputEntity.Type {
+    const withRelationship = RelationshipConstraintFixture.input(options);
+    const roleSchema = withRelationship.roles;
+    if (roleSchema === undefined) {
+      throw new TypeError('Relationship fixture requires a role schema');
+    }
+    const roles = RoleSchemaEntity.create({
+      ...(roleSchema.contrastPairs === undefined
+        ? {}
+        : { 'contrastPairs': roleSchema.contrastPairs }),
+      'name': roleSchema.name,
+      'roles': roleSchema.roles
     });
     const result = InputEntity.intake({ 'colors': [], 'roles': roles });
     return result;
@@ -133,6 +158,74 @@ class RelationshipConstraintSeedTask implements TaskInterface {
   }
 }
 
+void test('InputEntity intake keeps relationship graph admission immutable across runs', () => {
+  const input = InputEntity.intake({
+    'colors': [],
+    'roles': {
+      'contrastPairs': [],
+      'name': 'immutable-relationship-input',
+      'relationshipGraph': {
+        'groups': [{
+          'anchor': 'source',
+          'defaultMode': 'base',
+          'id': 'group',
+          'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'base' }], 'id': 'base' }],
+          'name': 'Group',
+          'relationships': [{
+            'id': 'source-to-text',
+            'operation': 'alias',
+            'priority': 0,
+            'relaxability': 'fixed',
+            'source': 'source',
+            'target': 'text'
+          }]
+        }]
+      },
+      'roles': [{ 'name': 'source' }, { 'lightnessRange': [0.2, 0.8], 'name': 'text' }]
+    }
+  });
+  const roleSchema = input.roles;
+  if (roleSchema === undefined) {
+    throw new TypeError('Input fixture lacks a role schema.');
+  }
+  const graph = roleSchema.relationshipGraph;
+  const textRole = roleSchema.roles.find((role) => {
+    const result = role.name === 'text';
+    return result;
+  });
+  const range = textRole?.lightnessRange;
+  if (graph === undefined || range === undefined) {
+    throw new TypeError('Input fixture lacks graph or range data.');
+  }
+  const group = graph.groups[0];
+  const relationship = group.relationships.at(0);
+  if (relationship === undefined) {
+    throw new TypeError('Input fixture lacks a relationship.');
+  }
+  assert.throws(() => {
+    const relationshipCount = group.relationships.push(relationship);
+    assert.equal(relationshipCount, 2);
+  }, TypeError);
+  assert.throws(() => {
+    const replacement = range[1];
+    range[0] = replacement;
+  }, TypeError);
+});
+
+void test('Engine runs isolate relationship output from earlier returned state mutations', () => {
+  const baseline = colorRecordFactory.fromHex('#777777');
+  const input = RelationshipConstraintFixture.input({ 'minimumContrastRatio': 4.5 });
+  const engine = RelationshipConstraintFixture.engine(input, baseline);
+  const first = engine.run(input);
+  const firstText = first.roles.text?.hex;
+
+  first.roles.text = colorRecordFactory.fromHex('#000000');
+  const second = engine.run(input);
+
+  assert.equal(second.roles.text?.hex, firstText);
+  assert.notEqual(second.roles.text?.hex, '#000000');
+});
+
 void test('RelationshipConstraint fixes a resolved relationship at its exact baseline', () => {
   const baseline = colorRecordFactory.fromHex('#77777780');
   const input = RelationshipConstraintFixture.input();
@@ -188,6 +281,36 @@ void test('RelationshipConstraint applies only declared tolerant lightness chrom
   );
 });
 
+void test('RelationshipConstraint compares coordinate candidates like canonical records', () => {
+  const baseline = colorRecordFactory.fromHex('#77777780');
+  const input = RelationshipConstraintFixture.input({ 'tolerance': {
+    'alpha': 0.1,
+    'chroma': 0.02,
+    'hue': 8,
+    'lightness': 0.03
+  } });
+  const metadata = RelationshipConstraintFixture.metadata(baseline);
+  const candidate = RelationshipConstraintFixture.candidate(baseline, {
+    'alpha': baseline.alpha + 0.05,
+    'chroma': baseline.oklch.c + 0.01,
+    'hue': baseline.oklch.h + 4,
+    'lightness': baseline.oklch.l + 0.02
+  });
+  const coordinate = ColorCoordinate.fromOklch(
+    candidate.oklch.l,
+    candidate.oklch.c,
+    candidate.oklch.h
+  );
+  const domain = RelationshipConstraint.domain(input, metadata, 'text');
+  const expected = RelationshipConstraint.allows(input, metadata, 'text', candidate);
+
+  assert.equal(
+    RelationshipConstraint.allowsCoordinates(input, metadata, 'text', candidate.alpha, coordinate),
+    expected
+  );
+  assert.equal(RelationshipConstraint.allowsDomain(domain, candidate.alpha, coordinate), expected);
+});
+
 void test('RelationshipConstraint exposes the resolved relationship domain without duplicating graph lookup', () => {
   const baseline = colorRecordFactory.fromHex('#77777780');
   const input = RelationshipConstraintFixture.input({ 'tolerance': {
@@ -216,8 +339,139 @@ void test('RelationshipConstraint exposes the resolved relationship domain witho
     'text',
     RelationshipConstraintFixture.candidate(baseline, { 'lightness': baseline.oklch.l + 0.1 })
   ), true);
-  assert.equal(RelationshipConstraint.limitsMovement(input, {}, 'text'), false);
-  assert.deepEqual(RelationshipConstraint.relationIds(input, {}, ['text']), []);
+  assert.deepEqual(RelationshipConstraint.relationIds(input, ['text']), ['text-from-source']);
+});
+
+void test('RelationshipConstraintDomain projects exact and tolerant coordinate envelopes', () => {
+  const exact = RelationshipConstraintDomain.coordinateRange({
+    'baseline': [0.6, 0.6],
+    'envelope': [0, 1],
+    'maximum': 1,
+    'minimum': 0,
+    'tolerance': undefined
+  });
+  const tolerant = RelationshipConstraintDomain.coordinateRange({
+    'baseline': [0.45, 0.75],
+    'envelope': [0.3, 0.8],
+    'maximum': 1,
+    'minimum': 0,
+    'tolerance': 0.1
+  });
+  const outside = RelationshipConstraintDomain.coordinateRange({
+    'baseline': [0.1, 0.2],
+    'envelope': [0.7, 0.9],
+    'maximum': 1,
+    'minimum': 0,
+    'tolerance': 0
+  });
+  const runtime = RelationshipConstraintDomain.coordinateRange({
+    'baseline': [0.6, 0.6],
+    'envelope': [0.3, 0.8],
+    'maximum': 1,
+    'minimum': 0,
+    'tolerance': 0.1
+  });
+
+  assert.deepEqual(exact, [0.6, 0.6]);
+  assert.deepEqual(tolerant, [0.35, 0.8]);
+  assert.deepEqual(outside, [0.7, 0.7]);
+  assert.ok(tolerant[0] <= runtime[0] && tolerant[1] >= runtime[1], 'the authored source envelope contains every runtime baseline interval');
+});
+
+void test('RelationshipConstraint reads caller-owned resolution records after in-place replacement', () => {
+  const baseline = colorRecordFactory.fromHex('#777777');
+  const replacement = RelationshipConstraintFixture.candidate(baseline, {
+    'lightness': baseline.oklch.l + 0.1
+  });
+  const resolution = {
+    'text': RelationshipResolutionEntity.create({
+      'after': baseline,
+      'disposition': 'applied',
+      'groupId': 'text-group',
+      'operation': 'alias',
+      'relationshipId': 'text-from-source',
+      'sources': ['source']
+    })
+  };
+  const metadata: Record<string, JSONSchema7Type> = {
+    'core:relationshipResolution': resolution
+  };
+  const input = RelationshipConstraintFixture.input();
+  const initial = RelationshipConstraint.domain(input, metadata, 'text');
+
+  resolution.text = RelationshipResolutionEntity.create({
+    'after': replacement,
+    'disposition': 'applied',
+    'groupId': 'text-group',
+    'operation': 'alias',
+    'relationshipId': 'text-from-source',
+    'sources': ['source']
+  });
+  const updated = RelationshipConstraint.domain(input, metadata, 'text');
+
+  assert.equal(initial?.baseline?.hex, baseline.hex);
+  assert.equal(updated?.baseline?.hex, replacement.hex);
+  assert.notStrictEqual(updated, initial);
+});
+
+void test('RelationshipConstraint reuses one domain for repeated calls on one graph and resolution record', () => {
+  const baseline = colorRecordFactory.fromHex('#777777');
+  const input = RelationshipConstraintFixture.input({ 'tolerance': { 'lightness': 0.03 } });
+  const metadata = RelationshipConstraintFixture.metadata(baseline);
+  const domain = RelationshipConstraint.domain(input, metadata, 'text');
+
+  assert.ok(domain !== undefined);
+  for (let index = 0; index < 8; index += 1) {
+    assert.equal(RelationshipConstraint.allows(input, metadata, 'text', baseline), true);
+    assert.strictEqual(RelationshipConstraint.domain(input, metadata, 'text'), domain);
+  }
+});
+
+void test('RelationshipConstraint rebuilds a domain after relationship resolution metadata changes', () => {
+  const baseline = colorRecordFactory.fromHex('#777777');
+  const replacement = RelationshipConstraintFixture.candidate(baseline, {
+    'lightness': baseline.oklch.l + 0.1
+  });
+  const input = RelationshipConstraintFixture.input();
+  const metadata = RelationshipConstraintFixture.metadata(baseline);
+  const initial = RelationshipConstraint.domain(input, metadata, 'text');
+
+  Metadata.writeRelationshipResolution(metadata, new Map([['text', RelationshipResolutionEntity.create({
+    'after': replacement,
+    'disposition': 'applied',
+    'groupId': 'text-group',
+    'operation': 'alias',
+    'relationshipId': 'text-from-source',
+    'sources': ['source']
+  })]]));
+  const updated = RelationshipConstraint.domain(input, metadata, 'text');
+
+  assert.ok(initial !== undefined);
+  assert.ok(updated !== undefined);
+  assert.notStrictEqual(updated, initial);
+  assert.equal(updated.baseline?.hex, replacement.hex);
+  assert.equal(RelationshipConstraint.allows(input, metadata, 'text', baseline), false);
+  assert.equal(RelationshipConstraint.allows(input, metadata, 'text', replacement), true);
+});
+
+void test('RelationshipConstraint keeps relationship domains scoped to the current run metadata', () => {
+  const firstBaseline = colorRecordFactory.fromHex('#777777');
+  const secondBaseline = RelationshipConstraintFixture.candidate(firstBaseline, {
+    'lightness': firstBaseline.oklch.l + 0.1
+  });
+  const input = RelationshipConstraintFixture.input();
+  const firstMetadata = RelationshipConstraintFixture.metadata(firstBaseline);
+  const secondMetadata = RelationshipConstraintFixture.metadata(secondBaseline);
+
+  const first = RelationshipConstraint.domain(input, firstMetadata, 'text');
+  const second = RelationshipConstraint.domain(input, secondMetadata, 'text');
+
+  assert.ok(first !== undefined);
+  assert.ok(second !== undefined);
+  assert.equal(first.baseline?.hex, firstBaseline.hex);
+  assert.equal(second.baseline?.hex, secondBaseline.hex);
+  assert.equal(RelationshipConstraint.allows(input, secondMetadata, 'text', firstBaseline), false);
+  assert.equal(RelationshipConstraint.allows(input, secondMetadata, 'text', secondBaseline), true);
 });
 
 void test('RelationshipConstraint resolves authored default hue-offset degrees without a runtime baseline', () => {
@@ -309,6 +563,83 @@ void test('enforce:contrast retains a relationship-fixed role and reports its re
   assert.deepEqual(pair.constraints, ['hue-relationship']);
   assert.deepEqual(pair.relationIds, ['text-from-source']);
   assert.equal(state.roles.text?.hex, baseline.hex);
+});
+
+void test('enforce:contrast preserves an unconstrained terminal inside a relationship domain', () => {
+  const baseline = colorRecordFactory.fromHex('#777777');
+  const tolerance = { 'alpha': 1, 'chroma': 0.5, 'hue': 180, 'lightness': 1 };
+  const unconstrainedInput = RelationshipConstraintFixture.inputWithoutRelationship({
+    'minimumContrastRatio': 4.5,
+    'tolerance': tolerance
+  });
+  const constrainedInput = RelationshipConstraintFixture.input({
+    'minimumContrastRatio': 4.5,
+    'tolerance': tolerance
+  });
+  const unconstrained = RelationshipConstraintFixture.engine(unconstrainedInput, baseline).run(unconstrainedInput);
+  const constrained = RelationshipConstraintFixture.engine(constrainedInput, baseline).run(constrainedInput);
+
+  assert.equal(constrained.roles.text?.hex, unconstrained.roles.text?.hex);
+  assert.equal(Metadata.contrastReport(constrained.metadata)?.compliant, true);
+});
+
+void test('RelationshipConstraint admits the on-brand near-white terminal inside its declared domain', () => {
+  const baseline = colorRecordFactory.fromHex('#0a1018');
+  const terminal = colorRecordFactory.fromHex('#ffffff');
+  const input = RelationshipConstraintFixture.input({
+    'tolerance': { 'alpha': 1, 'chroma': 0.5, 'hue': 180, 'lightness': 1 }
+  });
+  const metadata = RelationshipConstraintFixture.metadata(baseline);
+
+  assert.ok(terminal.oklch.c < 1e-7);
+  assert.equal(RelationshipConstraint.allows(input, metadata, 'text', terminal), true);
+});
+
+void test('RelationshipConstraint ignores hue for fixed and tolerant near-achromatic coordinates', () => {
+  const baseline = colorRecordFactory.fromOklch(0.65, hueResolutionChroma / 2, 0);
+  const metadata = RelationshipConstraintFixture.metadata(baseline);
+  const fixed = RelationshipConstraintFixture.input();
+  const tolerant = RelationshipConstraintFixture.input({ 'tolerance': { 'hue': 0 } });
+  const candidate = ColorCoordinate.fromOklch(0.65, hueResolutionChroma / 2, 180);
+
+  assert.equal(RelationshipConstraint.allowsCoordinates(fixed, metadata, 'text', 1, candidate), true);
+  assert.equal(RelationshipConstraint.allowsCoordinates(tolerant, metadata, 'text', 1, candidate), true);
+});
+
+void test('RelationshipConstraint enforces hue above the emitted hue-resolution chroma', () => {
+  const baseline = colorRecordFactory.fromOklch(0.65, hueResolutionChroma * 2, 0);
+  const metadata = RelationshipConstraintFixture.metadata(baseline);
+  const fixed = RelationshipConstraintFixture.input();
+  const tolerant = RelationshipConstraintFixture.input({ 'tolerance': { 'hue': 5 } });
+  const candidate = ColorCoordinate.fromOklch(0.65, hueResolutionChroma * 2, 6);
+
+  assert.equal(RelationshipConstraint.allowsCoordinates(fixed, metadata, 'text', 1, candidate), false);
+  assert.equal(RelationshipConstraint.allowsCoordinates(tolerant, metadata, 'text', 1, candidate), false);
+});
+
+void test('RelationshipConstraint admits the VS Code onAccent terminal from an achromatic relationship baseline', () => {
+  const baseline = colorRecordFactory.fromOklch(1, 0, 0);
+  const terminal = colorRecordFactory.fromHex('#050300');
+  const input = RelationshipConstraintFixture.input({
+    'tolerance': { 'alpha': 1, 'chroma': 0.5, 'hue': 5, 'lightness': 1 }
+  });
+  const metadata = RelationshipConstraintFixture.metadata(baseline);
+
+  assert.ok(baseline.oklch.c < hueResolutionChroma);
+  assert.ok(terminal.oklch.c > hueResolutionChroma);
+  assert.equal(RelationshipConstraint.allows(input, metadata, 'text', terminal), true);
+});
+
+void test('RelationshipConstraint admits the on-brand terminal from an achromatic relationship baseline', () => {
+  const baseline = colorRecordFactory.fromOklch(1, 0, 0);
+  const terminal = colorRecordFactory.fromHex('#fafafa');
+  const input = RelationshipConstraintFixture.input({
+    'tolerance': { 'alpha': 1, 'chroma': 0.5, 'hue': 5, 'lightness': 1 }
+  });
+  const metadata = RelationshipConstraintFixture.metadata(baseline);
+
+  assert.ok(terminal.oklch.c < hueResolutionChroma);
+  assert.equal(RelationshipConstraint.allows(input, metadata, 'text', terminal), true);
 });
 
 void test('enforce:contrast records deviation without replacing a tolerant resolution baseline', () => {

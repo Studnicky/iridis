@@ -87,14 +87,12 @@ class ClientFixture {
     const result = WorkerMessageEntity.create({
       'colorSpace': 'srgb',
       'cvdMode': 'nudge',
-      'derivationConfig': PaletteResolveFixture.request().derivationConfig,
       'enableStrictCompliance': false,
       'framing': 'dark',
       'hexes': ['#112233'],
       'kind': 'combine',
       'nonMandatoryLevel': 'AA',
       'schemaName': 'iridis-8',
-      'semanticHuesEnabled': true,
       'settings': ClientFixture.settings(),
       'strictness': 2
     });

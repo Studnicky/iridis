@@ -33,8 +33,7 @@ export const STAGE_GROUPS: readonly StageGroupType[] = [
       { 'key': 'picker', 'label': 'Palette' },
       { 'key': 'palette', 'label': 'Palette' },
       { 'key': 'cvd', 'label': 'CVD vision' },
-      { 'key': 'schemaCompliance', 'label': 'Schema' },
-      { 'key': 'derivationRelations', 'label': 'Derivation Relations' }
+      { 'key': 'schemaCompliance', 'label': 'Schema' }
     ],
     'label': 'Refine', 'name': 'refine'
   },
@@ -62,7 +61,6 @@ export const STAGE_GROUPS: readonly StageGroupType[] = [
     'items': [
       { 'key': 'pipeline', 'label': 'Pipeline' },
       { 'key': 'schema', 'label': 'Schema tree' },
-      { 'key': 'hueDerivation', 'label': 'Hue derivation' },
       { 'key': 'clamps', 'label': 'Clamps' }
     ],
     'label': 'Reference', 'name': 'reference'

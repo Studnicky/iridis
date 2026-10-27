@@ -34,28 +34,56 @@ export namespace InputEntity {
     'type':     'object'
   } as const;
 
-  export type Type = NominalSchemaType<typeof Schema>;
+  export type Type = NominalSchemaType<typeof Schema> & {
+    readonly 'roles'?: RoleSchemaEntity.Type;
+  };
 
   export const validate = EntityCompiler.compile<Type>(Schema);
-  export const intake = EntityCompiler.compileIntake<Type>(Schema);
+  const schemaIntake = EntityCompiler.compileIntake<Type>(Schema);
   const schemaCreate = EntityCompiler.compileCreate<Type, CanonicalShapeType<typeof Schema>>(Schema);
 
-  class ProgrammaticInput {
-    static create(value: CanonicalShapeType<typeof Schema>): Type {
-      const { maximumColorCount, ...finiteValue } = value;
-      if (maximumColorCount !== Infinity) {
-        const result = schemaCreate({
-          ...finiteValue,
-          ...(maximumColorCount === undefined ? {} : { 'maximumColorCount': maximumColorCount })
-        });
-        return result;
-      }
-
-      const admitted = schemaCreate(finiteValue);
-      const result = { ...admitted, 'maximumColorCount': Infinity };
+  class SchemaIntake {
+    static intake(value: Parameters<typeof schemaIntake>[0]): Type {
+      const admitted = schemaIntake(value);
+      const roleSchema = admitted.roles === undefined
+        ? undefined
+        : RoleSchemaEntity.intake(admitted.roles);
+      const result = roleSchema === undefined
+        ? admitted
+        : { ...admitted, 'roles': roleSchema };
       return result;
     }
   }
+
+  class ProgrammaticInput {
+    static create(value: CanonicalShapeType<typeof Schema>): Type {
+      const roleSchema = value.roles === undefined
+        ? undefined
+        : RoleSchemaEntity.intake(value.roles);
+      const { maximumColorCount, ...finiteValue } = value;
+      const admitted = maximumColorCount === Infinity
+        ? schemaCreate(finiteValue)
+        : schemaCreate({
+          ...finiteValue,
+          ...(maximumColorCount === undefined ? {} : { 'maximumColorCount': maximumColorCount })
+        });
+      if (roleSchema === undefined || admitted.roles === undefined) {
+        const result = maximumColorCount === Infinity
+          ? { ...admitted, 'maximumColorCount': Infinity }
+          : admitted;
+        return result;
+      }
+      const result = {
+        ...admitted,
+        'roles': roleSchema,
+        ...(maximumColorCount === Infinity ? { 'maximumColorCount': Infinity } : {})
+      };
+      return result;
+    }
+  }
+
+  /** Validates external input and admits its role schema into an immutable canonical form. */
+  export const intake = SchemaIntake.intake;
 
   /** Builds a trusted programmatic request; Infinity is the sole unlimited count. */
   export const create = ProgrammaticInput.create;

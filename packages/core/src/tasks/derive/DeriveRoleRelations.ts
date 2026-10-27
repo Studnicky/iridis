@@ -14,6 +14,7 @@ import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 import { mixOklch } from '../../math/MixOklch.ts';
 import { RelationshipHueDegrees } from '../../model/RelationshipHueDegrees.ts';
 import { RelationshipSources } from '../../model/RelationshipSources.ts';
+import { RoleRecord } from '../../model/RoleRecord.ts';
 import { Metadata } from '../../types/metadata.ts';
 import { RoleGeometry } from '../RoleGeometry.ts';
 
@@ -30,8 +31,63 @@ class RelationshipWorkItem {
   }
 }
 
+class RelationshipResolutionIdentity {
+  static from(
+    group: RelationshipGraphShape.GroupInterface,
+    relationship: RelationshipGraphShape.GroupInterface['relationships'][number]
+  ) {
+    const result = {
+      'groupId': group.id,
+      'modeId': RelationshipHueDegrees.modeId(group, relationship),
+      'operation': relationship.operation,
+      'relationshipId': relationship.id,
+      'sources': [...RelationshipSources.names(relationship)],
+      ...(relationship.operation === 'hue-offset' && relationship.variantId !== undefined ? { 'variantId': relationship.variantId } : {})
+    };
+    return result;
+  }
+}
+
 class RelationshipOperation {
   static apply(
+    group: RelationshipGraphShape.GroupInterface,
+    relationship: RelationshipGraphShape.GroupInterface['relationships'][number],
+    sources: readonly ColorRecordEntity.Type[],
+    target: NonNullable<PaletteStateInterface['input']['roles']>['roles'][number]
+  ): ColorRecordEntity.Type {
+    const hints = target.intent === undefined ? undefined : { 'intent': target.intent };
+    const operationResult = RelationshipOperation.applyRaw(group, relationship, sources);
+    if (target.lightnessRange === undefined && target.chromaRange === undefined) {
+      const result = RoleRecord.withHints(operationResult, hints);
+      return result;
+    }
+    const ownsTarget = RoleGeometry.ownsTarget(relationship);
+    if (ownsTarget) {
+      const result = RoleRecord.withHints(operationResult, hints);
+      return result;
+    }
+    const options = {
+      'chromaRange': target.chromaRange,
+      'lightnessRange': target.lightnessRange
+    };
+    const mode = RoleGeometry.coordinateMode(relationship);
+    const envelope = RoleGeometry.relationshipCoordinates(
+      operationResult.oklch.l,
+      operationResult.oklch.c,
+      options,
+      { 'chroma': mode, 'lightness': mode }
+    );
+    const result = colorRecordFactory.fromOklch(
+      envelope.lightness,
+      envelope.chroma,
+      operationResult.oklch.h,
+      { 'alpha': operationResult.alpha }
+    );
+    const targetResult = RoleRecord.withHints(result, hints);
+    return targetResult;
+  }
+
+  private static applyRaw(
     group: RelationshipGraphShape.GroupInterface,
     relationship: RelationshipGraphShape.GroupInterface['relationships'][number],
     sources: readonly ColorRecordEntity.Type[]
@@ -75,6 +131,15 @@ class RelationshipOperation {
       );
       return result;
     }
+    if (relationship.operation === 'hue-target') {
+      const result = colorRecordFactory.fromOklch(
+        source.oklch.l,
+        source.oklch.c,
+        RoleGeometry.hueTowards(source.oklch.h, relationship.hue, relationship.clamp ?? RoleGeometry.DEFAULT_HUE_CLAMP),
+        { 'alpha': source.alpha }
+      );
+      return result;
+    }
     const degrees = RelationshipHueDegrees.resolve(group, relationship);
     const result = colorRecordFactory.fromOklch(
       source.oklch.l,
@@ -97,21 +162,25 @@ class DeriveRoleRelations implements TaskInterface {
   });
 
   run(state: PaletteStateInterface, _context: PipelineContextInterface): void {
-    const graph = state.input.roles?.relationshipGraph === undefined
-      ? undefined
-      : RoleRelationshipGraphEntity.intake(state.input.roles.relationshipGraph);
-    if (graph === undefined) {
+    const roleSchema = state.input.roles;
+    if (roleSchema?.relationshipGraph === undefined) {
       return;
     }
+    const graph = RoleRelationshipGraphEntity.intake(roleSchema.relationshipGraph);
     const roles = PaletteRoleState.admit(state.roles);
     const provenance = Metadata.roleProvenance(state.metadata);
     const resolution = Metadata.relationshipResolution(state.metadata);
+    const distances = Metadata.roleDistances(state.metadata);
+    const targets = new Map(roleSchema.roles.map((role) => {
+      return [role.name, role] as const;
+    }));
     const pending = DeriveRoleRelations.workItems(graph.groups);
-    const unresolved = DeriveRoleRelations.resolvePending(roles, provenance, resolution, pending);
+    const unresolved = DeriveRoleRelations.resolvePending(roles, provenance, resolution, distances, targets, pending);
     DeriveRoleRelations.recordUnresolved(roles, resolution, unresolved);
     roles.commit();
     Metadata.writeRoleProvenance(state.metadata, provenance);
     Metadata.writeRelationshipResolution(state.metadata, resolution);
+    Metadata.writeRoleDistances(state.metadata, distances);
   }
 
   private static workItems(
@@ -138,19 +207,22 @@ class DeriveRoleRelations implements TaskInterface {
     roles: PaletteRoleState,
     provenance: ReturnType<typeof Metadata.roleProvenance>,
     resolution: ReturnType<typeof Metadata.relationshipResolution>,
+    distances: ReturnType<typeof Metadata.roleDistances>,
+    targets: ReadonlyMap<string, NonNullable<PaletteStateInterface['input']['roles']>['roles'][number]>,
     initialPending: readonly RelationshipWorkItem[]
   ): RelationshipWorkItem[] {
     let pending = [...initialPending];
     let progressed = true;
     while (pending.length > 0 && progressed) {
       progressed = false;
+      const pendingTargets = new Set(pending.map((item) => { return item.relationship.target; }));
       const next: RelationshipWorkItem[] = [];
       for (let index = 0; index < pending.length; index += 1) {
         const item = pending[index];
         if (item === undefined) {
           continue;
         }
-        if (DeriveRoleRelations.resolveItem(roles, provenance, resolution, item)) {
+        if (DeriveRoleRelations.resolveItem(roles, provenance, resolution, distances, pendingTargets, targets, item)) {
           progressed = true;
         } else {
           next.push(item);
@@ -178,10 +250,44 @@ class DeriveRoleRelations implements TaskInterface {
     return colors;
   }
 
+  private static sourcesFor(
+    roles: PaletteRoleState,
+    relationship: RelationshipGraphShape.GroupInterface['relationships'][number],
+    existing: ColorRecordEntity.Type | undefined
+  ): readonly ColorRecordEntity.Type[] | undefined {
+    const ownsTarget = RoleGeometry.ownsTarget(relationship);
+    if (ownsTarget) {
+      if (existing === undefined) {
+        return undefined;
+      }
+      const result = [existing];
+      return result;
+    }
+    const result = DeriveRoleRelations.sourceColors(roles, relationship);
+    return result;
+  }
+
+  private static sourcePending(
+    relationship: RelationshipGraphShape.GroupInterface['relationships'][number],
+    pendingTargets: ReadonlySet<string>
+  ): boolean {
+    if (RoleGeometry.ownsTarget(relationship)) {
+      return false;
+    }
+    const result = RelationshipSources.names(relationship).some((source) => {
+      const pending = pendingTargets.has(source);
+      return pending;
+    });
+    return result;
+  }
+
   private static resolveItem(
     roles: PaletteRoleState,
     provenance: ReturnType<typeof Metadata.roleProvenance>,
     resolution: ReturnType<typeof Metadata.relationshipResolution>,
+    distances: ReturnType<typeof Metadata.roleDistances>,
+    pendingTargets: ReadonlySet<string>,
+    targets: ReadonlyMap<string, NonNullable<PaletteStateInterface['input']['roles']>['roles'][number]>,
     item: RelationshipWorkItem
   ): boolean {
     const { group, relationship } = item;
@@ -192,34 +298,34 @@ class DeriveRoleRelations implements TaskInterface {
         'before': existing,
         'blockedReason': 'stated-target',
         'disposition': 'preserved-stated',
-        'groupId': group.id,
-        'modeId': group.defaultMode,
-        'operation': relationship.operation,
-        'relationshipId': relationship.id,
-        'sources': RelationshipSources.names(relationship),
-        ...(relationship.operation === 'hue-offset' && relationship.variantId !== undefined ? { 'variantId': relationship.variantId } : {})
+        ...RelationshipResolutionIdentity.from(group, relationship)
       }));
       return true;
     }
-    const sources = DeriveRoleRelations.sourceColors(roles, relationship);
+    const target = targets.get(relationship.target);
+    if (target === undefined) {
+      throw new TypeError(`${relationship.target} relationship target is not declared`);
+    }
+    const ownsTarget = RoleGeometry.ownsTarget(relationship);
+    const sourcePending = DeriveRoleRelations.sourcePending(relationship, pendingTargets);
+    if (sourcePending) {
+      return false;
+    }
+    const sources = DeriveRoleRelations.sourcesFor(roles, relationship, existing);
     if (sources === undefined) {
       return false;
     }
-    const derived = RelationshipOperation.apply(group, relationship, sources);
+    const derived = RelationshipOperation.apply(group, relationship, sources, target);
     roles.set(relationship.target, derived);
-    if (!provenance.has(relationship.target)) {
-      provenance.set(relationship.target, RoleProvenanceEntity.create({ 'adjustments': [], 'origin': 'derived' }));
+    if (!ownsTarget) {
+      distances.delete(relationship.target);
     }
+    provenance.set(relationship.target, RoleProvenanceEntity.create({ 'adjustments': [], 'origin': 'derived' }));
     resolution.set(relationship.target, RelationshipResolutionEntity.create({
       'after': derived,
       ...(existing === undefined ? {} : { 'before': existing }),
       'disposition': 'applied',
-      'groupId': group.id,
-      'modeId': relationship.operation === 'hue-offset' ? relationship.modeId ?? group.defaultMode : group.defaultMode,
-      'operation': relationship.operation,
-      'relationshipId': relationship.id,
-      'sources': RelationshipSources.names(relationship),
-      ...(relationship.operation === 'hue-offset' && relationship.variantId !== undefined ? { 'variantId': relationship.variantId } : {})
+      ...RelationshipResolutionIdentity.from(group, relationship)
     }));
     return true;
   }
@@ -239,21 +345,17 @@ class DeriveRoleRelations implements TaskInterface {
         continue;
       }
       const sources = RelationshipSources.names(item.relationship);
-      const missing = sources.some((source) => {
+      const existing = roles.get(item.relationship.target);
+      const missingCandidate = RoleGeometry.ownsTarget(item.relationship) && existing === undefined;
+      const missing = missingCandidate || sources.some((source) => {
         const result = !roles.has(source) && !unresolvedTargets.has(source);
         return result;
       });
-      const existing = roles.get(item.relationship.target);
       resolution.set(item.relationship.target, RelationshipResolutionEntity.create({
         ...(existing === undefined ? {} : { 'before': existing }),
         'blockedReason': missing ? 'missing-source' : 'cycle',
         'disposition': 'unresolved',
-        'groupId': item.group.id,
-        'modeId': item.group.defaultMode,
-        'operation': item.relationship.operation,
-        'relationshipId': item.relationship.id,
-        'sources': sources,
-        ...(item.relationship.operation === 'hue-offset' && item.relationship.variantId !== undefined ? { 'variantId': item.relationship.variantId } : {})
+        ...RelationshipResolutionIdentity.from(item.group, item.relationship)
       }));
     }
   }

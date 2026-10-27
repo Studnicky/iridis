@@ -13,7 +13,7 @@ The `private constructor` + `static shared()` pattern wires the engine during se
 
 ## From seed to palette
 
-`intake:any` normalizes the seed, `resolve:roles` assigns it through the schema, and `expand:family` derives schema-authored roles. `enforce:compliance` applies the selected `input.contrast` standard and CVD mode; `report:compliance` records terminal measurements. The service reparses emitted hexadecimal values, independently recomputes WCAG, and re-simulates CVD matrices with each linear channel clamped before gamma encoding. A palette that cannot satisfy the terminal contract throws without creating or changing a style element.
+`intake:any` normalizes the seed, `resolve:roles` assigns it through the schema, and `derive:roleRelations` resolves schema-authored role relationships. `enforce:compliance` applies the selected `input.contrast` standard and CVD mode; `report:compliance` records terminal measurements. The service reparses emitted hexadecimal values, independently recomputes WCAG, and re-simulates CVD matrices with each linear channel clamped before gamma encoding. A palette that cannot satisfy the terminal contract throws without creating or changing a style element.
 
 `emit:cssVars` writes `state.outputs['stylesheet:cssVars']` with `full` (the complete CSS string), `scopedBlock` (the `[data-category='music'] { ... }` block), and `map` (the role-to-custom-property mapping). `emit:capacitorStatusBar` writes `state.outputs['capacitor:statusBar']`, and `emit:capacitorTheme` writes `state.outputs['capacitor:theme']`. The returned `compliance` member is the engine compliance report, `wcagPairs` contains measurements rebuilt from the terminal emitted values, and `cvd` contains the terminal simulation result.
 

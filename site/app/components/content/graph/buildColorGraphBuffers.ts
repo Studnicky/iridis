@@ -4,30 +4,8 @@ import type { RoleMathEntry } from '~/composables/types/roleMathEntry.ts';
 
 import type { ColorGraphCategoryVisibility } from './ColorGraphCategoryVisibility.ts';
 
-import { buildDerivationRelations } from '../derivation/buildDerivationRelations.ts';
 import { ColorGraphNodeCategory } from './ColorGraphNodeCategory.ts';
-
-class ColorGraphPointMeta {
-  public readonly algorithm: string | null;
-  public readonly category: ColorGraphNodeCategory;
-  public readonly labelSuffix: string;
-  public readonly hex: string;
-  public readonly name: string;
-
-  public constructor(
-    algorithm: string | null,
-    category: ColorGraphNodeCategory,
-    labelSuffix: string,
-    hex: string,
-    name: string
-  ) {
-    this.algorithm = algorithm;
-    this.category = category;
-    this.labelSuffix = labelSuffix;
-    this.hex = hex;
-    this.name = name;
-  }
-}
+import { ColorGraphPointMeta } from './ColorGraphPointMeta.ts';
 
 class ColorGraphBuffers {
   public readonly colors: Float32Array;
@@ -445,11 +423,11 @@ export const buildColorGraphBuffers = class ColorGraphBuffersBuilder {
       if (role === undefined) {continue;}
       const category = ColorGraphNodeCategory.fromRole(role);
       meta.push(new ColorGraphPointMeta(
-        role.algorithmInfo === null ? null : buildDerivationRelations.serializeHueAlgorithm(role.algorithmInfo.algorithm),
         category,
-        role.clamp === null ? '' : ' ⏚',
         role.hex,
-        role.name
+        role.clamp === null ? '' : ' ⏚',
+        role.name,
+        role.relationship
       ));
     }
     return meta;

@@ -25,13 +25,12 @@ export namespace RelationshipResolutionEntity {
       'groupId': { 'minLength': 1, 'type': 'string' },
       'modeId': { 'minLength': 1, 'type': 'string' },
       'operation': {
-        'enum': ['alias', 'alpha-overlay', 'hue-offset', 'oklch-delta', 'oklch-interpolate'],
+        'enum': ['alias', 'alpha-overlay', 'hue-offset', 'hue-target', 'oklch-delta', 'oklch-interpolate'],
         'type': 'string'
       },
       'relationshipId': { 'minLength': 1, 'type': 'string' },
       'sources': {
         'items': { 'minLength': 1, 'type': 'string' },
-        'minItems': 1,
         'type': 'array'
       },
       'variantId': { 'minLength': 1, 'type': 'string' }

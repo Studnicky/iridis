@@ -15,7 +15,7 @@ import {
   PaletteRoleState,
   rgbToHex
 } from '@studnicky/iridis';
-import { RelationshipConstraint } from '@studnicky/iridis/model';
+import { CompositeKey, RelationshipConstraint } from '@studnicky/iridis/model';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
 import type { CvdEvalEntity } from '../entities/CvdEvalEntity.ts';
@@ -76,6 +76,7 @@ class CvdMoverGroup {
   readonly original: ColorRecordEntity.Type;
   readonly roleRange: ContrastPolicy.RoleRangeInterface;
 
+  private readonly relationshipDomain: ReturnType<typeof RelationshipConstraint.domain>;
   private relationshipCandidateRejections = 0;
   private readonly state: PaletteStateInterface;
 
@@ -92,6 +93,11 @@ class CvdMoverGroup {
     this.original = original;
     this.roleRange = roleRange;
     this.state = state;
+    this.relationshipDomain = RelationshipConstraint.domain(
+      state.input,
+      state.metadata,
+      mover
+    );
   }
 
   get relationshipCandidateRejectionCount(): number {
@@ -100,12 +106,21 @@ class CvdMoverGroup {
   }
 
   allows(record: ColorRecordEntity.Type): boolean {
-    const result = RelationshipConstraint.allows(
-      this.state.input,
-      this.state.metadata,
-      this.mover,
-      record
+    const result = RelationshipConstraint.allowsDomain(
+      this.relationshipDomain,
+      record.alpha,
+      record.oklch
     );
+    return result;
+  }
+
+  isOriginal(record: ColorRecordEntity.Type): boolean {
+    const epsilon = 1e-12;
+    const result =
+      Math.abs(record.alpha - this.original.alpha) <= epsilon &&
+      Math.abs(record.rgb.r - this.original.rgb.r) <= epsilon &&
+      Math.abs(record.rgb.g - this.original.rgb.g) <= epsilon &&
+      Math.abs(record.rgb.b - this.original.rgb.b) <= epsilon;
     return result;
   }
 
@@ -113,28 +128,17 @@ class CvdMoverGroup {
     budget: CvdSearchBudget,
     constraints: readonly CvdPairConstraint[]
   ): CvdCorrectionCandidate | undefined {
-    if (this.limitsMovement()) {
-      return undefined;
-    }
     const result = budget.cachedCorrection(
       this.original,
       constraints,
-      this.roleRange
+      this.roleRange,
+      this.relationshipSignature()
     );
     return result;
   }
 
   recordCandidateRejection(): void {
     this.relationshipCandidateRejections += 1;
-  }
-
-  private limitsMovement(): boolean {
-    const result = RelationshipConstraint.limitsMovement(
-      this.state.input,
-      this.state.metadata,
-      this.mover
-    );
-    return result;
   }
 
   recordDeviation(record: ColorRecordEntity.Type): void {
@@ -151,14 +155,31 @@ class CvdMoverGroup {
     constraints: readonly CvdPairConstraint[],
     correction: CvdCorrectionCandidate
   ): void {
-    if (!this.limitsMovement()) {
-      budget.storeCorrection(
-        this.original,
-        constraints,
-        this.roleRange,
-        correction
-      );
+    budget.storeCorrection(
+      this.original,
+      constraints,
+      this.roleRange,
+      this.relationshipSignature(),
+      correction
+    );
+  }
+
+  private relationshipSignature(): string {
+    const domain = this.relationshipDomain;
+    const baseline = domain?.baseline;
+    if (domain === undefined || baseline === undefined) {
+      return '';
     }
+    const tolerance = domain.tolerance;
+    const result = CompositeKey.of(
+      domain.relationId,
+      baseline.hex,
+      String(tolerance?.alpha ?? ''),
+      String(tolerance?.chroma ?? ''),
+      String(tolerance?.hue ?? ''),
+      String(tolerance?.lightness ?? '')
+    );
+    return result;
   }
 
   add(
@@ -638,7 +659,7 @@ class CvdSimulation {
       if (!selection.couldImprove(candidate.candidate)) {
         return true;
       }
-      if (!selection.canConsider(candidate.candidate.emitted)) {
+      if (!selection.canExplore(candidate.candidate.emitted)) {
         continue;
       }
       const score = budget.score(candidate.candidate, constraints);
@@ -734,7 +755,7 @@ class CvdSimulation {
       return fgRecord;
     }
 
-    let best = selection.result();
+    let best = selection.explorationResult();
     if (best === undefined) {
       return fgRecord;
     }
@@ -753,8 +774,12 @@ class CvdSimulation {
       return fgRecord;
     }
 
-    group.storeCorrection(budget, constraints, best);
-    const result = CvdSimulation.materializeCorrection(best, fgRecord);
+    const terminal = selection.result();
+    if (terminal === undefined) {
+      return fgRecord;
+    }
+    group.storeCorrection(budget, constraints, terminal);
+    const result = CvdSimulation.materializeCorrection(terminal, fgRecord);
     return result;
   }
 
@@ -853,7 +878,7 @@ class CvdSimulation {
       ) {
         return undefined;
       }
-      best = selection.result();
+      best = selection.explorationResult();
     }
     return best;
   }
@@ -920,7 +945,7 @@ class CvdSimulation {
         h,
         emittedColors
       );
-      if (!selection.canConsider(candidate.emitted)) {
+      if (!selection.canExplore(candidate.emitted)) {
         continue;
       }
       const score = budget.score(candidate, constraints);
@@ -1198,10 +1223,11 @@ class CvdSearchBudget {
   cachedCorrection(
     original: ColorRecordEntity.Type,
     constraints: readonly CvdPairConstraint[],
-    roleRange: ContrastPolicy.RoleRangeInterface
+    roleRange: ContrastPolicy.RoleRangeInterface,
+    relationshipSignature: string
   ): CvdCorrectionCandidate | undefined {
     const result = this.correctionCache.get(
-      this.groupKey(original, constraints, roleRange)
+      this.groupKey(original, constraints, roleRange, relationshipSignature)
     );
     return result;
   }
@@ -1210,9 +1236,13 @@ class CvdSearchBudget {
     original: ColorRecordEntity.Type,
     constraints: readonly CvdPairConstraint[],
     roleRange: ContrastPolicy.RoleRangeInterface,
+    relationshipSignature: string,
     correction: CvdCorrectionCandidate
   ): void {
-    this.correctionCache.set(this.groupKey(original, constraints, roleRange), correction);
+    this.correctionCache.set(
+      this.groupKey(original, constraints, roleRange, relationshipSignature),
+      correction
+    );
   }
 
   static create(options?: {
@@ -1267,14 +1297,16 @@ class CvdSearchBudget {
   private groupKey(
     original: ColorRecordEntity.Type,
     constraints: readonly CvdPairConstraint[],
-    roleRange: ContrastPolicy.RoleRangeInterface
+    roleRange: ContrastPolicy.RoleRangeInterface,
+    relationshipSignature: string
   ): string {
-    const result = [
+    const result = CompositeKey.of(
       original.hex,
       this.constraintSignature(constraints),
+      relationshipSignature,
       roleRange.chromaRange?.join(',') ?? '',
       roleRange.lightnessRange?.join(',') ?? ''
-    ].join('\u0000');
+    );
     return result;
   }
 
@@ -1282,10 +1314,10 @@ class CvdSearchBudget {
     candidate: CvdSearchColor,
     constraints: readonly CvdPairConstraint[]
   ): string {
-    const result = [
+    const result = CompositeKey.of(
       candidate.emitted.hex,
       this.constraintSignature(constraints)
-    ].join('\u0000');
+    );
     return result;
   }
 
@@ -1310,7 +1342,7 @@ class CvdSearchBudget {
         Array.from(constraint.originalFailureTypes).join(',')
       );
     }
-    const result = parts.join('\u0000');
+    const result = CompositeKey.of(...parts);
     this.constraintSignatures.set(constraints, result);
     return result;
   }
@@ -1318,6 +1350,7 @@ class CvdSearchBudget {
 
 class CvdCandidateSelection {
   private bestAny: CvdCorrectionCandidate | undefined;
+  private bestExploration: CvdCorrectionCandidate | undefined;
   private bestNonExtreme: CvdCorrectionCandidate | undefined;
   private readonly originalFailureCount: number;
   private readonly originalC: number;
@@ -1333,6 +1366,7 @@ class CvdCandidateSelection {
     group: CvdMoverGroup
   ) {
     this.bestAny = undefined;
+    this.bestExploration = undefined;
     this.bestNonExtreme = undefined;
     this.originalFailureCount = originalFailureCount;
     this.originalC = original.oklch.c;
@@ -1354,6 +1388,9 @@ class CvdCandidateSelection {
     candidate: CvdCorrectionCandidate,
     record: ColorRecordEntity.Type
   ): void {
+    if (this.isExplorationCandidate(candidate) && this.prefer(candidate, this.bestExploration)) {
+      this.bestExploration = candidate;
+    }
     if (!this.isEligible(candidate, record)) {
       return;
     }
@@ -1393,6 +1430,11 @@ class CvdCandidateSelection {
     return result;
   }
 
+  explorationResult(): CvdCorrectionCandidate | undefined {
+    const result = this.bestExploration;
+    return result;
+  }
+
   result(): CvdCorrectionCandidate | undefined {
     const result =
       !CvdCandidateSelection.isExtreme(this.originalRgb) &&
@@ -1403,14 +1445,7 @@ class CvdCandidateSelection {
   }
 
   canConsider(record: ColorRecordEntity.Type): boolean {
-    const withinRange =
-      (this.roleRange.chromaRange === undefined ||
-        (record.oklch.c >= this.roleRange.chromaRange[0] &&
-          record.oklch.c <= this.roleRange.chromaRange[1])) &&
-      (this.roleRange.lightnessRange === undefined ||
-        (record.oklch.l >= this.roleRange.lightnessRange[0] &&
-          record.oklch.l <= this.roleRange.lightnessRange[1]));
-    if (!withinRange) {
+    if (!this.canExplore(record)) {
       return false;
     }
     const allowed = this.group.allows(record);
@@ -1420,12 +1455,21 @@ class CvdCandidateSelection {
     return allowed;
   }
 
+  canExplore(record: ColorRecordEntity.Type): boolean {
+    const result = ContrastPolicy.allowsRange(this.roleRange, record.oklch);
+    return result;
+  }
+
   private isEligible(
     candidate: CvdCorrectionCandidate,
     record: ColorRecordEntity.Type
   ): boolean {
+    const result = this.isExplorationCandidate(candidate) && this.canConsider(record);
+    return result;
+  }
+
+  private isExplorationCandidate(candidate: CvdCorrectionCandidate): boolean {
     const result =
-      this.canConsider(record) &&
       candidate.trichromatBaselineDeficitCount === 0 &&
       candidate.novelFailureCount === 0 &&
       candidate.failureCount < this.originalFailureCount;
@@ -1599,12 +1643,8 @@ class CvdCorrectionCoordinator {
         );
       }
     }
-    const result = CvdCorrectionCoordinator.audit(
-      groups,
-      resolvedRoles,
-      originalRoles
-    );
-    return result;
+    CvdCorrectionCoordinator.audit(groups, resolvedRoles);
+    return resolvedRoles;
   }
 
   private static resolveComponent(
@@ -1624,7 +1664,7 @@ class CvdCorrectionCoordinator {
       );
       resolvedRoles.set(
         group.mover,
-        group.allows(corrected) ? corrected : group.original
+        CvdCorrectionCoordinator.terminalRecord(group, corrected)
       );
       return;
     }
@@ -1638,16 +1678,15 @@ class CvdCorrectionCoordinator {
 
   private static audit(
     groups: ReadonlyMap<string, CvdMoverGroup>,
-    resolvedRoles: Map<string, ColorRecordEntity.Type>,
-    originalRoles: ReadonlyMap<string, ColorRecordEntity.Type>
-  ): Map<string, ColorRecordEntity.Type> {
+    resolvedRoles: Map<string, ColorRecordEntity.Type>
+  ): void {
     for (let pass = 0; pass <= groups.size; pass += 1) {
       const invalid = CvdCorrectionCoordinator.invalidGroups(
         groups,
         resolvedRoles
       );
       if (invalid.length === 0) {
-        return resolvedRoles;
+        return;
       }
       if (
         !CvdCorrectionCoordinator.restoreInvalidGroups(
@@ -1656,11 +1695,9 @@ class CvdCorrectionCoordinator {
           resolvedRoles
         )
       ) {
-        break;
+        return;
       }
     }
-    const result = new Map(originalRoles);
-    return result;
   }
 
   private static invalidGroups(
@@ -1718,7 +1755,7 @@ class CvdCorrectionCoordinator {
     resolvedRoles: Map<string, ColorRecordEntity.Type>
   ): number {
     const foreground = resolvedRoles.get(group.mover);
-    if (foreground !== undefined && foreground !== group.original) {
+    if (foreground !== undefined && !group.isOriginal(foreground)) {
       resolvedRoles.set(group.mover, group.original);
       return 1;
     }
@@ -1745,13 +1782,15 @@ class CvdCorrectionCoordinator {
     foreground: ColorRecordEntity.Type,
     resolvedRoles: ReadonlyMap<string, ColorRecordEntity.Type>
   ): boolean {
+    if (group.isOriginal(foreground)) {
+      return true;
+    }
     const constraints = group.resolve(resolvedRoles);
     const result =
       CvdSimulation.preservesBaselines(foreground, constraints) &&
       CvdSimulation.preservesFailureSets(foreground, constraints) &&
       group.allows(foreground) &&
-      (foreground === group.original ||
-        CvdSimulation.improves(foreground, constraints));
+      CvdSimulation.improves(foreground, constraints);
     return result;
   }
 
@@ -1810,10 +1849,21 @@ class CvdCorrectionCoordinator {
       }
       resolvedRoles.set(
         group.mover,
-        group.allows(corrected) ? corrected : group.original
+        CvdCorrectionCoordinator.terminalRecord(group, corrected)
       );
     }
     const result = unchangedCount === component.length;
+    return result;
+  }
+
+  private static terminalRecord(
+    group: CvdMoverGroup,
+    corrected: ColorRecordEntity.Type
+  ): ColorRecordEntity.Type {
+    if (group.isOriginal(corrected)) {
+      return group.original;
+    }
+    const result = group.allows(corrected) ? corrected : group.original;
     return result;
   }
 
@@ -2092,7 +2142,7 @@ class EnforceCvdSimulate {
     for (let index = 0; index < existing.length; index += 1) {
       const pair = existing[index];
       if (pair !== undefined) {
-        known.add(`${pair.foreground}\u0000${pair.background}`);
+        known.add(CompositeKey.of(pair.foreground, pair.background));
       }
     }
     const groups = this.terminalFailureGroups(
@@ -2153,7 +2203,7 @@ class EnforceCvdSimulate {
         failurePolicy
       );
       if (group !== undefined) {
-        groups.set(`${group.foreground}\u0000${group.background}`, group);
+        groups.set(CompositeKey.of(group.foreground, group.background), group);
       }
     }
     return groups;
@@ -2171,7 +2221,7 @@ class EnforceCvdSimulate {
   } | undefined {
     const foreground = state.roles[pair.foreground];
     const background = state.roles[pair.background];
-    const key = `${pair.foreground}\u0000${pair.background}`;
+    const key = CompositeKey.of(pair.foreground, pair.background);
     if (foreground === undefined || background === undefined || known.has(key)) {
       return undefined;
     }

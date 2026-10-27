@@ -10,6 +10,23 @@ export const categoryW3cRoleSchema = RoleSchemaEntity.create({
   ],
   'description': 'WCAG 2.1 AAA-strength role schema for category colour palettes',
   'name': 'category-w3c',
+  'relationshipGraph': {
+    'groups': [{
+      'anchor': 'accent',
+      'defaultMode': 'default',
+      'id': 'accent-content',
+      'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'default' }], 'id': 'default' }],
+      'name': 'Accent content',
+      'relationships': [{
+        'id': 'accent-to-onAccent',
+        'operation': 'alias',
+        'priority': 0,
+        'relaxability': 'fixed',
+        'source': 'accent',
+        'target': 'onAccent'
+      }]
+    }]
+  },
   'roles': [
     {
       'description': 'Page / card background',
@@ -34,7 +51,6 @@ export const categoryW3cRoleSchema = RoleSchemaEntity.create({
       'required': true
     },
     {
-      'derivedFrom': 'accent',
       'description': 'Text / icons placed on accent',
       'intent': 'onAccent',
       'lightnessRange': [0.98, 1],

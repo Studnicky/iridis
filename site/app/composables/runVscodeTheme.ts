@@ -106,7 +106,7 @@ class VscodeThemePipeline {
     engine.adopt(contrastPlugin);
     engine.adopt(vscodePlugin);
     engine.pipeline([
-      'vscode:seedRoles', 'resolve:roles', 'expand:family', 'vscode:deriveUiRoles', 'enforce:contrast',
+      'vscode:seedRoles', 'resolve:roles', 'derive:roleRelations', 'vscode:deriveUiRoles', 'enforce:contrast',
       'derive:variant', 'vscode:expandTokens', 'vscode:applyModifiers', 'emit:vscodeSemanticRules',
       'emit:vscodeUiPalette', 'emit:vscodeThemeJson'
     ]);
