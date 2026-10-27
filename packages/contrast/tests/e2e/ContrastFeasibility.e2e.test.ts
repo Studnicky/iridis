@@ -457,6 +457,44 @@ await test('ContrastFeasibility leaves alpha-overlay schema targets indeterminat
   assert.ok(pair.sampled !== undefined, 'source-over targets retain labelled sampled evidence until compositing intervals are bounded');
 });
 
+await test('ContrastFeasibility leaves OKLCH interpolation schema targets indeterminate with sampled evidence', () => {
+  const schema = RoleSchemaEntity.intake({
+    'contrastPairs': [{ 'background': 'background', 'foreground': 'interpolated', 'minimumContrastRatio': 4.5 }],
+    'name': 'oklch-interpolate-feasibility',
+    'relationshipGraph': {
+      'groups': [{
+        'anchor': 'source',
+        'defaultMode': 'base',
+        'id': 'interpolate-group',
+        'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'base' }], 'id': 'base' }],
+        'name': 'Interpolate',
+        'relationships': [{
+          'id': 'interpolated',
+          'operation': 'oklch-interpolate',
+          'priority': 0,
+          'relaxability': 'fixed',
+          'source': 'source',
+          'target': 'interpolated',
+          'toward': 'toward',
+          'weight': 0.5
+        }]
+      }]
+    },
+    'roles': [
+      ContrastFeasibilityFixture.role('background', 0.1, 0, 0),
+      ContrastFeasibilityFixture.role('source', 0.9, 0.2, 30),
+      ContrastFeasibilityFixture.role('toward', 0.2, 0.2, 240),
+      ContrastFeasibilityFixture.role('interpolated', 0.5, 0.2, 120)
+    ]
+  });
+
+  const pair = ContrastFeasibility.analyzeSchema(schema, ContrastFeasibilityFixture.options()).pairs[0];
+
+  assert.ok(pair !== undefined, 'interpolated pair receives a feasibility result');
+  assert.strictEqual(pair.reachability, 'indeterminate');
+  assert.ok(pair.sampled !== undefined, 'interpolated targets retain labelled sampled evidence until interval bounds exist');
+});
+
 await test('ContrastFeasibility projects hue-target relationships through the authored clamp', () => {
   const roles = [
     ContrastFeasibilityFixture.role('background', 0.05, 0.01, 0),
