@@ -148,7 +148,7 @@ await test('iridis-32 status hue targets preserve their authored clamp and toler
     assert.notEqual(relationship, undefined, `${roleName} declares a relationship`);
     assert.notEqual(resolution, undefined, `${roleName} records a relationship baseline`);
     assert.notEqual(final, undefined, `${roleName} resolves`);
-    if (relationship === undefined || resolution === undefined || final === undefined) {
+    if (relationship === undefined || resolution?.after === undefined || final === undefined) {
       throw new Error(`${roleName} is missing relationship resolution evidence`);
     }
     assert.equal(relationship.operation, 'hue-target', `${roleName} uses a hue target`);
