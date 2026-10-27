@@ -2,8 +2,7 @@ import type {
   ColorHintsEntity,
   ColorRecordEntity,
   ContrastOptionsEntity,
-  PaletteStateInterface,
-  RelationshipConstraintDomain
+  PaletteStateInterface
 } from '@studnicky/iridis';
 
 import {
@@ -15,6 +14,7 @@ import {
   Metadata,
   PaletteRoleState,
   RelationshipConstraint,
+  RelationshipConstraintDomain,
   RoleSchemaEntity
 } from '@studnicky/iridis';
 import { ContrastPolicy, RoleGeometry } from '@studnicky/iridis/tasks';
@@ -651,10 +651,22 @@ class ContrastFeasibilityDomain {
     const tolerance = relationship?.tolerance;
     const lightness = options?.lightness ?? (baseline === undefined || tolerance === undefined
       ? role.lightnessRange ?? [0, 1]
-      : ContrastFeasibilityDomain.intersection(role.lightnessRange ?? [0, 1], baseline.oklch.l, tolerance.lightness));
+      : RelationshipConstraintDomain.coordinateRange({
+        'baseline': [baseline.oklch.l, baseline.oklch.l],
+        'envelope': role.lightnessRange ?? [0, 1],
+        'maximum': 1,
+        'minimum': 0,
+        'tolerance': tolerance.lightness
+      }));
     const chroma = options?.chroma ?? (baseline === undefined || tolerance === undefined
       ? role.chromaRange ?? [0, 0.5]
-      : ContrastFeasibilityDomain.intersection(role.chromaRange ?? [0, 0.5], baseline.oklch.c, tolerance.chroma));
+      : RelationshipConstraintDomain.coordinateRange({
+        'baseline': [baseline.oklch.c, baseline.oklch.c],
+        'envelope': role.chromaRange ?? [0, 0.5],
+        'maximum': 0.5,
+        'minimum': 0,
+        'tolerance': tolerance.chroma
+      }));
     const fixedRecord = options?.fixedRecord ?? (relationship?.tolerance === undefined ? baseline : undefined);
     const hue = baseline?.oklch.h ?? options?.resolvedHue;
     const result: RoleDomainInterface = {
@@ -671,16 +683,6 @@ class ContrastFeasibilityDomain {
     return result;
   }
 
-  private static intersection(
-    authored: readonly [number, number],
-    baseline: number,
-    tolerance: number | undefined
-  ): readonly [number, number] {
-    const lower = Math.max(authored[0], baseline - (tolerance ?? 0));
-    const upper = Math.min(authored[1], baseline + (tolerance ?? 0));
-    const result: readonly [number, number] = lower <= upper ? [lower, upper] : [lower, lower];
-    return result;
-  }
   static record(
     domain: RoleDomainInterface,
     lightness: number,
@@ -1303,17 +1305,15 @@ export class ContrastFeasibility {
     baseline: readonly [number, number],
     options: CoordinateProjectionOptionsInterface
   ): readonly [number, number] {
-    const lower = Math.min(baseline[0], baseline[1]) - (options.tolerance ?? 0);
-    const upper = Math.max(baseline[0], baseline[1]) + (options.tolerance ?? 0);
     const envelope = authored ?? [options.minimum, options.maximum] as const;
-    const clampedLower = Math.max(options.minimum, envelope[0], lower);
-    const clampedUpper = Math.min(options.maximum, envelope[1], upper);
-    if (clampedLower <= clampedUpper) {
-      const result: readonly [number, number] = [clampedLower, clampedUpper];
-      return result;
-    }
-    const edge = upper < envelope[0] ? envelope[0] : envelope[1];
-    const result: readonly [number, number] = [edge, edge];
+    // Schema analysis encloses runtime baselines because seed resolution is unavailable.
+    const result = RelationshipConstraintDomain.coordinateRange({
+      'baseline': baseline,
+      'envelope': envelope,
+      'maximum': options.maximum,
+      'minimum': options.minimum,
+      'tolerance': options.tolerance
+    });
     return result;
   }
 

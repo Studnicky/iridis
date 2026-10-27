@@ -32,6 +32,25 @@ export class RelationshipConstraintDomain {
     this.tolerance = options.tolerance;
   }
 
+  static coordinateRange(options: Readonly<{
+    'baseline': readonly [number, number];
+    'envelope': readonly [number, number];
+    'maximum': number;
+    'minimum': number;
+    'tolerance': number | undefined;
+  }>): readonly [number, number] {
+    const tolerance = options.tolerance ?? 0;
+    const lower = Math.max(options.minimum, options.envelope[0], Math.min(options.baseline[0], options.baseline[1]) - tolerance);
+    const upper = Math.min(options.maximum, options.envelope[1], Math.max(options.baseline[0], options.baseline[1]) + tolerance);
+    if (lower <= upper) {
+      const result: readonly [number, number] = [lower, upper];
+      return result;
+    }
+    const edge = upper < options.envelope[0] ? options.envelope[0] : options.envelope[1];
+    const result: readonly [number, number] = [edge, edge];
+    return result;
+  }
+
   get operation(): RoleRelationshipEntity.Type['operation'] {
     const result = this.relationship.operation;
     return result;

@@ -18,6 +18,7 @@ import { ColorCoordinate } from '../../src/math/ColorCoordinate.ts';
 import { colorRecordFactory } from '../../src/math/ColorRecordFactory.ts';
 import { hueResolutionChroma } from '../../src/math/index.ts';
 import { RelationshipConstraint } from '../../src/model/RelationshipConstraint.ts';
+import { RelationshipConstraintDomain } from '../../src/model/RelationshipConstraintDomain.ts';
 import { coreTasks } from '../../src/tasks/index.ts';
 import { Metadata } from '../../src/types/metadata.ts';
 
@@ -272,6 +273,34 @@ void test('RelationshipConstraint exposes the resolved relationship domain witho
   ), true);
   assert.equal(RelationshipConstraint.limitsMovement(input, {}, 'text'), false);
   assert.deepEqual(RelationshipConstraint.relationIds(input, ['text']), ['text-from-source']);
+});
+
+void test('RelationshipConstraintDomain projects exact and tolerant coordinate envelopes', () => {
+  const exact = RelationshipConstraintDomain.coordinateRange({
+    'baseline': [0.6, 0.6],
+    'envelope': [0, 1],
+    'maximum': 1,
+    'minimum': 0,
+    'tolerance': undefined
+  });
+  const tolerant = RelationshipConstraintDomain.coordinateRange({
+    'baseline': [0.45, 0.75],
+    'envelope': [0.3, 0.8],
+    'maximum': 1,
+    'minimum': 0,
+    'tolerance': 0.1
+  });
+  const outside = RelationshipConstraintDomain.coordinateRange({
+    'baseline': [0.1, 0.2],
+    'envelope': [0.7, 0.9],
+    'maximum': 1,
+    'minimum': 0,
+    'tolerance': 0
+  });
+
+  assert.deepEqual(exact, [0.6, 0.6]);
+  assert.deepEqual(tolerant, [0.35, 0.8]);
+  assert.deepEqual(outside, [0.7, 0.7]);
 });
 
 void test('RelationshipConstraint reuses one domain for repeated calls on one graph and resolution record', () => {
