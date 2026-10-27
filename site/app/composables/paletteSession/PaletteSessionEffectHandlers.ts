@@ -1,15 +1,19 @@
+import type { ExtractionSettingsEntity } from '../entities/ExtractionSettingsEntity.ts';
+import type { ImageCombineResultEntity } from '../entities/ImageCombineResultEntity.ts';
+import type { ImageExtractionResultEntity } from '../entities/ImageExtractionResultEntity.ts';
 import type { PaletteSnapshotEntity } from '../entities/PaletteSnapshotEntity.ts';
 import type { WorkerEnvelopeEntity } from '../entities/WorkerEnvelopeEntity.ts';
-import type { WorkerMessageEntity } from '../entities/WorkerMessageEntity.ts';
 import type { WorkerReplyEntity } from '../entities/WorkerReplyEntity.ts';
 import type { WorkerHandlersInterface } from '../interfaces/WorkerHandlersInterface.ts';
 import type { PaletteSessionInputEntity } from './entities/PaletteSessionInputEntity.ts';
 import type { PaletteResolutionClientInterface } from './interfaces/PaletteResolutionClientInterface.ts';
 import type { PaletteResolutionClientProviderInterface } from './interfaces/PaletteResolutionClientProviderInterface.ts';
 import type { PaletteSessionEffectHandlersInterface } from './interfaces/PaletteSessionEffectHandlersInterface.ts';
+import type { PaletteSessionLaneFailureInterface } from './interfaces/PaletteSessionLaneFailureInterface.ts';
 import type { PaletteSessionOutcomeInterface } from './interfaces/PaletteSessionOutcomeInterface.ts';
 import type { PaletteSessionRuntime } from './PaletteSessionRuntime.ts';
 
+import { WorkerMessageEntity } from '../entities/WorkerMessageEntity.ts';
 import { PaletteSessionEvent } from './fsm/PaletteSessionEvent.ts';
 import { PaletteSessionRequest } from './PaletteSessionRequest.ts';
 
@@ -31,7 +35,7 @@ class LaneFailureHandlers implements WorkerHandlersInterface {
   }
 
   public idle(message: WorkerMessageEntity.Type): void {
-    this.#lastIdle = message.kind;
+    this.#lastIdle = message.kind === 'extract' ? `extract:${message.imageId}` : message.kind;
   }
 
   public reject(message: string): void {
@@ -42,6 +46,7 @@ class LaneFailureHandlers implements WorkerHandlersInterface {
 /** Runs palette FSM effects: one `palette` lane request per settled revision, one microtask boundary per tick. */
 export class PaletteSessionEffectHandlers implements PaletteSessionEffectHandlersInterface {
   readonly #client: PaletteResolutionClientInterface;
+  readonly #laneFailure: PaletteSessionLaneFailureInterface;
   readonly #outcome: PaletteSessionOutcomeInterface;
   readonly #runtime: PaletteSessionRuntime;
   #submitted = 0;
@@ -49,21 +54,29 @@ export class PaletteSessionEffectHandlers implements PaletteSessionEffectHandler
   public constructor(
     runtime: PaletteSessionRuntime,
     provider: PaletteResolutionClientProviderInterface,
-    outcome: PaletteSessionOutcomeInterface
+    outcome: PaletteSessionOutcomeInterface,
+    laneFailure: PaletteSessionLaneFailureInterface
   ) {
+    this.#laneFailure = laneFailure;
     this.#outcome = outcome;
     this.#runtime = runtime;
     this.#client = provider.open(new LaneFailureHandlers((lane, message) => { this.#laneFailed(lane, message); }));
   }
 
-  public async combine(input: PaletteSessionInputEntity.Type, hexes: readonly string[]): Promise<string[] | undefined> {
+  public async combine(input: PaletteSessionInputEntity.Type, hexes: readonly string[]): Promise<ImageCombineResultEntity.Type | undefined> {
     const reply = await this.#client.request(PaletteSessionRequest.combine(input, hexes));
-    const result = reply?.kind === 'combine' ? reply.result?.extracted : undefined;
+    const result = reply?.kind === 'combine' ? reply.result : undefined;
     return result;
   }
 
   public dispose(): void {
     this.#client.dispose();
+  }
+
+  public async extract(imageId: string, settings: ExtractionSettingsEntity.Type): Promise<ImageExtractionResultEntity.Type | undefined> {
+    const reply = await this.#client.request(WorkerMessageEntity.create({ 'imageId': imageId, 'kind': 'extract', 'settings': settings }));
+    const result = reply?.kind === 'extract' ? reply.result : undefined;
+    return result;
   }
 
   public fail(revision: number, correlationId: string, message: string): void {
@@ -79,6 +92,15 @@ export class PaletteSessionEffectHandlers implements PaletteSessionEffectHandler
     this.#outcome.published(revision, correlationId, input, snapshot);
   }
 
+  /** Hands an image's pixels to the engine worker; the extract lane reads them by image id. */
+  public async loadPixels(imageId: string, width: number, height: number, pixels: ArrayBuffer): Promise<void> {
+    await this.#client.request(WorkerMessageEntity.create({ 'height': height, 'imageId': imageId, 'kind': 'pixels', 'width': width }), pixels);
+  }
+
+  public async release(imageId: string): Promise<void> {
+    await this.#client.request(WorkerMessageEntity.create({ 'imageId': imageId, 'kind': 'release' }));
+  }
+
   public settle(): void {
     queueMicrotask(() => { this.#runtime.send(PaletteSessionEvent.settled()); });
   }
@@ -90,7 +112,9 @@ export class PaletteSessionEffectHandlers implements PaletteSessionEffectHandler
 
   #laneFailed(lane: string, message: string): void {
     if (lane === 'combine') {
-      this.#outcome.combineFailed(message);
+      this.#laneFailure.combineFailed(message);
+    } else if (lane.startsWith('extract:')) {
+      this.#laneFailure.extractFailed(lane.slice('extract:'.length), message);
     } else {
       this.#runtime.send(PaletteSessionEvent.failed(this.#submitted, message));
     }

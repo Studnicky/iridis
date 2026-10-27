@@ -5,28 +5,28 @@ import type {
 import { EntityCompiler } from '@studnicky/entity/browser';
 import { GalleryCandidateOutputEntity } from '@studnicky/iridis-image';
 
-const weightedHexListSchema = {
-  'items': {
-    'additionalProperties': false,
-    'properties': {
-      'hex': { 'type': 'string' },
-      'weight': { 'type': 'number' }
-    },
-    'required': ['hex', 'weight'],
-    'type': 'object'
-  },
-  'type': 'array'
-} as const;
-
 /** Stage 1 outcome for one image: its heaviest histogram bins, weighted dominant colors, and per-algorithm candidate palettes. */
 export namespace ImageExtractionResultEntity {
+  export const WeightedHexListSchema = {
+    'items': {
+      'additionalProperties': false,
+      'properties': {
+        'hex': { 'type': 'string' },
+        'weight': { 'type': 'number' }
+      },
+      'required': ['hex', 'weight'],
+      'type': 'object'
+    },
+    'type': 'array'
+  } as const;
+
   export const Schema = {
     '$id': 'https://iridis.dev/site/image-extraction-result',
     'additionalProperties': false,
     'properties': {
       'candidates': { 'items': GalleryCandidateOutputEntity.Schema, 'type': 'array' },
-      'dominantColorRecords': weightedHexListSchema,
-      'histogram': weightedHexListSchema
+      'dominantColorRecords': WeightedHexListSchema,
+      'histogram': WeightedHexListSchema
     },
     'required': [
       'candidates',

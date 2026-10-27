@@ -1,19 +1,26 @@
+import type { PaletteSessionImageEntity } from './entities/PaletteSessionImageEntity.ts';
 import type { PaletteSessionInputEntity } from './entities/PaletteSessionInputEntity.ts';
 import type { PaletteSessionReadModelEntity } from './entities/PaletteSessionReadModelEntity.ts';
 import type { PaletteResolutionClientProviderInterface } from './interfaces/PaletteResolutionClientProviderInterface.ts';
 
+import { ExtractionSettingsEntity } from '../entities/ExtractionSettingsEntity.ts';
 import { PaletteInteractionCommandEntity } from './entities/PaletteInteractionCommandEntity.ts';
 import { PaletteInteractionEnvelopeEntity } from './entities/PaletteInteractionEnvelopeEntity.ts';
 import { PaletteSessionEvent } from './fsm/PaletteSessionEvent.ts';
 import { PaletteSessionEffectHandlers } from './PaletteSessionEffectHandlers.ts';
+import { PaletteSessionImage } from './PaletteSessionImage.ts';
 import { PaletteSessionInput } from './PaletteSessionInput.ts';
+import { PaletteSessionLaneFailures } from './PaletteSessionLaneFailures.ts';
 import { PaletteSessionPublisher } from './PaletteSessionPublisher.ts';
 import { PaletteSessionRuntime } from './PaletteSessionRuntime.ts';
 
 /** One session's single source of truth: admits intents, reduces the input, resolves once per settled revision, and publishes the read model. */
 export class PaletteSessionStore {
+  #combineEpoch = 0;
   #live = true;
+  readonly #failures: PaletteSessionLaneFailures;
   readonly #handlers: PaletteSessionEffectHandlers;
+  #image: PaletteSessionImageEntity.Type;
   #input: PaletteSessionInputEntity.Type;
   readonly #publisher: PaletteSessionPublisher;
   #revision = 0;
@@ -21,9 +28,11 @@ export class PaletteSessionStore {
 
   public constructor(provider: PaletteResolutionClientProviderInterface) {
     this.#input = PaletteSessionInput.initial();
-    this.#publisher = new PaletteSessionPublisher(this.#input);
+    this.#image = PaletteSessionImage.initial();
+    this.#publisher = new PaletteSessionPublisher(this.#input, this.#image);
     this.#runtime = new PaletteSessionRuntime(this.#input);
-    this.#handlers = new PaletteSessionEffectHandlers(this.#runtime, provider, this.#publisher);
+    this.#failures = new PaletteSessionLaneFailures((command) => { this.#issue(command); });
+    this.#handlers = new PaletteSessionEffectHandlers(this.#runtime, provider, this.#publisher, this.#failures);
     this.#runtime.register(this.#handlers);
     this.#runtime.send(PaletteSessionEvent.published(0, this.#publisher.current().correlationId, this.#input));
   }
@@ -48,6 +57,12 @@ export class PaletteSessionStore {
     await this.#publisher.close();
   }
 
+  /** Hands an uploaded image's pixels to the engine worker; load them before adding the entry that extracts them. */
+  public async loadPixels(imageId: string, width: number, height: number, pixels: ArrayBuffer): Promise<void> {
+    this.#assertLive();
+    await this.#handlers.loadPixels(imageId, width, height, pixels);
+  }
+
   /** Applies a stamped envelope; only the envelope carrying the next revision is accepted. */
   public publishIntent(envelope: PaletteInteractionEnvelopeEntity.Type): void {
     this.#assertLive();
@@ -56,18 +71,19 @@ export class PaletteSessionStore {
       throw new RangeError(`Palette intent targets revision ${String(intent.revision)}, expected ${String(this.#revision + 1)}`);
     }
     const next = PaletteSessionInput.reduce(this.#input, intent.command);
+    const previousImage = this.#image;
+    const image = PaletteSessionImage.reduce(previousImage, intent.command, this.#input);
     const resolves = PaletteSessionInput.fingerprint(next) !== PaletteSessionInput.fingerprint(this.#input);
     this.#revision = intent.revision;
     this.#input = next;
+    this.#image = image;
     if (resolves) {
-      this.#publisher.resolving(intent.revision, intent.correlationId, next);
+      this.#publisher.resolving(intent.revision, intent.correlationId, next, image);
       this.#runtime.send(PaletteSessionEvent.published(intent.revision, intent.correlationId, next));
     } else {
-      this.#publisher.revised(intent.revision, intent.correlationId, next);
+      this.#publisher.revised(intent.revision, intent.correlationId, next, image);
     }
-    if (intent.command.interaction === 'palette.image.combine.request') {
-      void this.#combine(next, intent.command.payload.hexes);
-    }
+    this.#dispatchImage(previousImage, intent.command);
   }
 
   public readModel(): PaletteSessionReadModelEntity.Type {
@@ -90,14 +106,51 @@ export class PaletteSessionStore {
     }
   }
 
-  async #combine(input: PaletteSessionInputEntity.Type, hexes: readonly string[]): Promise<void> {
+  async #combine(): Promise<void> {
+    this.#combineEpoch += 1;
+    const epoch = this.#combineEpoch;
+    const hexes = PaletteSessionImage.combineHexes(this.#image);
+    if (hexes.length === 0) {
+      this.#issue({ 'interaction': 'palette.image.combine.applied', 'payload': { 'result': { 'candidates': [], 'extracted': [], 'histogram': [] } } });
+    } else {
+      try {
+        const result = await this.#handlers.combine(this.#input, hexes);
+        if (result !== undefined && epoch === this.#combineEpoch) {
+          this.#issue({ 'interaction': 'palette.image.combine.applied', 'payload': { 'result': result } });
+        }
+      } catch (error) {
+        this.#failures.combineFailed(error instanceof Error ? error.message : String(error));
+      }
+    }
+  }
+
+  #dispatchImage(previous: PaletteSessionImageEntity.Type, command: PaletteInteractionCommandEntity.Type): void {
+    const extraction = PaletteSessionImage.extractionFor(this.#image, command);
+    if (extraction !== undefined) {
+      void this.#extract(extraction.id, ExtractionSettingsEntity.intake(extraction.settings));
+    }
+    if (command.interaction === 'palette.image.entry.remove') {
+      void this.#handlers.release(command.payload.imageId);
+    }
+    if (PaletteSessionImage.requestsCombine(previous, command)) {
+      void this.#combine();
+    }
+  }
+
+  async #extract(imageId: string, settings: ExtractionSettingsEntity.Type): Promise<void> {
     try {
-      const extracted = await this.#handlers.combine(input, hexes);
-      if (extracted !== undefined && extracted.length > 0 && this.#live) {
-        this.publishIntent(this.createIntent({ 'interaction': 'palette.seeds.replace', 'payload': { 'hexes': extracted } }));
+      const result = await this.#handlers.extract(imageId, settings);
+      if (result !== undefined) {
+        this.#issue({ 'interaction': 'palette.image.entry.extracted', 'payload': { 'imageId': imageId, 'result': result } });
       }
     } catch (error) {
-      this.#publisher.combineFailed(error instanceof Error ? error.message : String(error));
+      this.#failures.extractFailed(imageId, error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  #issue(command: unknown): void {
+    if (this.#live) {
+      this.publishIntent(this.createIntent(command));
     }
   }
 }

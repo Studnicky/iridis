@@ -6,6 +6,7 @@ import { roleSchemaByName } from '../../theme/RoleSchemaByName.ts';
 import { PaletteResolveRequestEntity } from '../entities/PaletteResolveRequestEntity.ts';
 import { WorkerMessageEntity } from '../entities/WorkerMessageEntity.ts';
 import { PaletteResolve } from '../paletteResolve.ts';
+import { PaletteSessionInput } from './PaletteSessionInput.ts';
 
 /** Builds worker lane messages from the session input; role relationships come from the selected schema's own graph. */
 export class PaletteSessionRequest {
@@ -37,7 +38,7 @@ export class PaletteSessionRequest {
       'nonMandatoryLevel': input.nonMandatoryLevel,
       ...(graph === undefined ? {} : { 'relationshipGraph': graph }),
       'schemaName': input.schemaName,
-      'seeds': PaletteResolve.seeds(input.seeds.map((seed) => {
+      'seeds': PaletteResolve.seeds(PaletteSessionInput.activeSeeds(input).map((seed) => {
         const picker = { 'hex': seed.hex, 'role': seed.role };
         return picker;
       })),

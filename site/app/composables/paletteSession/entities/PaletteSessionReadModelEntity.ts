@@ -4,9 +4,10 @@ import { EntityCompiler } from '@studnicky/entity/browser';
 
 import { FramingEntity } from '../../entities/FramingEntity.ts';
 import { PaletteSnapshotEntity } from '../../entities/PaletteSnapshotEntity.ts';
+import { PaletteSessionImageEntity } from './PaletteSessionImageEntity.ts';
 import { PaletteSessionInputEntity } from './PaletteSessionInputEntity.ts';
 
-/** What consumers read: the latest input, the lifecycle status, and the newest admitted palette with its revision identity. */
+/** What consumers read: the latest input, the image-intake state, the lifecycle status, and the newest admitted palette with its revision identity. */
 export namespace PaletteSessionReadModelEntity {
   const statuses = ['failed', 'idle', 'resolving'] as const;
 
@@ -30,17 +31,19 @@ export namespace PaletteSessionReadModelEntity {
     'properties': {
       'correlationId': { 'minLength': 1, 'type': 'string' },
       'error': { 'type': 'string' },
+      'image': PaletteSessionImageEntity.Schema,
       'input': PaletteSessionInputEntity.Schema,
       'resolved': ResolvedSchema,
       'revision': { 'minimum': 0, 'type': 'integer' },
       'status': { 'enum': statuses, 'type': 'string' },
       'withheld': { 'type': 'boolean' }
     },
-    'required': ['correlationId', 'input', 'revision', 'status', 'withheld'],
+    'required': ['correlationId', 'image', 'input', 'revision', 'status', 'withheld'],
     'type': 'object'
   } as const;
 
   export type Type = NominalSchemaType<typeof Schema> & {
+    'image': PaletteSessionImageEntity.Type;
     'input': PaletteSessionInputEntity.Type;
     'resolved'?: NominalSchemaType<typeof ResolvedSchema> & { 'snapshot': PaletteSnapshotEntity.Type };
   };

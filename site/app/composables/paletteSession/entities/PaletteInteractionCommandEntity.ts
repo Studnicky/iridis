@@ -3,11 +3,12 @@ import type { CanonicalShapeType, NominalSchemaType } from '@studnicky/json-tolo
 import { EntityCompiler } from '@studnicky/entity/browser';
 
 import { CvdModeEntity } from '../../entities/CvdModeEntity.ts';
-import { ExtractionSettingsEntity } from '../../entities/ExtractionSettingsEntity.ts';
 import { FramingEntity } from '../../entities/FramingEntity.ts';
+import { ModeEntity } from '../../entities/ModeEntity.ts';
 import { NonMandatoryLevelEntity } from '../../entities/NonMandatoryLevelEntity.ts';
 import { SchemaNameEntity } from '../../entities/SchemaNameEntity.ts';
 import { ColorSpaceEntity } from './ColorSpaceEntity.ts';
+import { PaletteImageCommandEntity } from './PaletteImageCommandEntity.ts';
 import { PaletteSessionInputEntity } from './PaletteSessionInputEntity.ts';
 import { PaletteSessionSeedEntity } from './PaletteSessionSeedEntity.ts';
 
@@ -191,31 +192,18 @@ export namespace PaletteInteractionCommandEntity {
       {
         'additionalProperties': false,
         'properties': {
-          'interaction': { 'const': 'palette.image.tuning.set', 'type': 'string' },
+          'interaction': { 'const': 'palette.mode.select', 'type': 'string' },
           'payload': {
             'additionalProperties': false,
-            'properties': { 'settings': ExtractionSettingsEntity.Schema },
-            'required': ['settings'],
+            'properties': { 'mode': ModeEntity.Schema },
+            'required': ['mode'],
             'type': 'object'
           }
         },
         'required': ['interaction', 'payload'],
         'type': 'object'
       },
-      {
-        'additionalProperties': false,
-        'properties': {
-          'interaction': { 'const': 'palette.image.combine.request', 'type': 'string' },
-          'payload': {
-            'additionalProperties': false,
-            'properties': { 'hexes': hexListSchema },
-            'required': ['hexes'],
-            'type': 'object'
-          }
-        },
-        'required': ['interaction', 'payload'],
-        'type': 'object'
-      }
+      PaletteImageCommandEntity.Schema
     ]
   } as const;
 

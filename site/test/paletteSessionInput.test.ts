@@ -85,21 +85,21 @@ await test('a role pins to one seed at a time and unpins on an empty assignment'
     { 'interaction': 'palette.seed.role.assign', 'payload': { 'index': 0, 'role': 'brand' } },
     { 'interaction': 'palette.seed.role.assign', 'payload': { 'index': 1, 'role': 'brand' } }
   ]);
-  assert.deepEqual(pinned.seeds, [{ 'hex': '#000000' }, { 'hex': '#ffffff', 'role': 'brand' }]);
+  assert.deepEqual(PaletteSessionInput.activeSeeds(pinned), [{ 'hex': '#000000' }, { 'hex': '#ffffff', 'role': 'brand' }]);
   const cleared = PaletteSessionInput.reduce(pinned, PaletteInteractionCommandEntity.intake({ 'interaction': 'palette.seed.role.assign', 'payload': { 'index': 1 } }));
-  assert.deepEqual(cleared.seeds, [{ 'hex': '#000000' }, { 'hex': '#ffffff' }]);
+  assert.deepEqual(PaletteSessionInput.activeSeeds(cleared), [{ 'hex': '#000000' }, { 'hex': '#ffffff' }]);
 });
 
 await test('seed bounds hold: the last seed stays, the list caps, indexes are checked', () => {
   const single = InputHarness.apply([{ 'interaction': 'palette.seed.remove', 'payload': { 'index': 0 } }]);
-  assert.equal(single.seeds.length, 1);
+  assert.equal(PaletteSessionInput.activeSeeds(single).length, 1);
   const unchanged = PaletteSessionInput.reduce(single, PaletteInteractionCommandEntity.intake({ 'interaction': 'palette.seed.remove', 'payload': { 'index': 0 } }));
-  assert.equal(unchanged.seeds.length, 1);
+  assert.equal(PaletteSessionInput.activeSeeds(unchanged).length, 1);
   const added: unknown[] = [];
   for (let index = 0; index < 40; index += 1) {
     added.push({ 'interaction': 'palette.seed.add', 'payload': { 'hex': '#010203' } });
   }
-  assert.equal(InputHarness.apply(added).seeds.length, 32);
+  assert.equal(PaletteSessionInput.activeSeeds(InputHarness.apply(added)).length, 32);
   assert.throws(() => { InputHarness.apply([{ 'interaction': 'palette.seed.set', 'payload': { 'hex': '#010203', 'index': 9 } }]); }, RangeError);
 });
 
@@ -109,7 +109,7 @@ await test('a replacement keeps the role pinned to a surviving hex and a schema 
     { 'interaction': 'palette.seeds.replace', 'payload': { 'hexes': ['#ffffff', '#336699'] } },
     { 'interaction': 'palette.schema.select', 'payload': { 'schemaName': 'iridis-12' } }
   ]);
-  assert.deepEqual(input.seeds, [{ 'hex': '#ffffff', 'role': 'text' }, { 'hex': '#336699' }]);
+  assert.deepEqual(PaletteSessionInput.activeSeeds(input), [{ 'hex': '#ffffff', 'role': 'text' }, { 'hex': '#336699' }]);
   assert.equal(input.imageTuning.k, 12);
 });
 

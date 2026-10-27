@@ -5,18 +5,17 @@ import { EntityCompiler } from '@studnicky/entity/browser';
 import { CvdModeEntity } from '../../entities/CvdModeEntity.ts';
 import { ExtractionSettingsEntity } from '../../entities/ExtractionSettingsEntity.ts';
 import { FramingEntity } from '../../entities/FramingEntity.ts';
+import { ModeEntity } from '../../entities/ModeEntity.ts';
 import { NonMandatoryLevelEntity } from '../../entities/NonMandatoryLevelEntity.ts';
 import { SchemaNameEntity } from '../../entities/SchemaNameEntity.ts';
 import { ColorSpaceEntity } from './ColorSpaceEntity.ts';
 import { PaletteSessionSeedEntity } from './PaletteSessionSeedEntity.ts';
 
-/**
- * Everything a palette resolution derives from. Role relationships come from the
- * selected schema's own graph; a working-graph override field joins here when
- * graph-edit commands exist.
- */
+/** Everything a palette resolution derives from; `mode` selects which seed list resolves. */
 export namespace PaletteSessionInputEntity {
   export const maximumSeeds = 32;
+
+  const seedListSchema = { 'items': PaletteSessionSeedEntity.Schema, 'maxItems': maximumSeeds, 'minItems': 1, 'type': 'array' } as const;
 
   export const Schema = {
     '$id': 'https://iridis.dev/site/palette-session/input',
@@ -26,10 +25,12 @@ export namespace PaletteSessionInputEntity {
       'cvdMode': CvdModeEntity.Schema,
       'enableStrictCompliance': { 'type': 'boolean' },
       'framing': FramingEntity.Schema,
+      'imageSeeds': seedListSchema,
       'imageTuning': ExtractionSettingsEntity.Schema,
+      'mode': ModeEntity.Schema,
       'nonMandatoryLevel': NonMandatoryLevelEntity.Schema,
+      'pickerSeeds': seedListSchema,
       'schemaName': SchemaNameEntity.Schema,
-      'seeds': { 'items': PaletteSessionSeedEntity.Schema, 'maxItems': maximumSeeds, 'minItems': 1, 'type': 'array' },
       'strictness': { 'maximum': 2, 'minimum': 0, 'type': 'integer' }
     },
     'required': [
@@ -37,10 +38,12 @@ export namespace PaletteSessionInputEntity {
       'cvdMode',
       'enableStrictCompliance',
       'framing',
+      'imageSeeds',
       'imageTuning',
+      'mode',
       'nonMandatoryLevel',
+      'pickerSeeds',
       'schemaName',
-      'seeds',
       'strictness'
     ],
     'type': 'object'

@@ -1,4 +1,5 @@
 import type { PaletteSnapshotEntity } from '../entities/PaletteSnapshotEntity.ts';
+import type { PaletteSessionImageEntity } from './entities/PaletteSessionImageEntity.ts';
 import type { PaletteSessionInputEntity } from './entities/PaletteSessionInputEntity.ts';
 
 import { AccessibilityBlockers } from '../accessibilityBlockers.ts';
@@ -12,6 +13,7 @@ export class PaletteSessionReadModel {
     const result = PaletteSessionReadModelEntity.create({
       'correlationId': model.correlationId,
       'error': message,
+      'image': model.image,
       'input': model.input,
       ...PaletteSessionReadModel.resolvedOf(model),
       'revision': model.revision,
@@ -21,9 +23,10 @@ export class PaletteSessionReadModel {
     return result;
   }
 
-  public static initial(input: PaletteSessionInputEntity.Type): PaletteSessionReadModelEntity.Type {
+  public static initial(input: PaletteSessionInputEntity.Type, image: PaletteSessionImageEntity.Type): PaletteSessionReadModelEntity.Type {
     const result = PaletteSessionReadModelEntity.create({
       'correlationId': 'session',
+      'image': image,
       'input': input,
       'revision': 0,
       'status': 'resolving',
@@ -37,11 +40,13 @@ export class PaletteSessionReadModel {
     model: PaletteSessionReadModelEntity.Type,
     revision: number,
     correlationId: string,
-    input: PaletteSessionInputEntity.Type
+    input: PaletteSessionInputEntity.Type,
+    image: PaletteSessionImageEntity.Type
   ): PaletteSessionReadModelEntity.Type {
     const result = PaletteSessionReadModelEntity.create({
       'correlationId': correlationId,
       ...PaletteSessionReadModel.errorOf(model),
+      'image': image,
       'input': input,
       ...PaletteSessionReadModel.resolvedOf(model),
       'revision': revision,
@@ -71,6 +76,7 @@ export class PaletteSessionReadModel {
     };
     const result = PaletteSessionReadModelEntity.create({
       'correlationId': model.correlationId,
+      'image': model.image,
       'input': model.input,
       ...(admitted ? admittedPalette : PaletteSessionReadModel.resolvedOf(model)),
       'revision': model.revision,
@@ -85,27 +91,16 @@ export class PaletteSessionReadModel {
     model: PaletteSessionReadModelEntity.Type,
     revision: number,
     correlationId: string,
-    input: PaletteSessionInputEntity.Type
+    input: PaletteSessionInputEntity.Type,
+    image: PaletteSessionImageEntity.Type
   ): PaletteSessionReadModelEntity.Type {
     const result = PaletteSessionReadModelEntity.create({
       'correlationId': correlationId,
+      'image': image,
       'input': input,
       ...PaletteSessionReadModel.resolvedOf(model),
       'revision': revision,
       'status': 'resolving',
-      'withheld': model.withheld
-    });
-    return result;
-  }
-
-  public static withError(model: PaletteSessionReadModelEntity.Type, message: string): PaletteSessionReadModelEntity.Type {
-    const result = PaletteSessionReadModelEntity.create({
-      'correlationId': model.correlationId,
-      'error': message,
-      'input': model.input,
-      ...PaletteSessionReadModel.resolvedOf(model),
-      'revision': model.revision,
-      'status': model.status,
       'withheld': model.withheld
     });
     return result;
