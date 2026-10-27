@@ -37,6 +37,16 @@ class VscodeThemeFixture {
     return result;
   }
 
+  static strictUnresolved() {
+    const palette = VscodeThemeFixture.darkTierFour();
+    const result = {
+      ...palette,
+      'contrast': { ...palette.contrast, 'enableStrictCompliance': true },
+      'roles': { ...palette.roles, 'foreground': palette.roles.background }
+    };
+    return result;
+  }
+
   static lightTierFour() {
     const result = {
       'contrast': VscodeThemeFixture.contrast(),
@@ -170,6 +180,20 @@ await test('runVscodeTheme emits canonical dark and light VS Code theme data', (
   assert.equal(light.palette.framing, 'light');
   assert.equal(dark.palette.tier, 4);
   assert.equal(light.palette.tier, 4);
+  assert.notEqual(dark.compliance.disposition, 'withheld');
+  assert.notEqual(light.compliance.disposition, 'withheld');
+  assert.notEqual(dark.workbenchColors, undefined, 'dark theme output is available');
+  assert.notEqual(light.workbenchColors, undefined, 'light theme output is available');
+  assert.notEqual(dark.semanticTokenColors, undefined, 'dark semantic output is available');
+  assert.notEqual(light.semanticTokenColors, undefined, 'light semantic output is available');
+  if (
+    dark.workbenchColors === undefined ||
+    light.workbenchColors === undefined ||
+    dark.semanticTokenColors === undefined ||
+    light.semanticTokenColors === undefined
+  ) {
+    throw new Error('resolved VS Code theme output is absent');
+  }
   assert.equal(Object.keys(dark.workbenchColors).length, 132);
   assert.equal(Object.keys(light.workbenchColors).length, 132);
   assert.equal(Object.keys(dark.semanticTokenColors).length > 0, true);
@@ -217,6 +241,22 @@ await test('runVscodeTheme pins every tier-specific supplied role and returns co
 await test('runVscodeTheme emits only sRGB hex workbench colors', () => {
   const result = runVscodeTheme(VscodeThemeFixture.lightTierSixtyFour());
 
+  assert.notEqual(result.workbenchColors, undefined, 'resolved workbench colors are available');
+  assert.notEqual(result.theme, undefined, 'resolved theme JSON is available');
+  if (result.workbenchColors === undefined || result.theme === undefined) {
+    throw new Error('resolved VS Code theme output is absent');
+  }
   assert.equal(Object.values(result.workbenchColors).every(VscodeThemeFixture.isSrgb), true);
   assert.equal(JSON.stringify(result.theme.json).includes('display-p3'), false);
+});
+
+await test('runVscodeTheme withholds serializable output for strict unresolved contrast', () => {
+  const result = runVscodeTheme(VscodeThemeFixture.strictUnresolved());
+
+  assert.equal(result.compliance.disposition, 'withheld');
+  assert.notEqual(result.compliance.problemPairs.length, 0);
+  assert.equal(result.theme, undefined);
+  assert.equal(result.workbenchColors, undefined);
+  assert.equal(result.semanticTokenColors, undefined);
+  assert.notEqual(result.roles.foreground, undefined, 'best-achievable roles remain available for diagnostics');
 });
