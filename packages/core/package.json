@@ -79,7 +79,7 @@
     "@studnicky/json-tology": "0.27.1",
     "@studnicky/logger": "^15.2.1",
     "@studnicky/types": "^15.2.1",
-    "re2js": "^2.8.6",
+    "re2js": "^2.8.8",
     "@types/json-schema": "^7.0.15",
     "json-schema": "0.4.0"
   }
