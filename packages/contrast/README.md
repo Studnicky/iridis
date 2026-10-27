@@ -68,7 +68,7 @@ interval bounds can certify the composite.
 
 `ContrastFeasibility.analyzeSchema(schema, options)` evaluates declared pair envelopes for schema authors.
 It reports reachable, unreachable, hue-dependent, or indeterminate reachability without changing a palette.
-`ContrastFeasibility.proveRun(state)` evaluates the terminal resolved roles with the engine contrast primitives.
+`ContrastFeasibility.proveRun(state, pairKeys?)` evaluates terminal resolved roles with the engine contrast primitives. The optional `ReadonlySet<string>` limits evaluation to pair keys produced by `CompositeKey.of(foreground, background)`.
 A failing pair may carry an optional `proof` containing its required value, best actual value, shortfall, and limiting bounds.
 Fixed relationship hues produce direct proof evidence; unanchored-hue analysis keeps sampled evidence explicitly separate.
 The advisory APIs preserve the same range, gamut, pin, selected-standard, and CVD-floor constraints as compliance.

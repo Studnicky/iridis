@@ -110,6 +110,8 @@ class IridisVocab {
   readonly 'harmonyVariant' = `${this.base}harmonyVariant`;
   readonly 'hueVariantId' = `${this.base}hueVariantId`;
   readonly 'hueDegrees' = `${this.base}hueDegrees`;
+  readonly 'hueTarget' = `${this.base}hueTarget`;
+  readonly 'hueClamp' = `${this.base}hueClamp`;
   readonly 'hueOffset' = `${this.base}hueOffset`;
   readonly 'lightnessOffset' = `${this.base}lightnessOffset`;
   readonly 'chromaScale' = `${this.base}chromaScale`;

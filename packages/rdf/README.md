@@ -19,7 +19,7 @@ into range during this run.
 
 ## Relationship graph provenance
 
-An authored `relationshipGraph` is projected as linked graph, group, mode, variant, relationship, and tolerance resources. `iridis:relationshipSource` and `iridis:relationshipTarget` support reverse traversal from a source role to every derived target. A resolved role links to its `iridis:RelationshipResolution`, which identifies the authored relationship, group, selected mode, source roles, baseline and resolved colors, disposition, and any allowed deviation. Operation parameters remain queryable through their relationship resource.
+An authored `relationshipGraph` is projected as linked graph, group, mode, variant, relationship, and tolerance resources. `iridis:relationshipSource` and `iridis:relationshipTarget` support reverse traversal from a source role to every derived target. A resolved role links to its `iridis:RelationshipResolution`, which identifies the authored relationship, group, selected mode, source roles, baseline and resolved colors, disposition, and any allowed deviation. Relationship resources expose exact operation parameters; a `hue-target` relationship emits `iridis:hueTarget` and `iridis:hueClamp` as `xsd:double` literals.
 
 ## Install
 

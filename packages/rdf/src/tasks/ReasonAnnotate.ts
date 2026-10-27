@@ -276,6 +276,26 @@ class ReasonAnnotate implements TaskInterface {
     }
   }
 
+  private static emitHueOffsetParameters(
+    store: Store,
+    schemaName: string,
+    group: RoleRelationshipGroupEntity.Type,
+    relationshipNode: ReturnType<typeof DataFactory.namedNode>,
+    relationship: RoleRelationshipEntity.Type
+  ): void {
+    if (relationship.operation !== 'hue-offset') {
+      return;
+    }
+    if (relationship.degrees !== undefined) {
+      store.addQuad(DataFactory.quad(relationshipNode, DataFactory.namedNode(iridisVocab.hueDegrees), ReasonAnnotate.authoredNumber(relationship.degrees)));
+    }
+    if (relationship.variantId !== undefined) {
+      const modeId = relationship.modeId ?? group.defaultMode;
+      const variantNode = DataFactory.namedNode(Iri.harmonyVariant(schemaName, group.id, modeId, relationship.variantId));
+      store.addQuad(DataFactory.quad(relationshipNode, DataFactory.namedNode(iridisVocab.harmonyVariant), variantNode));
+    }
+  }
+
   private static emitRelationshipParameters(
     store: Store,
     schemaName: string,
@@ -284,13 +304,13 @@ class ReasonAnnotate implements TaskInterface {
     relationship: RoleRelationshipEntity.Type
   ): void {
     if (relationship.operation === 'hue-offset') {
-      if (relationship.degrees !== undefined) {
-        store.addQuad(DataFactory.quad(relationshipNode, DataFactory.namedNode(iridisVocab.hueDegrees), ReasonAnnotate.authoredNumber(relationship.degrees)));
-      }
-      if (relationship.variantId !== undefined) {
-        const modeId = relationship.modeId ?? group.defaultMode;
-        const variantNode = DataFactory.namedNode(Iri.harmonyVariant(schemaName, group.id, modeId, relationship.variantId));
-        store.addQuad(DataFactory.quad(relationshipNode, DataFactory.namedNode(iridisVocab.harmonyVariant), variantNode));
+      ReasonAnnotate.emitHueOffsetParameters(store, schemaName, group, relationshipNode, relationship);
+      return;
+    }
+    if (relationship.operation === 'hue-target') {
+      store.addQuad(DataFactory.quad(relationshipNode, DataFactory.namedNode(iridisVocab.hueTarget), ReasonAnnotate.authoredNumber(relationship.hue)));
+      if (relationship.clamp !== undefined) {
+        store.addQuad(DataFactory.quad(relationshipNode, DataFactory.namedNode(iridisVocab.hueClamp), ReasonAnnotate.authoredNumber(relationship.clamp)));
       }
       return;
     }
