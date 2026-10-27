@@ -1,12 +1,13 @@
-import type { RoleSchemaEntity } from '@studnicky/iridis/model';
+import type { RoleSchemaEntity } from '@studnicky/iridis';
 
-import { RelationshipSources } from '@studnicky/iridis/model';
+import { RoleRelationshipEntity } from '@studnicky/iridis';
 
 import type { RoleHexMapType } from '~/composables/types/index.ts';
 import type { RoleSortKeyType } from '~/composables/types/roleSortKeyType.ts';
 import type { RoleSortFieldBehaviorInterface } from '~/utils/roleSortFieldBehaviorInterface.ts';
 
 import { RoleSortableRowEntity } from '~/composables/entities/RoleSortableRowEntity.ts';
+import { RelationshipSource } from '~/composables/RelationshipSource.ts';
 import { sortRoleRows } from '~/utils/sortRoleRows.ts';
 
 class SchemaTreeLeaf {
@@ -52,8 +53,8 @@ class SchemaTreeTier {
 }
 
 export const buildSchemaTree = class SchemaTreeBuilder {
-  private static relationshipSources(schema: RoleSchemaEntity.Type): ReadonlyMap<string, string> {
-    const sources = new Map<string, string>();
+  private static relationshipSources(schema: RoleSchemaEntity.Type): ReadonlyMap<string, string | undefined> {
+    const sources = new Map<string, string | undefined>();
     const groups = schema.relationshipGraph?.groups ?? [];
     for (let groupIndex = 0; groupIndex < groups.length; groupIndex += 1) {
       const relationships = groups[groupIndex]?.relationships ?? [];
@@ -62,8 +63,7 @@ export const buildSchemaTree = class SchemaTreeBuilder {
         if (relationship === undefined) {
           continue;
         }
-        const names = RelationshipSources.names(relationship);
-        sources.set(relationship.target, names.length === 0 ? relationship.target : names.join(' + '));
+        sources.set(relationship.target, RelationshipSource.label(RoleRelationshipEntity.intake(relationship)));
       }
     }
     return sources;

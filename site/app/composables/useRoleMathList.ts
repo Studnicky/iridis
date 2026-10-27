@@ -1,12 +1,11 @@
-import type { RoleSchemaEntity } from '@studnicky/iridis';
-
-import { colorRecordFactory, RelationshipSources, RoleDefinitionEntity, RoleRelationshipEntity } from '@studnicky/iridis';
+import { colorRecordFactory, RoleDefinitionEntity, RoleRelationshipEntity } from '@studnicky/iridis';
 import { computed } from 'vue';
 
 import type { RoleMathCandidateType } from '~/composables/types/roleMathCandidateType.ts';
 import type { RoleMathEntry } from '~/composables/types/roleMathEntry.ts';
 
 import { RoleSortableRowEntity } from '~/composables/entities/RoleSortableRowEntity.ts';
+import { RelationshipSource } from '~/composables/RelationshipSource.ts';
 import { roleSchemaFor } from '~/composables/roleSchemaFor.ts';
 import { RoleMathCandidatePresentation } from '~/composables/types/RoleMathCandidatePresentation.ts';
 import { RoleMathOrigin } from '~/composables/types/roleMathOrigin.ts';
@@ -18,13 +17,6 @@ import { minimumRatioForRole } from '~/utils/minimumRatioForRole.ts';
 import { sortRoleRows } from '~/utils/sortRoleRows.ts';
 
 class UseRoleMathListOperation {
-  private static relationshipSourceName(
-    relationship: NonNullable<RoleSchemaEntity.Type['relationshipGraph']>['groups'][number]['relationships'][number] | undefined
-  ): string | undefined {
-    const result = relationship === undefined ? undefined : RelationshipSources.names(relationship)[0];
-    return result;
-  }
-
   static run() {
     const { framing, roleClamps, roleDistances, roles, roleSortKeys, rolesPinned, rolesSynthesized, schemaName } = useIridis();
 
@@ -33,14 +25,14 @@ class UseRoleMathListOperation {
       const selected = framing.value === 'dark' ? pair.dark : pair.light;
       const schema = roleSchemaFor(selected);
       const roleDefs = schema.roles ?? [];
-      const relationshipsByTarget = new Map<string, NonNullable<RoleSchemaEntity.Type['relationshipGraph']>['groups'][number]['relationships'][number]>();
+      const relationshipsByTarget = new Map<string, RoleRelationshipEntity.Type>();
       const relationshipGroups = schema.relationshipGraph?.groups ?? [];
       for (let groupIndex = 0; groupIndex < relationshipGroups.length; groupIndex += 1) {
         const relationships = relationshipGroups[groupIndex]?.relationships ?? [];
         for (let relationshipIndex = 0; relationshipIndex < relationships.length; relationshipIndex += 1) {
           const relationship = relationships[relationshipIndex];
           if (relationship !== undefined) {
-            relationshipsByTarget.set(relationship.target, relationship);
+            relationshipsByTarget.set(relationship.target, RoleRelationshipEntity.intake(relationship));
           }
         }
       }
@@ -88,7 +80,7 @@ class UseRoleMathListOperation {
 
         const def = roleDefinitionsByName.get(roleName);
 
-        const parentRole = UseRoleMathListOperation.relationshipSourceName(relationship);
+        const parentRole = RelationshipSource.primary(relationship);
         // roleName comes from Object.keys(roles.value) itself, so this lookup
         // can never miss — never a hardcoded placeholder.
         const hex = roles.value[roleName]!;
@@ -116,7 +108,7 @@ class UseRoleMathListOperation {
           'parentRole': parentRole,
           'pinnedSeedHex': origin.isPinned() ? (clamp?.seedHex.toLowerCase() ?? null) : null,
           'ratio': ratio,
-          'relationship': relationship === undefined ? null : RoleRelationshipEntity.intake(relationship)
+          'relationship': relationship ?? null
         };
       });
 
