@@ -7,6 +7,7 @@ import { PaletteResolveRequestEntity } from '../app/composables/entities/Palette
 import { PaletteSnapshotEntity } from '../app/composables/entities/PaletteSnapshotEntity.ts';
 import { PaletteResolve } from '../app/composables/paletteResolve.ts';
 import { roleSchemaByName } from '../app/theme/RoleSchemaByName.ts';
+import { ThemeRegistrationEntity } from '../app/theme/ThemeRegistrationEntity.ts';
 import { Tokens } from '../app/theme/Tokens.ts';
 import { PaletteResolveFixture } from './fixtures/PaletteResolveFixture.ts';
 
@@ -115,10 +116,11 @@ await test('output-enabled snapshots intake canonical VS Code themes for every s
         'schemaName': schemaName
       });
       const snapshot = PaletteResolve.run(request);
-      const description = `${schemaName} ${framing}`;
-      assert.notEqual(snapshot.vscodeTheme, undefined, `${description} emits a VS Code theme`);
+      const snapshotLabel = [schemaName, framing].join(' ');
+      assert.notEqual(snapshot.vscodeTheme, undefined, `${snapshotLabel} emits a VS Code theme`);
+      assert.deepEqual(ThemeRegistrationEntity.intake(snapshot.vscodeTheme), snapshot.vscodeTheme, `${snapshotLabel} registers its canonical VS Code theme with Shiki`);
       const restored = PaletteSnapshotEntity.intake(JSON.parse(JSON.stringify(snapshot)));
-      assert.deepEqual(restored.vscodeTheme, snapshot.vscodeTheme, `${description} restores its canonical VS Code theme`);
+      assert.deepEqual(restored.vscodeTheme, snapshot.vscodeTheme, `${snapshotLabel} restores its canonical VS Code theme`);
     }
   }
 });

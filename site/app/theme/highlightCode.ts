@@ -2,6 +2,7 @@ import type { HighlighterGeneric } from 'shiki';
 
 import { createHighlighter } from 'shiki';
 import { createJavaScriptRegexEngine } from 'shiki/engine/javascript';
+import { toRaw } from 'vue';
 
 import { SUPPORTED_LANGS } from './supportedLangs.ts';
 import { ThemeRegistrationEntity } from './ThemeRegistrationEntity.ts';
@@ -27,7 +28,7 @@ class Highlighter {
 /** Highlights code using the live VS Code theme emitted by Iridis. */
 class HighlightCodeOperation {
   static async run(code: string, language: string, theme: object): Promise<string> {
-    const registration = ThemeRegistrationEntity.intake(theme);
+    const registration = ThemeRegistrationEntity.intake(toRaw(theme));
     const highlighter = await Highlighter.get();
     const html = highlighter.codeToHtml(code, {
       'lang': language,

@@ -56,6 +56,14 @@ await test('renders the nameless site theme shape and a named dark theme through
   assert.equal(HighlightCodeFixture.darkTheme.tokenColors.length, darkRuleCount);
 });
 
+await test('normalizes reactive VS Code themes before Shiki intake', async () => {
+  const theme = VueModule.reactive(HighlightCodeFixture.darkTheme);
+
+  assert.equal(VueModule.isReactive(theme), true);
+  const html = await highlightCode('if (answer) {}', 'javascript', theme);
+  assert.equal(html.includes('background-color:#121212'), true);
+});
+
 await test('colors keywords however long the tokenizer takes', async (context) => {
   let clock = 0;
   context.mock.method(Date, 'now', () => {

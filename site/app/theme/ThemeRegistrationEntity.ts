@@ -3,25 +3,21 @@ import type { ThemeRegistration } from 'shiki';
 
 import { EntityCompiler } from '@studnicky/entity/browser';
 
-/** Validates the subset of VS Code theme JSON registered with Shiki. */
+import { VscodeThemeJsonEntity } from '../composables/entities/VscodeThemeJsonEntity.ts';
+
+/** Validates the canonical VS Code theme JSON passed to Shiki. */
 export namespace ThemeRegistrationEntity {
   export const Schema = {
     '$id': 'https://iridis.dev/site/shiki-theme-registration',
     'additionalProperties': false,
     'properties': {
-      'colors': { 'additionalProperties': { 'type': 'string' }, 'type': 'object' },
-      'name': { 'type': 'string' },
+      ...VscodeThemeJsonEntity.Schema.properties,
       'tokenColors': {
         'items': {
           'additionalProperties': true,
           'properties': {
             'name': { 'type': 'string' },
-            'scope': {
-              'anyOf': [
-                { 'type': 'string' },
-                { 'items': { 'type': 'string' }, 'type': 'array' }
-              ]
-            },
+            'scope': { 'anyOf': [{ 'type': 'string' }, { 'items': { 'type': 'string' }, 'type': 'array' }] },
             'settings': {
               'additionalProperties': true,
               'properties': {
@@ -35,8 +31,7 @@ export namespace ThemeRegistrationEntity {
           'type': 'object'
         },
         'type': 'array'
-      },
-      'type': { 'enum': ['dark', 'light', 'hc-dark', 'hc-light'], 'type': 'string' }
+      }
     },
     'required': [],
     'type': 'object'
