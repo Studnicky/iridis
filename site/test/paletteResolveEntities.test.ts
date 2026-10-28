@@ -95,6 +95,34 @@ await test('palette input carries the schema-authored VS Code bridge for its sel
   assert.deepEqual(input.metadata?.['vscode:roleBridge'], roleSchemaByName['iridis-16'].vscodeRoleBridge.light);
 });
 
+await test('output-enabled snapshots intake canonical VS Code themes for every schema and framing', () => {
+  const schemaNames = Object.keys(roleSchemaByName);
+  const framings = ['dark', 'light'] as const;
+  for (let schemaIndex = 0; schemaIndex < schemaNames.length; schemaIndex += 1) {
+    const schemaName = schemaNames[schemaIndex];
+    if (schemaName === undefined) {
+      throw new Error('Schema name is required.');
+    }
+    for (let framingIndex = 0; framingIndex < framings.length; framingIndex += 1) {
+      const framing = framings[framingIndex];
+      if (framing === undefined) {
+        throw new Error('Framing is required.');
+      }
+      const request = PaletteResolveRequestEntity.create({
+        ...PaletteResolveFixture.request(),
+        'enableOutputs': true,
+        'framing': framing,
+        'schemaName': schemaName
+      });
+      const snapshot = PaletteResolve.run(request);
+      const description = `${schemaName} ${framing}`;
+      assert.notEqual(snapshot.vscodeTheme, undefined, `${description} emits a VS Code theme`);
+      const restored = PaletteSnapshotEntity.intake(JSON.parse(JSON.stringify(snapshot)));
+      assert.deepEqual(restored.vscodeTheme, snapshot.vscodeTheme, `${description} restores its canonical VS Code theme`);
+    }
+  }
+});
+
 await test('palette resolution supplies distinct monotonic tonal scales to every Nuxt alias', () => {
   const request = PaletteResolveRequestEntity.create(PaletteResolveFixture.request());
   const snapshot = PaletteResolve.run(request);
