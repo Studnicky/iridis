@@ -169,6 +169,9 @@ export class Engine implements EngineInterface {
    */
   private readonly metadataSchemas: Map<string, JsonSchemaObjectType> = new Map();
 
+  /** Plugin input-metadata slots validated before pipeline tasks run. */
+  private readonly inputMetadataSchemas: Map<string, JsonSchemaObjectType> = new Map();
+
   /**
    * Registers every task and math primitive a plugin contributes in a
    * single call. Idempotent at the registry level: re-adopting a plugin
@@ -246,6 +249,9 @@ export class Engine implements EngineInterface {
       return;
     }
     const contribution = plugin.schemas();
+    if (contribution.inputMetadata !== undefined) {
+      this.registerSchemaSlots(plugin.name, JsonValue.from(contribution.inputMetadata), this.inputMetadataSchemas, 'input metadata');
+    }
     if (contribution.outputs !== undefined) {
       this.registerSchemaSlots(plugin.name, JsonValue.from(contribution.outputs), this.outputSchemas, 'outputs');
     }
@@ -431,6 +437,11 @@ export class Engine implements EngineInterface {
         }
       }
     }
+    this.validatePluginSlots(
+      this.inputMetadataSchemas,
+      InputJsonRecord.admit(input.metadata, 'metadata') ?? {},
+      'input.metadata'
+    );
     this.validateContrastPairBounds(input);
   }
 

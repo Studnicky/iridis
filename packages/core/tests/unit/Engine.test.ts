@@ -911,3 +911,61 @@ void test('Engine :: cell-8 :: schema.run :: happy :: conforming output and meta
     '[cell=8, scenario=good] output slot accessible after valid run'
   );
 });
+
+class InputMetadataScenario {
+  static readonly state = { 'taskRan': false };
+
+  static plugin(): PluginInterface {
+    return {
+      'name': 'input-metadata-validator-plugin',
+      'schemas': InputMetadataScenario.schemas,
+      'tasks': InputMetadataScenario.tasks,
+      'version': '0.1.0'
+    };
+  }
+
+  static schemas(): ReturnType<Exclude<PluginInterface['schemas'], undefined>> {
+    return {
+      'inputMetadata': {
+        'bridge': {
+          'properties': { 'framing': { 'enum': ['dark', 'light'] } },
+          'required': ['framing'],
+          'type': 'object'
+        }
+      }
+    };
+  }
+
+  static tasks(): readonly TaskInterface[] {
+    return [{
+      'manifest': TaskManifestEntity.create({ 'name': 'task:input-metadata' }),
+      'name': 'task:input-metadata',
+      'run': InputMetadataScenario.run
+    }];
+  }
+
+  static run(): void {
+    InputMetadataScenario.state.taskRan = true;
+  }
+}
+
+void test('Engine :: input metadata schema rejects invalid plugin metadata before a task runs', () => {
+  const engine = new Engine();
+  InputMetadataScenario.state.taskRan = false;
+  engine.adopt(InputMetadataScenario.plugin());
+  engine.pipeline(['task:input-metadata']);
+
+  assert.throws(
+    () => {
+      engine.run(InputEntity.create({
+        'colors': [],
+        'metadata': { 'bridge': { 'framing': 'unsupported' } }
+      }));
+    },
+    (error: Error) => {
+      assert.ok(error.message.includes("input.metadata['bridge']"));
+      return true;
+    }
+  );
+  assert.equal(InputMetadataScenario.state.taskRan, false);
+});
