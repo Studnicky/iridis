@@ -32,6 +32,7 @@ export class PaletteSessionInteraction {
     'palette.cvd-mode.select',
     'palette.non-mandatory-level.select',
     'palette.mode.select',
+    'palette.relationship.mode.select',
     'palette.image.tuning.set'
   ] as const;
 

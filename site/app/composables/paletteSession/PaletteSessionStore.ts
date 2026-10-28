@@ -1,8 +1,11 @@
+import type { PaletteSnapshotEntity } from '../entities/PaletteSnapshotEntity.ts';
 import type { PaletteSessionImageEntity } from './entities/PaletteSessionImageEntity.ts';
 import type { PaletteSessionInputEntity } from './entities/PaletteSessionInputEntity.ts';
 import type { PaletteSessionReadModelEntity } from './entities/PaletteSessionReadModelEntity.ts';
 import type { PaletteResolutionClientProviderInterface } from './interfaces/PaletteResolutionClientProviderInterface.ts';
 
+import { keyedDebounce } from '../../utils/keyedDebounce.ts';
+import { PALETTE_SESSION_CONSTANTS } from '../constants/PALETTE_SESSION_CONSTANTS.ts';
 import { ExtractionSettingsEntity } from '../entities/ExtractionSettingsEntity.ts';
 import { PaletteInteractionCommandEntity } from './entities/PaletteInteractionCommandEntity.ts';
 import { PaletteInteractionEnvelopeEntity } from './entities/PaletteInteractionEnvelopeEntity.ts';
@@ -19,6 +22,7 @@ export class PaletteSessionStore {
   #combineEpoch = 0;
   #live = true;
   readonly #failures: PaletteSessionLaneFailures;
+  readonly #feasibility = keyedDebounce<string>(() => { void this.#checkFeasibility(); }, PALETTE_SESSION_CONSTANTS.FEASIBILITY_DEBOUNCE_MS);
   readonly #handlers: PaletteSessionEffectHandlers;
   #image: PaletteSessionImageEntity.Type;
   #input: PaletteSessionInputEntity.Type;
@@ -35,6 +39,7 @@ export class PaletteSessionStore {
     this.#handlers = new PaletteSessionEffectHandlers(this.#runtime, provider, this.#publisher, this.#failures);
     this.#runtime.register(this.#handlers);
     this.#runtime.send(PaletteSessionEvent.published(0, this.#publisher.current().correlationId, this.#input));
+    this.#feasibility.schedule(PALETTE_SESSION_CONSTANTS.FEASIBILITY_KEY);
   }
 
   /** Admits a raw command and stamps it with the next revision; `publishIntent` applies the stamped envelope. */
@@ -52,9 +57,18 @@ export class PaletteSessionStore {
 
   public async dispose(): Promise<void> {
     this.#live = false;
+    this.#feasibility.cancel(PALETTE_SESSION_CONSTANTS.FEASIBILITY_KEY);
     this.#runtime.dispose();
     this.#handlers.dispose();
     await this.#publisher.close();
+  }
+
+  /** Seeds the read model with a palette resolved elsewhere (the server render) before the first local resolution lands. */
+  public hydrate(snapshot: PaletteSnapshotEntity.Type): void {
+    this.#assertLive();
+    if (this.#revision === 0 && this.#publisher.current().resolved === undefined) {
+      this.#publisher.published(0, this.#publisher.current().correlationId, this.#input, snapshot);
+    }
   }
 
   /** Hands an uploaded image's pixels to the engine worker; load them before adding the entry that extracts them. */
@@ -74,6 +88,7 @@ export class PaletteSessionStore {
     const previousImage = this.#image;
     const image = PaletteSessionImage.reduce(previousImage, intent.command, this.#input);
     const resolves = PaletteSessionInput.fingerprint(next) !== PaletteSessionInput.fingerprint(this.#input);
+    const checksFeasibility = PaletteSessionInput.feasibilityFingerprint(next) !== PaletteSessionInput.feasibilityFingerprint(this.#input);
     this.#revision = intent.revision;
     this.#input = next;
     this.#image = image;
@@ -84,6 +99,9 @@ export class PaletteSessionStore {
       this.#publisher.revised(intent.revision, intent.correlationId, next, image);
     }
     this.#dispatchImage(previousImage, intent.command);
+    if (checksFeasibility) {
+      this.#feasibility.schedule(PALETTE_SESSION_CONSTANTS.FEASIBILITY_KEY);
+    }
   }
 
   public readModel(): PaletteSessionReadModelEntity.Type {
@@ -103,6 +121,16 @@ export class PaletteSessionStore {
   #assertLive(): void {
     if (!this.#live) {
       throw new Error('The palette session is disposed');
+    }
+  }
+
+  async #checkFeasibility(): Promise<void> {
+    if (this.#live) {
+      try {
+        await this.#handlers.feasibility(this.#input);
+      } catch (error) {
+        this.#publisher.feasibilityFailed(error instanceof Error ? error.message : String(error));
+      }
     }
   }
 

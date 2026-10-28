@@ -10,8 +10,9 @@ import { NonMandatoryLevelEntity } from '../../entities/NonMandatoryLevelEntity.
 import { SchemaNameEntity } from '../../entities/SchemaNameEntity.ts';
 import { ColorSpaceEntity } from './ColorSpaceEntity.ts';
 import { PaletteSessionSeedEntity } from './PaletteSessionSeedEntity.ts';
+import { RelationshipModeSelectionEntity } from './RelationshipModeSelectionEntity.ts';
 
-/** Everything a palette resolution derives from; `mode` selects which seed list resolves. */
+/** Everything a palette resolution derives from; `mode` selects which seed list resolves and `relationshipModes` the chosen mode per relationship group. */
 export namespace PaletteSessionInputEntity {
   export const maximumSeeds = 32;
 
@@ -30,6 +31,7 @@ export namespace PaletteSessionInputEntity {
       'mode': ModeEntity.Schema,
       'nonMandatoryLevel': NonMandatoryLevelEntity.Schema,
       'pickerSeeds': seedListSchema,
+      'relationshipModes': { 'items': RelationshipModeSelectionEntity.Schema, 'type': 'array' },
       'schemaName': SchemaNameEntity.Schema,
       'strictness': { 'maximum': 2, 'minimum': 0, 'type': 'integer' }
     },
@@ -43,6 +45,7 @@ export namespace PaletteSessionInputEntity {
       'mode',
       'nonMandatoryLevel',
       'pickerSeeds',
+      'relationshipModes',
       'schemaName',
       'strictness'
     ],

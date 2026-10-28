@@ -203,6 +203,20 @@ export namespace PaletteInteractionCommandEntity {
         'required': ['interaction', 'payload'],
         'type': 'object'
       },
+      {
+        'additionalProperties': false,
+        'properties': {
+          'interaction': { 'const': 'palette.relationship.mode.select', 'type': 'string' },
+          'payload': {
+            'additionalProperties': false,
+            'properties': { 'groupId': { 'minLength': 1, 'type': 'string' }, 'modeId': { 'minLength': 1, 'type': 'string' } },
+            'required': ['groupId', 'modeId'],
+            'type': 'object'
+          }
+        },
+        'required': ['interaction', 'payload'],
+        'type': 'object'
+      },
       PaletteImageCommandEntity.Schema
     ]
   } as const;

@@ -13,6 +13,7 @@ import { schemaRoleCount } from '../schemaRoleCount.ts';
 import { PaletteSessionInputEntity } from './entities/PaletteSessionInputEntity.ts';
 import { PaletteSessionSeedEntity } from './entities/PaletteSessionSeedEntity.ts';
 import { PaletteSessionInteraction } from './PaletteSessionInteraction.ts';
+import { PaletteSessionRelationshipGraph } from './PaletteSessionRelationshipGraph.ts';
 
 /** Reduces admitted commands onto the input model; every result is a fresh, schema-checked input. */
 export class PaletteSessionInput {
@@ -25,7 +26,21 @@ export class PaletteSessionInput {
       input.framing,
       input.nonMandatoryLevel,
       input.schemaName,
+      PaletteSessionInput.relationshipIdentity(input),
       PaletteSessionInput.activeSeeds(input),
+      input.strictness
+    ]);
+    return result;
+  }
+
+  /** Identity of the fields a schema-feasibility check derives from; framing, colour space, and seeds do not participate. */
+  public static feasibilityFingerprint(input: PaletteSessionInputEntity.Type): string {
+    const result = JSON.stringify([
+      input.cvdMode,
+      input.enableStrictCompliance,
+      input.nonMandatoryLevel,
+      PaletteSessionInput.relationshipIdentity(input),
+      input.schemaName,
       input.strictness
     ]);
     return result;
@@ -57,6 +72,7 @@ export class PaletteSessionInput {
       'mode': ModeEntity.intake('picker'),
       'nonMandatoryLevel': NonMandatoryLevelEntity.defaultValue,
       'pickerSeeds': PaletteSessionInput.defaultSeeds(),
+      'relationshipModes': [],
       'schemaName': schemaName,
       'strictness': 2
     });
@@ -81,6 +97,20 @@ export class PaletteSessionInput {
     return result;
   }
 
+  /** The selected modes ordered by group, so equal selections share one identity. */
+  private static relationshipIdentity(input: PaletteSessionInputEntity.Type): string[][] {
+    const result = input.relationshipModes
+      .map((entry) => {
+        const pair = [entry.groupId, entry.modeId];
+        return pair;
+      })
+      .sort((left, right) => {
+        const order = (left[0] ?? '').localeCompare(right[0] ?? '');
+        return order;
+      });
+    return result;
+  }
+
   private static reduceSeed(input: PaletteSessionInputEntity.Type, command: PaletteSessionFamilyCommandType<typeof PaletteSessionInteraction.seedInteractions>): PaletteSessionInputEntity.Type {
     let result: PaletteSessionInputEntity.Type;
     if (command.interaction === 'palette.seed.set') {
@@ -101,7 +131,10 @@ export class PaletteSessionInput {
     let result: PaletteSessionInputEntity.Type;
     if (command.interaction === 'palette.schema.select') {
       const imageTuning = ExtractionSettingsEntity.intake({ ...input.imageTuning, 'k': schemaRoleCount(command.payload.schemaName) });
-      result = PaletteSessionInputEntity.intake({ ...input, 'imageTuning': imageTuning, 'schemaName': command.payload.schemaName });
+      result = PaletteSessionInputEntity.intake({ ...input, 'imageTuning': imageTuning, 'relationshipModes': [], 'schemaName': command.payload.schemaName });
+    } else if (command.interaction === 'palette.relationship.mode.select') {
+      const relationshipModes = PaletteSessionRelationshipGraph.select(input, command.payload.groupId, command.payload.modeId);
+      result = PaletteSessionInputEntity.intake({ ...input, 'relationshipModes': relationshipModes });
     } else if (command.interaction === 'palette.framing.select') {
       result = PaletteSessionInputEntity.intake({ ...input, 'framing': command.payload.framing });
     } else if (command.interaction === 'palette.color-space.select') {

@@ -1,3 +1,5 @@
+import type { ContrastFeasibilityReportEntity } from '@studnicky/iridis-contrast';
+
 import { EventBus } from '@studnicky/event-bus/browser';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/browser';
 
@@ -35,6 +37,18 @@ export class PaletteSessionPublisher implements PaletteSessionOutcomeInterface {
   public failed(_revision: number, _correlationId: string, message: string): void {
     this.#publish(PaletteSessionReadModel.failed(this.#model, message));
     this.#release();
+  }
+
+  public feasibilityChecking(): void {
+    this.#publish(PaletteSessionReadModel.feasibilityChecking(this.#model));
+  }
+
+  public feasibilityFailed(message: string): void {
+    this.#publish(PaletteSessionReadModel.feasibilityFailed(this.#model, message));
+  }
+
+  public feasibilityReported(report: ContrastFeasibilityReportEntity.Type): void {
+    this.#publish(PaletteSessionReadModel.feasibilityReported(this.#model, report));
   }
 
   public published(
