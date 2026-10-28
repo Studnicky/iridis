@@ -18,6 +18,7 @@ export class DefaultThemeCss {
   private static readonly parameters = {
     'colorSpace': 'srgb',
     'cvdMode': CvdModeEntity.defaultValue,
+    'enableOutputs': false,
     'enableStrictCompliance': false,
     'nonMandatoryLevel': NonMandatoryLevelEntity.defaultValue,
     'schemaName': SchemaNameEntity.defaultValue,

@@ -5,6 +5,8 @@ import type {
 import { EntityCompiler } from '@studnicky/entity/browser';
 import { ComplianceReportEntity, CvdResultSetEntity } from '@studnicky/iridis-contrast';
 
+import { OutputRowsEntity } from './OutputRowsEntity.ts';
+
 const hexMapSchema = {
   'additionalProperties': { 'type': 'string' },
   'type': 'object'
@@ -107,6 +109,7 @@ export namespace PaletteSnapshotEntity {
         },
         'type': 'object'
       },
+      'outputs': OutputRowsEntity.Schema,
       'provenance': provenanceSchema,
       'roles': {
         'items': roleSchema,

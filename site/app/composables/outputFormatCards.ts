@@ -2,8 +2,8 @@ import type { CarouselCardType } from './types/carouselCardType.ts';
 
 /**
  * Stable keys for every output format the engine has a real emit plugin for —
- * one Stylesheets-stage carousel card per format (see OutputFormatCard.vue /
- * useMultiOutput.ts), in the same fixed order the pipeline always emits them.
+ * one Stylesheets-stage carousel card per format (see OutputFormatCard.vue),
+ * in OutputKeyEntity order.
  */
 export const OUTPUT_FORMAT_CARDS: readonly CarouselCardType[] = [
   { 'key': 'output-cssVars', 'label': 'CSS variables' },

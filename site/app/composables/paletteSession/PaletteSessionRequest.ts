@@ -33,6 +33,7 @@ export class PaletteSessionRequest {
     const request = PaletteResolveRequestEntity.create({
       'colorSpace': input.colorSpace,
       'cvdMode': input.cvdMode,
+      'enableOutputs': true,
       'enableStrictCompliance': input.enableStrictCompliance,
       'framing': input.framing,
       'nonMandatoryLevel': input.nonMandatoryLevel,

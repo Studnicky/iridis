@@ -191,7 +191,7 @@ function stepLabel(currentId: string | undefined, delta: 1 | -1): string | undef
   return target === undefined ? undefined : destinationLabel(target);
 }
 
-/** Strips the 'output-' prefix OUTPUT_FORMAT_CARDS keys share, matching useMultiOutput()'s outputsByKey keys. */
+/** Strips the 'output-' prefix OUTPUT_FORMAT_CARDS keys share, matching useIridis()'s outputsByKey keys. */
 function outputFormatKey(itemKey: string): string {
   return itemKey.replace(/^output-/, '');
 }

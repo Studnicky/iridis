@@ -10,6 +10,7 @@ import type { PaletteResolutionClientProviderInterface } from '../app/composable
 import { PaletteSessionComposition } from '../app/composables/paletteSession/PaletteSessionComposition.ts';
 import { WorkerRequestClient } from '../app/composables/workerRequestClient.ts';
 import { LoopbackWorkerPort } from './fixtures/LoopbackWorkerPort.ts';
+import { RdfRunIdentifier } from './fixtures/RdfRunIdentifier.ts';
 
 class LoopbackProvider implements PaletteResolutionClientProviderInterface {
   public open(handlers: WorkerHandlersInterface): PaletteResolutionClientInterface {
@@ -69,7 +70,7 @@ await test('the server path yields the same read model as the worker path', asyn
   await Promise.all([server.settled(), client.settled()]);
   assert.equal(server.readModel().status, 'idle');
   assert.ok(server.readModel().resolved !== undefined);
-  assert.deepEqual(server.readModel(), client.readModel());
+  assert.equal(RdfRunIdentifier.mask(JSON.stringify(server.readModel())), RdfRunIdentifier.mask(JSON.stringify(client.readModel())));
   await Promise.all([server.dispose(), client.dispose()]);
 });
 

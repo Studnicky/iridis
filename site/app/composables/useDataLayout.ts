@@ -1,7 +1,7 @@
 /**
  * Selects the active theme's presentation layout for components that render
- * palette data. useIridis and useMultiOutput resolve and publish that data;
- * this composable selects only the container strategy.
+ * palette data. useIridis resolves and publishes that data; this composable
+ * selects only the container strategy.
  */
 import * as VueModule from 'vue';
 

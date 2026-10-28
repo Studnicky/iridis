@@ -14,6 +14,7 @@ import { ContrastConfigFor } from './contrastConfigFor.ts';
 import { createColorEngine } from './createColorEngine.ts';
 import { ContrastConfigOptionsEntity } from './entities/ContrastConfigOptionsEntity.ts';
 import { PaletteSnapshotEntity } from './entities/PaletteSnapshotEntity.ts';
+import { OutputRows } from './outputRows.ts';
 import { PaletteMetadata } from './paletteMetadata.ts';
 import { pickerSeedInputs } from './pickerSeedInputs.ts';
 import { roleSchemaFor } from './roleSchemaFor.ts';
@@ -118,9 +119,11 @@ export class PaletteResolve {
 
   public static run(request: PaletteResolveRequestEntity.Type): PaletteSnapshotEntity.Type {
     const engine = createColorEngine();
-    engine.pipeline(COLOR_PIPELINE);
+    if (request.enableOutputs) {OutputRows.adopt(engine);}
+    engine.pipeline(request.enableOutputs ? [...COLOR_PIPELINE, ...OutputRows.tasks] : COLOR_PIPELINE);
     const state = engine.run(PaletteResolve.input(request));
-    const result = PaletteResolve.snapshot(state);
+    const outputs = request.enableOutputs ? PaletteResolve.record(OutputRows.build(state.outputs)) : void 0;
+    const result = PaletteResolve.snapshot(state, outputs);
     return result;
   }
 
@@ -145,7 +148,7 @@ export class PaletteResolve {
     return result;
   }
 
-  private static snapshot(state: PaletteStateInterface): PaletteSnapshotEntity.Type {
+  private static snapshot(state: PaletteStateInterface, outputs: PaletteSnapshotEntity.Type['outputs']): PaletteSnapshotEntity.Type {
     const provenance = Metadata.roleProvenance(state.metadata);
     const derived: string[] = [];
     const pinned: string[] = [];
@@ -171,6 +174,7 @@ export class PaletteResolve {
       ...(compliance === undefined ? {} : { 'compliance': compliance }),
       ...(cvd === undefined ? {} : { 'cvd': cvd }),
       'distances': PaletteResolve.record(distances),
+      ...(outputs === void 0 ? {} : { 'outputs': outputs }),
       'provenance': { 'derived': derived, 'pinned': pinned, 'synthesized': synthesized },
       'roles': roles,
       'scales': PaletteResolve.scales(state)
