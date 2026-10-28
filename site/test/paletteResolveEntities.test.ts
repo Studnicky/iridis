@@ -53,6 +53,13 @@ class TonalScaleAssertion {
   }
 }
 
+class OutputSnapshotAssertion {
+  static label(schemaName: string, framing: string): string {
+    const result = `${schemaName} ${framing}`;
+    return result;
+  }
+}
+
 await test('request entity survives a JSON round trip unchanged', () => {
   const request = PaletteResolveRequestEntity.create(PaletteResolveFixture.request());
   const text = JSON.stringify(request);
@@ -116,7 +123,7 @@ await test('output-enabled snapshots intake canonical VS Code themes for every s
         'schemaName': schemaName
       });
       const snapshot = PaletteResolve.run(request);
-      const snapshotLabel = [schemaName, framing].join(' ');
+      const snapshotLabel = OutputSnapshotAssertion.label(schemaName, framing);
       assert.notEqual(snapshot.vscodeTheme, undefined, `${snapshotLabel} emits a VS Code theme`);
       assert.deepEqual(ThemeRegistrationEntity.intake(snapshot.vscodeTheme), snapshot.vscodeTheme, `${snapshotLabel} registers its canonical VS Code theme with Shiki`);
       const restored = PaletteSnapshotEntity.intake(JSON.parse(JSON.stringify(snapshot)));
