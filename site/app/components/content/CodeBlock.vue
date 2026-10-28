@@ -9,8 +9,8 @@ import { trustedMarkupRenderer } from './trustedMarkupRenderer.ts';
  * Real multi-language syntax highlighting (Shiki: CSS, JSON, JS/TS, XML) using
  * a genuine VS Code theme object as the color source — not a static Shiki
  * theme, but `theme.vscodeTheme`: the live output of this site's own
- * emit:vscodeThemeJson task (MultiOutput.vue runs the full vscode plugin
- * pipeline once per palette change and hands the result down). Highlighting
+ * emit:vscodeThemeJson task (resolved once per palette change and
+ * handed down). Highlighting
  * different output languages this way still stays 100% engine-derived: the
  * theme changes the moment a seed changes, same as everything else on the
  * page, because it IS the engine's output, just reused as Shiki's input.

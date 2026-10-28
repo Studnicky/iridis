@@ -62,10 +62,10 @@ const capacitorSplashScreenSchema = {
   'type': 'object'
 } as const;
 
-/** Canonical admitted engine outputs displayed by the site format showcase. */
-export namespace MultiOutputEntity {
+/** Engine emit-task outputs read by the output-format rows. */
+export namespace EmittedOutputsEntity {
   export const Schema = {
-    '$id': 'https://iridis.dev/site/multi-output-result',
+    '$id': 'https://iridis.dev/site/emitted-outputs',
     'additionalProperties': false,
     'properties': {
       'capacitor:androidThemeXml': { 'type': 'string' },

@@ -17,6 +17,7 @@ import * as VueModule from 'vue';
 
 import { useNuxtApp, useRuntimeConfig, useState } from '#imports';
 
+import type { OutputRowsEntity } from './entities/OutputRowsEntity.ts';
 import type { PaletteSnapshotEntity } from './entities/PaletteSnapshotEntity.ts';
 import type { WorkerEnvelopeEntity } from './entities/WorkerEnvelopeEntity.ts';
 import type { WorkerReplyEntity } from './entities/WorkerReplyEntity.ts';
@@ -280,6 +281,9 @@ class IridisContextFactory {
       return initial;
     });
 
+    /** Output-format rows of the last admitted palette, keyed by OutputKeyEntity. */
+    const outputsByKey = VueModule.shallowRef<OutputRowsEntity.Type>({});
+
     /** Compliance and CVD reports from the last run. */
     const contrastReport = VueModule.shallowRef<{
       'compliance'?: ComplianceReportEntity.Type;
@@ -375,6 +379,7 @@ class IridisContextFactory {
         rolesDerived.value = snapshot.provenance.derived;
         scales.value = snapshot.scales;
         contrastReport.value = { 'compliance': snapshot.compliance, 'cvd': snapshot.cvd };
+        outputsByKey.value = snapshot.outputs ?? {};
         if (typeof document !== 'undefined') {
           applyCurrentFramingTokens(Tokens.mapFromEngine(roles.value, scales.value));
         }
@@ -462,6 +467,7 @@ class IridisContextFactory {
         const result = PaletteResolveRequestEntity.create({
           'colorSpace': colorSpace.value,
           'cvdMode': cvdMode.value,
+          'enableOutputs': true,
           'enableStrictCompliance': enableStrictCompliance.value,
           'framing': pendingFraming ?? framing.value,
           'nonMandatoryLevel': nonMandatoryLevel.value,
@@ -1318,7 +1324,7 @@ class IridisContextFactory {
           'effectiveHexesFor': effectiveHexesFor, 'enableStrictCompliance': enableStrictCompliance, 'error': error, 'framing': framing,
           'histogram': histogram,
           'imageSeeds': imageSeeds, 'imgChromaRange': imgChromaRange, 'imgDeltaECap': imgDeltaECap,
-          'imgHarmonize': imgHarmonize, 'imgHistogramBits': imgHistogramBits, 'imgK': imgK, 'imgLightnessRange': imgLightnessRange, 'imgStrategy': imgStrategy, 'mode': mode, 'nonMandatoryLevel': nonMandatoryLevel, 'paletteRevision': paletteRevision, 'pickerSeeds': pickerSeeds,
+          'imgHarmonize': imgHarmonize, 'imgHistogramBits': imgHistogramBits, 'imgK': imgK, 'imgLightnessRange': imgLightnessRange, 'imgStrategy': imgStrategy, 'mode': mode, 'nonMandatoryLevel': nonMandatoryLevel, 'outputsByKey': outputsByKey, 'paletteRevision': paletteRevision, 'pickerSeeds': pickerSeeds,
           'pinnableRoles': pinnableRoles, 'rejectedPinRoles': rejectedPinRoles, 'relationshipGraph': relationshipGraph, 'removeUploadedImage': removeUploadedImage, 'reRunCombine': reRunCombine, 'resolving': resolving, 'roleClamps': roleClamps, 'roleContrastRows': roleContrastRows,
           'roleDistances': roleDistances, 'roles': roles,
           'rolesDerived': rolesDerived, 'rolesPinned': rolesPinned, 'rolesSynthesized': rolesSynthesized,

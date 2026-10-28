@@ -34,6 +34,7 @@ export namespace PaletteResolveRequestEntity {
         'type': 'string'
       },
       'cvdMode': CvdModeEntity.Schema,
+      'enableOutputs': { 'type': 'boolean' },
       'enableStrictCompliance': { 'type': 'boolean' },
       'framing': FramingEntity.Schema,
       'nonMandatoryLevel': NonMandatoryLevelEntity.Schema,
@@ -48,6 +49,7 @@ export namespace PaletteResolveRequestEntity {
     'required': [
       'colorSpace',
       'cvdMode',
+      'enableOutputs',
       'enableStrictCompliance',
       'framing',
       'nonMandatoryLevel',

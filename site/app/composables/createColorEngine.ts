@@ -6,8 +6,7 @@ import { intakeHexHint } from '../theme/IntakeHexHint.ts';
 /**
  * Bootstraps an Engine with the core tasks, the site's own role-resolution
  * hex-hint intake task and the contrast plugin — the shared baseline
- * both the live palette pipeline (useIridis) and the export pipeline
- * (useMultiOutput) build on before adopting their own extra emit plugins.
+ * every palette resolution builds on before adopting extra emit plugins.
  */
 class CreateColorEngineOperation {
   static run(): Engine {

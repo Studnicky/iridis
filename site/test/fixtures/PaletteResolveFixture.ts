@@ -3,6 +3,7 @@ export class PaletteResolveFixture {
     const result = ({
       'colorSpace': 'srgb',
       'cvdMode': 'nudge',
+      'enableOutputs': false,
       'enableStrictCompliance': false,
       'framing': 'dark',
       'nonMandatoryLevel': 'AA',

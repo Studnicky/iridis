@@ -260,6 +260,7 @@ await test('the cvdMode and nonMandatoryLevel events reach the worker request an
   assert.equal(PairRequirements.count(liftedReport.pairs, 3), 0, 'AAA lifts every 3:1 non-text pair');
   assert.equal(PairRequirements.count(liftedReport.pairs, 4.5), baselineNonText + PairRequirements.count(baseline.pairs, 4.5));
   assert.ok(state.paletteRevision.value > revisionBefore, 'the admitted palette advances the revision');
+  assert.ok((state.outputsByKey.value.cssVars?.text.length ?? 0) > 0, 'the admitted palette publishes its output rows');
 
   const warned = await Session.resolveAfter(state, IridisUiEvent.setCvdMode('warn'), () => {
     const applied = state.cvdMode.value === 'warn';

@@ -33,6 +33,7 @@ await test('the initial input resolves to the demo defaults', () => {
     assert.deepEqual(message.request, {
       'colorSpace': 'srgb',
       'cvdMode': 'nudge',
+      'enableOutputs': true,
       'enableStrictCompliance': false,
       'framing': 'dark',
       'nonMandatoryLevel': 'AA',
@@ -57,6 +58,7 @@ await test('a command sequence produces the pinned resolve request', () => {
   assert.deepEqual(request, {
     'colorSpace': 'displayP3',
     'cvdMode': 'nudge',
+    'enableOutputs': true,
     'enableStrictCompliance': false,
     'framing': 'light',
     'nonMandatoryLevel': 'AA',
