@@ -79,6 +79,19 @@ export class PaletteSessionEffectHandlers implements PaletteSessionEffectHandler
     return result;
   }
 
+  /** Runs one schema-feasibility check; only the newest check's report or failure reaches the read model. */
+  public async feasibility(input: PaletteSessionInputEntity.Type): Promise<void> {
+    this.#outcome.feasibilityChecking();
+    const reply = await this.#client.request(PaletteSessionRequest.feasibility(input));
+    if (reply?.kind === 'schema-feasibility') {
+      if (reply.report === undefined) {
+        this.#outcome.feasibilityFailed('Schema feasibility reply carried no report');
+      } else {
+        this.#outcome.feasibilityReported(reply.report);
+      }
+    }
+  }
+
   public fail(revision: number, correlationId: string, message: string): void {
     this.#outcome.failed(revision, correlationId, message);
   }
@@ -113,6 +126,8 @@ export class PaletteSessionEffectHandlers implements PaletteSessionEffectHandler
   #laneFailed(lane: string, message: string): void {
     if (lane === 'combine') {
       this.#laneFailure.combineFailed(message);
+    } else if (lane === 'schema-feasibility') {
+      this.#outcome.feasibilityFailed(message);
     } else if (lane.startsWith('extract:')) {
       this.#laneFailure.extractFailed(lane.slice('extract:'.length), message);
     } else {
