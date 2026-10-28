@@ -7,6 +7,7 @@ export namespace PluginSchemaContributionInterfaceEntity {
   export const Schema = {
     'additionalProperties': false,
     'properties': {
+      'inputMetadata': { 'type': 'object' },
       'metadata': { 'type': 'object' },
       'outputs':  { 'type': 'object' }
     },
