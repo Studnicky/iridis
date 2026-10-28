@@ -4,7 +4,7 @@ import type { JSONSchema7Type } from 'json-schema';
 import { ModuleError } from '@studnicky/errors/node';
 import { TaskManifestEntity } from '@studnicky/iridis';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
-import { JsonObject } from '@studnicky/types/node';
+import { JsonObject, JsonValue } from '@studnicky/types/node';
 
 import { vscodeSeedRoleData } from '../data/vscodeSeedRoleData.ts';
 import { VscodeRoleBridgeEntity } from '../entities/VscodeRoleBridgeEntity.ts';
@@ -12,11 +12,12 @@ import { VscodeRolePaletteEntity } from '../entities/VscodeRolePaletteEntity.ts'
 import { VscodeRoleProjectionEntity } from '../entities/VscodeRoleProjectionEntity.ts';
 
 class VscodeRoleBridgeResolution {
-  static readonly #seedRoleNames = vscodeSeedRoleData.roleTiers[2].roleNames;
+  static readonly #seedRoleTier = vscodeSeedRoleData.roleTiers[2];
+  static readonly #seedRoleNames = VscodeRoleBridgeResolution.#seedRoleTier.roleNames;
 
   static bridge(state: PaletteStateInterface): {
-    readonly 'palette': { readonly 'framing': string; readonly 'roles': Record<string, JSONSchema7Type>; readonly 'tier': number };
-    readonly 'projection': { readonly 'framing': string; readonly 'roles': Record<string, JSONSchema7Type> };
+    readonly 'palette': VscodeRolePaletteEntity.Type;
+    readonly 'projection': VscodeRoleProjectionEntity.Type;
   } | undefined {
     const candidate = state.input.metadata?.['vscode:roleBridge'];
     if (candidate === undefined) {
@@ -42,22 +43,23 @@ class VscodeRoleBridgeResolution {
       const sourceRole = VscodeRoleBridgeResolution.sourceRole(resolvedRoles, candidates, seedRole);
       const color = resolvedRoles.get(sourceRole);
       if (color === undefined) {
-        throw new TypeError(`vscode:bridgeRoles resolved absent source role '${sourceRole}'`);
+        throw ModuleError.create(`vscode:bridgeRoles resolved absent source role '${sourceRole}'`, {
+          'context': { 'seedRole': seedRole, 'sourceRole': sourceRole },
+          'scenario': 'CONFIGURATION'
+        });
       }
       paletteEntries.set(seedRole, color);
       projectionEntries.set(seedRole, { 'color': color, 'sourceRole': sourceRole });
     }
-    const palette = {
+    const palette = VscodeRolePaletteEntity.intake({
       'framing': bridge.framing,
       'roles': JsonObject.fromEntries(paletteEntries),
-      'tier': 16
-    };
-    const projection = {
+      'tier': VscodeRoleBridgeResolution.#seedRoleTier.tier
+    });
+    const projection = VscodeRoleProjectionEntity.intake({
       'framing': bridge.framing,
       'roles': JsonObject.fromEntries(projectionEntries)
-    };
-    VscodeRolePaletteEntity.intake(palette);
-    VscodeRoleProjectionEntity.intake(projection);
+    });
     return { 'palette': palette, 'projection': projection };
   }
 
@@ -67,7 +69,10 @@ class VscodeRoleBridgeResolution {
     seedRole: string
   ): string {
     if (candidates === undefined) {
-      throw new TypeError(`vscode:roleBridge omits canonical seed role '${seedRole}'`);
+      throw ModuleError.create(`vscode:roleBridge omits canonical seed role '${seedRole}'`, {
+        'context': { 'seedRole': seedRole },
+        'scenario': 'CONFIGURATION'
+      });
     }
     for (let candidateIndex = 0; candidateIndex < candidates.length; candidateIndex += 1) {
       const candidate = candidates.at(candidateIndex);
@@ -98,8 +103,8 @@ class BridgeVscodeRoles implements TaskInterface {
     if (result === undefined) {
       return;
     }
-    state.metadata['vscode:rolePalette'] = result.palette;
-    state.metadata['vscode:roleProjection'] = result.projection;
+    state.metadata['vscode:rolePalette'] = JsonValue.from(result.palette);
+    state.metadata['vscode:roleProjection'] = JsonValue.from(result.projection);
     context.logger.debug(
       LogBody.create({
         'component': 'BridgeVscodeRoles',

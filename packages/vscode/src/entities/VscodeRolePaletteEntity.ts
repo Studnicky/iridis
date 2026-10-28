@@ -6,7 +6,8 @@ import { ColorRecordEntity } from '@studnicky/iridis';
 import { vscodeSeedRoleData } from '../data/vscodeSeedRoleData.ts';
 
 class VscodeRolePaletteSchema {
-  static readonly #seedRoleNames = vscodeSeedRoleData.roleTiers[2].roleNames;
+  static readonly #seedRoleTier = vscodeSeedRoleData.roleTiers[2];
+  static readonly #seedRoleNames = VscodeRolePaletteSchema.#seedRoleTier.roleNames;
 
   static readonly schema = {
     '$id': 'https://iridis.dev/schema/vscode/role-palette',
@@ -20,7 +21,7 @@ class VscodeRolePaletteSchema {
         'propertyNames': { 'enum': VscodeRolePaletteSchema.#seedRoleNames },
         'type': 'object'
       },
-      'tier': { 'const': 16, 'type': 'number' }
+      'tier': { 'const': VscodeRolePaletteSchema.#seedRoleTier.tier, 'type': 'number' }
     },
     'required': ['framing', 'roles', 'tier'],
     'type': 'object'
