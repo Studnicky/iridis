@@ -26,7 +26,8 @@ export namespace PaletteSessionImageEntity {
       },
       'enableCombineLock': { 'type': 'boolean' },
       'entries': { 'items': PaletteSessionImageEntryEntity.Schema, 'type': 'array' },
-      'histogram': ImageExtractionResultEntity.WeightedHexListSchema
+      'histogram': ImageExtractionResultEntity.WeightedHexListSchema,
+      'selectedCandidateLabel': { 'minLength': 1, 'type': 'string' }
     },
     'required': ['candidates', 'combine', 'enableCombineLock', 'entries', 'histogram'],
     'type': 'object'

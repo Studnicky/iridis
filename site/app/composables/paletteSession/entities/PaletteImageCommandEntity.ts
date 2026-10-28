@@ -5,10 +5,12 @@ import { EntityCompiler } from '@studnicky/entity/browser';
 import { ExtractionSettingsEntity } from '../../entities/ExtractionSettingsEntity.ts';
 import { ImageCombineResultEntity } from '../../entities/ImageCombineResultEntity.ts';
 import { ImageExtractionResultEntity } from '../../entities/ImageExtractionResultEntity.ts';
+import { PaletteSessionInputEntity } from './PaletteSessionInputEntity.ts';
+import { PaletteSessionSeedEntity } from './PaletteSessionSeedEntity.ts';
 
 const imageIdSchema = { 'minLength': 1, 'type': 'string' } as const;
 
-/** Image-intake intents; hexes are never carried, the session derives them from its own entries. */
+/** Image-intake intents; the combine inputs are derived from the session's own entries, and a candidate selection carries the chosen palette's hexes. */
 export namespace PaletteImageCommandEntity {
   export const Schema = {
     '$id': 'https://iridis.dev/site/palette-session/image-command',
@@ -63,6 +65,23 @@ export namespace PaletteImageCommandEntity {
             'additionalProperties': false,
             'properties': { 'imageId': imageIdSchema, 'label': { 'minLength': 1, 'type': 'string' } },
             'required': ['imageId'],
+            'type': 'object'
+          }
+        },
+        'required': ['interaction', 'payload'],
+        'type': 'object'
+      },
+      {
+        'additionalProperties': false,
+        'properties': {
+          'interaction': { 'const': 'palette.image.candidate.select', 'type': 'string' },
+          'payload': {
+            'additionalProperties': false,
+            'properties': {
+              'hexes': { 'items': PaletteSessionSeedEntity.HexSchema, 'maxItems': PaletteSessionInputEntity.maximumSeeds, 'minItems': 1, 'type': 'array' },
+              'label': { 'minLength': 1, 'type': 'string' }
+            },
+            'required': ['hexes', 'label'],
             'type': 'object'
           }
         },
