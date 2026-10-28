@@ -3,6 +3,8 @@ import type { ContrastFeasibilityReportEntity } from '@studnicky/iridis-contrast
 
 import { colorRecordFactory, ContrastOptionsEntity, InputEntity, Metadata, RoleRelationshipGraphEntity, RoleSchemaEntity } from '@studnicky/iridis';
 import { ComplianceReportEntity, ContrastFeasibility, CvdResultSetEntity } from '@studnicky/iridis-contrast';
+import { vscodePlugin, VscodeRolePaletteEntity } from '@studnicky/iridis-vscode';
+import { JsonObject } from '@studnicky/types/browser';
 
 import type { PaletteResolveRequestEntity } from './entities/PaletteResolveRequestEntity.ts';
 import type { PickerSeedType } from './types/pickerSeedType.ts';
@@ -18,6 +20,7 @@ import { OutputRows } from './outputRows.ts';
 import { PaletteMetadata } from './paletteMetadata.ts';
 import { pickerSeedInputs } from './pickerSeedInputs.ts';
 import { roleSchemaFor } from './roleSchemaFor.ts';
+import { runVscodeTheme } from './runVscodeTheme.ts';
 
 class ContrastMetadataSlot {
   static compliance(metadata: PaletteStateInterface['metadata']): ComplianceReportEntity.Type | undefined {
@@ -69,6 +72,38 @@ class RoleClampReadModel {
   }
 }
 
+class VscodeThemeSnapshot {
+  static from(
+    state: PaletteStateInterface,
+    request: PaletteResolveRequestEntity.Type
+  ): { readonly 'compliance': PaletteSnapshotEntity.Type['vscodeCompliance']; readonly 'theme': PaletteSnapshotEntity.Type['vscodeTheme']; } {
+    const value = state.metadata['vscode:rolePalette'];
+    if (value === undefined) {
+      throw new RangeError('The palette pipeline did not write a VS Code role palette.');
+    }
+    const palette = VscodeRolePaletteEntity.intake(value);
+    const paletteEntries = Object.entries(palette.roles);
+    const roleEntries = new Map<string, string>();
+    for (let index = 0; index < paletteEntries.length; index += 1) {
+      const entry = paletteEntries[index];
+      if (entry !== undefined) {
+        roleEntries.set(entry[0], entry[1].hex);
+      }
+    }
+    const run = runVscodeTheme({
+      'contrast': state.input.contrast,
+      'framing': request.framing,
+      'roles': JsonObject.fromEntries(roleEntries),
+      'tier': palette.tier
+    });
+    const result = { 'compliance': run.compliance, 'theme': run.theme?.json };
+    if (result.theme === undefined) {
+      throw new RangeError('The VS Code pipeline did not emit a theme JSON object.');
+    }
+    return result;
+  }
+}
+
 /** Resolves one palette request to a JSON-serializable snapshot; the single engine path shared by the worker, SSR, and build-time callers. */
 export class PaletteResolve {
   public static seeds(seeds: readonly PickerSeedType[]): PaletteResolveRequestEntity.Type['seeds'] {
@@ -101,7 +136,7 @@ export class PaletteResolve {
         'nonMandatoryLevel': request.nonMandatoryLevel,
         'strictness': request.strictness
       })),
-      'metadata': PaletteMetadata.withVariant({}),
+      'metadata': PaletteMetadata.withVariant({ 'vscode:roleBridge': request.framing === 'dark' ? pair.vscodeRoleBridge.dark : pair.vscodeRoleBridge.light }),
       'roles': roleSchemaFor(roles),
       'runtime': { 'colorSpace': request.colorSpace, 'framing': request.framing }
     });
@@ -119,11 +154,18 @@ export class PaletteResolve {
 
   public static run(request: PaletteResolveRequestEntity.Type): PaletteSnapshotEntity.Type {
     const engine = createColorEngine();
-    if (request.enableOutputs) {OutputRows.adopt(engine);}
-    engine.pipeline(request.enableOutputs ? [...COLOR_PIPELINE, ...OutputRows.tasks] : COLOR_PIPELINE);
+    if (request.enableOutputs) {
+      engine.adopt(vscodePlugin);
+      OutputRows.adopt(engine);
+    }
+    const pipeline = request.enableOutputs
+      ? [...COLOR_PIPELINE, 'vscode:bridgeRoles', ...OutputRows.tasks]
+      : COLOR_PIPELINE;
+    engine.pipeline(pipeline);
     const state = engine.run(PaletteResolve.input(request));
     const outputs = request.enableOutputs ? PaletteResolve.record(OutputRows.build(state.outputs)) : void 0;
-    const result = PaletteResolve.snapshot(state, outputs);
+    const vscode = request.enableOutputs ? VscodeThemeSnapshot.from(state, request) : undefined;
+    const result = PaletteResolve.snapshot(state, outputs, vscode);
     return result;
   }
 
@@ -148,7 +190,11 @@ export class PaletteResolve {
     return result;
   }
 
-  private static snapshot(state: PaletteStateInterface, outputs: PaletteSnapshotEntity.Type['outputs']): PaletteSnapshotEntity.Type {
+  private static snapshot(
+    state: PaletteStateInterface,
+    outputs: PaletteSnapshotEntity.Type['outputs'],
+    vscode: { readonly 'compliance': PaletteSnapshotEntity.Type['vscodeCompliance']; readonly 'theme': PaletteSnapshotEntity.Type['vscodeTheme']; } | undefined
+  ): PaletteSnapshotEntity.Type {
     const provenance = Metadata.roleProvenance(state.metadata);
     const derived: string[] = [];
     const pinned: string[] = [];
@@ -176,6 +222,7 @@ export class PaletteResolve {
       'distances': PaletteResolve.record(distances),
       ...(outputs === void 0 ? {} : { 'outputs': outputs }),
       'provenance': { 'derived': derived, 'pinned': pinned, 'synthesized': synthesized },
+      ...(vscode === undefined ? {} : { 'vscodeCompliance': vscode.compliance, 'vscodeTheme': vscode.theme }),
       'roles': roles,
       'scales': PaletteResolve.scales(state)
     });

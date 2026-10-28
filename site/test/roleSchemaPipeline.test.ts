@@ -162,6 +162,41 @@ await test('pinned derived roles remain byte-exact while unpinned roles resolve 
   assert.deepEqual(provenance, { 'adjustments': [], 'origin': 'stated' });
 });
 
+await test('site schemas author a resolvable VS Code bridge for each framing', () => {
+  const schemaEntries = Object.entries(roleSchemaByName);
+  const framings = ['dark', 'light'] as const;
+  for (let schemaIndex = 0; schemaIndex < schemaEntries.length; schemaIndex += 1) {
+    const schemaEntry = schemaEntries[schemaIndex];
+    if (schemaEntry === undefined) {
+      throw new Error(`schema entry ${schemaIndex} is absent`);
+    }
+    const [schemaName, pair] = schemaEntry;
+    for (let framingIndex = 0; framingIndex < framings.length; framingIndex += 1) {
+      const framing = framings[framingIndex];
+      if (framing === undefined) {
+        throw new Error(`framing ${framingIndex} is absent`);
+      }
+      const available = new Set(pair[framing].roles.map((role) => {return role.name;}));
+      const bridgeEntries = Object.entries(pair.vscodeRoleBridge[framing].roles);
+      for (let bridgeIndex = 0; bridgeIndex < bridgeEntries.length; bridgeIndex += 1) {
+        const bridgeEntry = bridgeEntries[bridgeIndex];
+        if (bridgeEntry === undefined) {
+          throw new Error(`bridge entry ${bridgeIndex} is absent`);
+        }
+        const [seedRole, candidates] = bridgeEntry;
+        assert.equal(
+          candidates.some((candidate) => {
+            const result = available.has(candidate);
+            return result;
+          }),
+          true,
+          `${schemaName} ${framing} bridge resolves ${seedRole}`
+        );
+      }
+    }
+  }
+});
+
 await test('iridis-32 status hue targets preserve their authored clamp and tolerance', () => {
   const { schema, state } = RoleSchemaPipelineFixture.run('iridis-32');
   const resolutions = Metadata.relationshipResolution(state.metadata);

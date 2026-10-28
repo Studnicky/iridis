@@ -44,6 +44,7 @@ import { PaletteResolveRequestEntity } from './entities/PaletteResolveRequestEnt
 import { RoleSortableRowEntity } from './entities/RoleSortableRowEntity.ts';
 import { SchemaNameEntity } from './entities/SchemaNameEntity.ts';
 import { WorkerMessageEntity } from './entities/WorkerMessageEntity.ts';
+import { globalVscodeTheme } from './globalVscodeTheme.ts';
 import { ImagePixels } from './imagePixels.ts';
 import { PaletteAdmission } from './paletteAdmission.ts';
 import { PaletteResolve } from './paletteResolve.ts';
@@ -380,6 +381,7 @@ class IridisContextFactory {
         scales.value = snapshot.scales;
         contrastReport.value = { 'compliance': snapshot.compliance, 'cvd': snapshot.cvd };
         outputsByKey.value = snapshot.outputs ?? {};
+        globalVscodeTheme.value = snapshot.vscodeTheme ?? {};
         if (typeof document !== 'undefined') {
           applyCurrentFramingTokens(Tokens.mapFromEngine(roles.value, scales.value));
         }

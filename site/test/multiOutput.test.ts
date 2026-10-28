@@ -109,30 +109,39 @@ await test('a request without enableOutputs is rejected at the boundary', () => 
 await test('enableOutputs false resolves the palette without output rows', () => {
   const snapshot = PaletteResolve.run(PaletteResolveRequestEntity.create(PaletteResolveFixture.request()));
   assert.equal(snapshot.outputs, void 0);
+  assert.equal(snapshot.vscodeTheme, void 0);
   assert.equal(snapshot.roles.length > 0, true);
 });
 
 await test('enableOutputs true produces every dark output row with pinned text, labels, and languages', () => {
   const snapshot = PaletteResolve.run(PaletteResolveRequestEntity.create({ ...PaletteResolveFixture.request(), 'enableOutputs': true }));
   PinnedRows.assertRows(snapshot, PinnedRows.dark);
+  assert.notEqual(snapshot.vscodeTheme, undefined);
+  assert.notEqual(snapshot.vscodeCompliance, undefined);
 });
 
 await test('enableOutputs true produces every light output row with pinned text, labels, and languages', () => {
   const snapshot = PaletteResolve.run(PaletteResolveRequestEntity.create({ ...PaletteResolveFixture.request(), 'enableOutputs': true, 'framing': 'light' }));
   PinnedRows.assertRows(snapshot, PinnedRows.light);
+  assert.notEqual(snapshot.vscodeTheme, undefined);
+  assert.notEqual(snapshot.vscodeCompliance, undefined);
 });
 
-await test('one resolution runs one engine pass with a single contrast stage and the emit tasks', () => {
+await test('one worker resolution runs the palette and canonical VS Code pipelines once each', () => {
   const run = mock.method(Engine.prototype, 'run');
   const pipeline = mock.method(Engine.prototype, 'pipeline');
   try {
     PaletteResolve.run(PaletteResolveRequestEntity.create({ ...PaletteResolveFixture.request(), 'enableOutputs': true }));
-    assert.equal(run.mock.callCount(), 1);
-    assert.equal(pipeline.mock.callCount(), 1);
-    const stages = pipeline.mock.calls[0]?.arguments[0] ?? [];
-    assert.equal(stages.filter(Stages.isCompliance).length, 1);
-    assert.equal(stages.includes('emit:cssVars'), true);
-    assert.equal(stages.includes('reason:serialize'), true);
+    assert.equal(run.mock.callCount(), 2);
+    assert.equal(pipeline.mock.callCount(), 2);
+    const paletteStages = pipeline.mock.calls[0]?.arguments[0] ?? [];
+    const vscodeStages = pipeline.mock.calls[1]?.arguments[0] ?? [];
+    assert.equal(paletteStages.filter(Stages.isCompliance).length, 1);
+    assert.equal(paletteStages.includes('vscode:bridgeRoles'), true);
+    assert.equal(paletteStages.includes('emit:cssVars'), true);
+    assert.equal(paletteStages.includes('reason:serialize'), true);
+    assert.equal(vscodeStages.includes('enforce:contrast'), true);
+    assert.equal(vscodeStages.includes('emit:vscodeThemeJson'), true);
   } finally {
     run.mock.restore();
     pipeline.mock.restore();

@@ -22,6 +22,7 @@
  */
 
 import { RoleRelationshipEntity, RoleRelationshipGraphEntity, RoleSchemaEntity } from '@studnicky/iridis';
+import { VscodeRoleBridgeEntity } from '@studnicky/iridis-vscode';
 
 import type { SchemaNameEntity } from '../composables/entities/SchemaNameEntity.ts';
 import type { SchemaPair } from '../composables/types/index.ts';
@@ -71,6 +72,35 @@ namespace RoleSchemas {
         'clamp': 90, 'hue': hue, 'id': id, 'operation': 'hue-target', 'priority': 0, 'relaxability': 'tolerant', 'target': target, 'tolerance': RelationshipGraphs.toleranceByOperation['hue-target'],
         ...(source === undefined ? {} : { 'source': source })
       });
+      return result;
+    }
+  }
+
+  class VscodeBridge {
+    private static readonly candidates = {
+      'background': ['background', 'bg-soft', 'surface'],
+      'comment': ['syntax-comment', 'text-subtle', 'muted'],
+      'constant': ['syntax-attribute', 'syntax-operator', 'brand'],
+      'error': ['error', 'warning', 'brand'],
+      'foreground': ['text', 'text-strong', 'brand'],
+      'function': ['syntax-function', 'brand'],
+      'info': ['info', 'brand'],
+      'keyword': ['syntax-keyword', 'brand'],
+      'muted': ['muted', 'text-subtle', 'divider'],
+      'number': ['syntax-number', 'brand'],
+      'string': ['syntax-string', 'brand'],
+      'success': ['success', 'brand'],
+      'surface': ['surface', 'bg-soft', 'background'],
+      'type': ['syntax-type', 'syntax-class', 'brand'],
+      'variable': ['text', 'text-strong', 'brand'],
+      'warning': ['warning', 'error', 'brand']
+    };
+
+    static pair(): SchemaPair['vscodeRoleBridge'] {
+      const result = {
+        'dark': VscodeRoleBridgeEntity.intake({ 'framing': 'dark', 'roles': VscodeBridge.candidates }),
+        'light': VscodeRoleBridgeEntity.intake({ 'framing': 'light', 'roles': VscodeBridge.candidates })
+      };
       return result;
     }
   }
@@ -356,11 +386,11 @@ namespace RoleSchemas {
   /* ─── Public registry ─────────────────────────────────────────────── */
 
   export const byName: Record<SchemaNameEntity.Type, SchemaPair> = {
-    'iridis-12': { 'dark': iridis12Dark, 'light': iridis12Light },
-    'iridis-16': { 'dark': iridis16Dark, 'light': iridis16Light },
-    'iridis-32': { 'dark': iridis32Dark, 'light': iridis32Light },
-    'iridis-4':  { 'dark': iridis4Dark,  'light': iridis4Light  },
-    'iridis-8':  { 'dark': iridis8Dark,  'light': iridis8Light  }
+    'iridis-12': { 'dark': iridis12Dark, 'light': iridis12Light, 'vscodeRoleBridge': VscodeBridge.pair() },
+    'iridis-16': { 'dark': iridis16Dark, 'light': iridis16Light, 'vscodeRoleBridge': VscodeBridge.pair() },
+    'iridis-32': { 'dark': iridis32Dark, 'light': iridis32Light, 'vscodeRoleBridge': VscodeBridge.pair() },
+    'iridis-4':  { 'dark': iridis4Dark,  'light': iridis4Light,  'vscodeRoleBridge': VscodeBridge.pair() },
+    'iridis-8':  { 'dark': iridis8Dark,  'light': iridis8Light,  'vscodeRoleBridge': VscodeBridge.pair() }
   };
 }
 

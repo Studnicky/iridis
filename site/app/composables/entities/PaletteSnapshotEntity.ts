@@ -6,6 +6,7 @@ import { EntityCompiler } from '@studnicky/entity/browser';
 import { ComplianceReportEntity, CvdResultSetEntity } from '@studnicky/iridis-contrast';
 
 import { OutputRowsEntity } from './OutputRowsEntity.ts';
+import { VscodeThemeJsonEntity } from './VscodeThemeJsonEntity.ts';
 
 const hexMapSchema = {
   'additionalProperties': { 'type': 'string' },
@@ -118,7 +119,9 @@ export namespace PaletteSnapshotEntity {
       'scales': {
         'additionalProperties': hexMapSchema,
         'type': 'object'
-      }
+      },
+      'vscodeCompliance': ComplianceReportEntity.Schema,
+      'vscodeTheme': VscodeThemeJsonEntity.Schema
     },
     'required': [
       'clamps',

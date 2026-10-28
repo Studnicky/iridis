@@ -6,6 +6,7 @@ import { reactive } from 'vue';
 import { PaletteResolveRequestEntity } from '../app/composables/entities/PaletteResolveRequestEntity.ts';
 import { PaletteSnapshotEntity } from '../app/composables/entities/PaletteSnapshotEntity.ts';
 import { PaletteResolve } from '../app/composables/paletteResolve.ts';
+import { roleSchemaByName } from '../app/theme/RoleSchemaByName.ts';
 import { Tokens } from '../app/theme/Tokens.ts';
 import { PaletteResolveFixture } from './fixtures/PaletteResolveFixture.ts';
 
@@ -85,6 +86,13 @@ await test('request entity rejects an unknown schema name', () => {
   assert.throws(() => {
     PaletteResolveRequestEntity.intake({ ...PaletteResolveFixture.request(), 'schemaName': 'iridis-5' });
   });
+});
+
+await test('palette input carries the schema-authored VS Code bridge for its selected framing', () => {
+  const request = PaletteResolveRequestEntity.create({ ...PaletteResolveFixture.request(), 'framing': 'light', 'schemaName': 'iridis-16' });
+  const input = PaletteResolve.input(request);
+
+  assert.deepEqual(input.metadata?.['vscode:roleBridge'], roleSchemaByName['iridis-16'].vscodeRoleBridge.light);
 });
 
 await test('palette resolution supplies distinct monotonic tonal scales to every Nuxt alias', () => {
