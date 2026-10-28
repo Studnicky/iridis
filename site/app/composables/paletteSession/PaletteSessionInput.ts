@@ -71,6 +71,8 @@ export class PaletteSessionInput {
       result = PaletteSessionInput.reduceSetting(input, command);
     } else if (command.interaction === 'palette.image.combine.applied') {
       result = PaletteSessionInput.hydrate(input, command.payload.result.extracted);
+    } else if (command.interaction === 'palette.image.candidate.select') {
+      result = PaletteSessionInput.hydrate(input, command.payload.hexes);
     } else if (PaletteSessionInteraction.isImageState(command)) {
       result = input;
     } else {
@@ -133,7 +135,7 @@ export class PaletteSessionInput {
     return result;
   }
 
-  /** A combine outcome feeds both lists; no extracted colours restore the defaults. */
+  /** A combine outcome or a selected candidate feeds both lists; no colours restore the defaults. */
   private static hydrate(input: PaletteSessionInputEntity.Type, hexes: readonly string[]): PaletteSessionInputEntity.Type {
     const result = PaletteSessionInputEntity.intake({
       ...input,

@@ -11,6 +11,7 @@ import { PaletteSessionInput } from './PaletteSessionInput.ts';
 export class PaletteSessionReadModel {
   public static failed(model: PaletteSessionReadModelEntity.Type, message: string): PaletteSessionReadModelEntity.Type {
     const result = PaletteSessionReadModelEntity.create({
+      'blockers': model.blockers,
       'correlationId': model.correlationId,
       'error': message,
       'image': model.image,
@@ -25,6 +26,7 @@ export class PaletteSessionReadModel {
 
   public static initial(input: PaletteSessionInputEntity.Type, image: PaletteSessionImageEntity.Type): PaletteSessionReadModelEntity.Type {
     const result = PaletteSessionReadModelEntity.create({
+      'blockers': AccessibilityBlockers.fromReport(undefined),
       'correlationId': 'session',
       'image': image,
       'input': input,
@@ -44,6 +46,7 @@ export class PaletteSessionReadModel {
     image: PaletteSessionImageEntity.Type
   ): PaletteSessionReadModelEntity.Type {
     const result = PaletteSessionReadModelEntity.create({
+      'blockers': model.blockers,
       'correlationId': correlationId,
       ...PaletteSessionReadModel.errorOf(model),
       'image': image,
@@ -75,6 +78,7 @@ export class PaletteSessionReadModel {
       }
     };
     const result = PaletteSessionReadModelEntity.create({
+      'blockers': blockers,
       'correlationId': model.correlationId,
       'image': model.image,
       'input': model.input,
@@ -95,6 +99,7 @@ export class PaletteSessionReadModel {
     image: PaletteSessionImageEntity.Type
   ): PaletteSessionReadModelEntity.Type {
     const result = PaletteSessionReadModelEntity.create({
+      'blockers': model.blockers,
       'correlationId': correlationId,
       'image': image,
       'input': input,

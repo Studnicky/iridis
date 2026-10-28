@@ -2,12 +2,13 @@ import type { CanonicalShapeType, NominalSchemaType } from '@studnicky/json-tolo
 
 import { EntityCompiler } from '@studnicky/entity/browser';
 
+import { AccessibilityBlockerSetEntity } from '../../entities/AccessibilityBlockerSetEntity.ts';
 import { FramingEntity } from '../../entities/FramingEntity.ts';
 import { PaletteSnapshotEntity } from '../../entities/PaletteSnapshotEntity.ts';
 import { PaletteSessionImageEntity } from './PaletteSessionImageEntity.ts';
 import { PaletteSessionInputEntity } from './PaletteSessionInputEntity.ts';
 
-/** What consumers read: the latest input, the image-intake state, the lifecycle status, and the newest admitted palette with its revision identity. */
+/** What consumers read: the latest input, the accessibility blockers of the latest run (withheld runs included), the image-intake state, the lifecycle status, and the newest admitted palette with its revision identity. */
 export namespace PaletteSessionReadModelEntity {
   const statuses = ['failed', 'idle', 'resolving'] as const;
 
@@ -29,6 +30,7 @@ export namespace PaletteSessionReadModelEntity {
     '$id': 'https://iridis.dev/site/palette-session/read-model',
     'additionalProperties': false,
     'properties': {
+      'blockers': AccessibilityBlockerSetEntity.Schema,
       'correlationId': { 'minLength': 1, 'type': 'string' },
       'error': { 'type': 'string' },
       'image': PaletteSessionImageEntity.Schema,
@@ -38,7 +40,7 @@ export namespace PaletteSessionReadModelEntity {
       'status': { 'enum': statuses, 'type': 'string' },
       'withheld': { 'type': 'boolean' }
     },
-    'required': ['correlationId', 'image', 'input', 'revision', 'status', 'withheld'],
+    'required': ['blockers', 'correlationId', 'image', 'input', 'revision', 'status', 'withheld'],
     'type': 'object'
   } as const;
 

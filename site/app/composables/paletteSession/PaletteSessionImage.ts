@@ -77,9 +77,15 @@ export class PaletteSessionImage {
       result = PaletteSessionImageEntity.intake({ ...image, 'enableCombineLock': command.payload.enableCombineLock });
     } else if (command.interaction === 'palette.image.combine.applied') {
       const combined = command.payload.result;
-      result = PaletteSessionImage.combineIdle(
-        PaletteSessionImageEntity.intake({ ...image, 'candidates': combined.candidates, 'histogram': combined.histogram })
-      );
+      result = PaletteSessionImage.combineIdle(PaletteSessionImageEntity.intake({
+        'candidates': combined.candidates,
+        'combine': image.combine,
+        'enableCombineLock': image.enableCombineLock,
+        'entries': image.entries,
+        'histogram': combined.histogram
+      }));
+    } else if (command.interaction === 'palette.image.candidate.select') {
+      result = PaletteSessionImageEntity.intake({ ...image, 'selectedCandidateLabel': command.payload.label });
     } else if (command.interaction === 'palette.image.combine.failed') {
       result = PaletteSessionImage.combineFailed(image, command.payload.message);
     }
@@ -152,7 +158,7 @@ export class PaletteSessionImage {
   }
 
   /** The weighted colours an entry contributes: its chosen candidate when that label still exists, otherwise its dominant colours. */
-  private static contribution(entry: PaletteSessionImageEntity.Type['entries'][number]): readonly { 'hex': string; 'weight': number }[] {
+  public static contribution(entry: PaletteSessionImageEntity.Type['entries'][number]): readonly { 'hex': string; 'weight': number }[] {
     const match = entry.candidates.find((candidate) => {
       const chosen = Object.is(candidate.label, entry.selectedCandidateLabel);
       return chosen;
