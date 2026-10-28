@@ -94,7 +94,7 @@ class BridgeVscodeRoles implements TaskInterface {
     'description': 'Maps resolved caller roles to the canonical VS Code seed palette without inventing unresolved colours.',
     'name': 'vscode:bridgeRoles',
     'reads': ['input.metadata.vscode:roleBridge', 'roles', 'runtime.framing'],
-    'requires': ['enforce:contrast'],
+    'requires': ['withhold:compliance'],
     'writes': ['metadata.vscode:rolePalette', 'metadata.vscode:roleProjection']
   });
 

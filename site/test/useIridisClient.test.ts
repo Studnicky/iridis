@@ -7,6 +7,7 @@ import { watch } from 'vue';
 import type { WorkerReplyEntity } from '../app/composables/entities/WorkerReplyEntity.ts';
 import type { EngineWorkerScopeInterface } from '../app/composables/interfaces/EngineWorkerScopeInterface.ts';
 
+import { globalVscodeTheme } from '../app/composables/globalVscodeTheme.ts';
 import { EngineWorkerHost } from '../app/workers/EngineWorkerHost.ts';
 import * as NuxtImportsLoader from './fixtures/NuxtImportsLoader.mjs';
 
@@ -162,6 +163,7 @@ await test('useIridis client boot applies tokens and extracts the sample image o
   assert.ok(state.histogram.value.length > 0, 'the worker combine result lands on the shared histogram');
   assert.ok(state.candidates.value.length > 0, 'the worker combine candidates land on the shared candidates');
   assert.equal(typeof state.roles.value.background, 'string');
+  assert.notDeepEqual(globalVscodeTheme.value, {}, 'the admitted worker snapshot replaces the empty VS Code theme');
   assert.ok(cssVariables.size > 0);
   assert.equal(classNames.has('dark'), true);
 

@@ -6,6 +6,8 @@ import { reactive } from 'vue';
 import { PaletteResolveRequestEntity } from '../app/composables/entities/PaletteResolveRequestEntity.ts';
 import { PaletteSnapshotEntity } from '../app/composables/entities/PaletteSnapshotEntity.ts';
 import { PaletteResolve } from '../app/composables/paletteResolve.ts';
+import { roleSchemaByName } from '../app/theme/RoleSchemaByName.ts';
+import { ThemeRegistrationEntity } from '../app/theme/ThemeRegistrationEntity.ts';
 import { Tokens } from '../app/theme/Tokens.ts';
 import { PaletteResolveFixture } from './fixtures/PaletteResolveFixture.ts';
 
@@ -51,6 +53,13 @@ class TonalScaleAssertion {
   }
 }
 
+class OutputSnapshotAssertion {
+  static label(schemaName: string, framing: string): string {
+    const result = `${schemaName} ${framing}`;
+    return result;
+  }
+}
+
 await test('request entity survives a JSON round trip unchanged', () => {
   const request = PaletteResolveRequestEntity.create(PaletteResolveFixture.request());
   const text = JSON.stringify(request);
@@ -85,6 +94,42 @@ await test('request entity rejects an unknown schema name', () => {
   assert.throws(() => {
     PaletteResolveRequestEntity.intake({ ...PaletteResolveFixture.request(), 'schemaName': 'iridis-5' });
   });
+});
+
+await test('palette input carries the schema-authored VS Code bridge for its selected framing', () => {
+  const request = PaletteResolveRequestEntity.create({ ...PaletteResolveFixture.request(), 'framing': 'light', 'schemaName': 'iridis-16' });
+  const input = PaletteResolve.input(request);
+
+  assert.deepEqual(input.metadata?.['vscode:roleBridge'], roleSchemaByName['iridis-16'].vscodeRoleBridge.light);
+});
+
+await test('output-enabled snapshots intake canonical VS Code themes for every schema and framing', () => {
+  const schemaNames = Object.keys(roleSchemaByName);
+  const framings = ['dark', 'light'] as const;
+  for (let schemaIndex = 0; schemaIndex < schemaNames.length; schemaIndex += 1) {
+    const schemaName = schemaNames[schemaIndex];
+    if (schemaName === undefined) {
+      throw new Error('Schema name is required.');
+    }
+    for (let framingIndex = 0; framingIndex < framings.length; framingIndex += 1) {
+      const framing = framings[framingIndex];
+      if (framing === undefined) {
+        throw new Error('Framing is required.');
+      }
+      const request = PaletteResolveRequestEntity.create({
+        ...PaletteResolveFixture.request(),
+        'enableOutputs': true,
+        'framing': framing,
+        'schemaName': schemaName
+      });
+      const snapshot = PaletteResolve.run(request);
+      const snapshotLabel = OutputSnapshotAssertion.label(schemaName, framing);
+      assert.notEqual(snapshot.vscodeTheme, undefined, `${snapshotLabel} emits a VS Code theme`);
+      assert.deepEqual(ThemeRegistrationEntity.intake(snapshot.vscodeTheme), snapshot.vscodeTheme, `${snapshotLabel} registers its canonical VS Code theme with Shiki`);
+      const restored = PaletteSnapshotEntity.intake(JSON.parse(JSON.stringify(snapshot)));
+      assert.deepEqual(restored.vscodeTheme, snapshot.vscodeTheme, `${snapshotLabel} restores its canonical VS Code theme`);
+    }
+  }
 });
 
 await test('palette resolution supplies distinct monotonic tonal scales to every Nuxt alias', () => {

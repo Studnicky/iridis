@@ -2,6 +2,27 @@ import type { CanonicalShapeType, NominalSchemaType } from '@studnicky/json-tolo
 
 import { EntityCompiler } from '@studnicky/entity/browser';
 
+const semanticRuleSchema = {
+  'additionalProperties': false,
+  'properties': {
+    'fontStyle': { 'type': 'string' },
+    'foreground': { 'type': 'string' }
+  },
+  'required': [],
+  'type': 'object'
+} as const;
+
+const tokenColorRuleSchema = {
+  'additionalProperties': false,
+  'properties': {
+    'name': { 'type': 'string' },
+    'scope': { 'anyOf': [{ 'type': 'string' }, { 'items': { 'type': 'string' }, 'type': 'array' }] },
+    'settings': semanticRuleSchema
+  },
+  'required': ['name', 'scope', 'settings'],
+  'type': 'object'
+} as const;
+
 /** Canonical VS Code theme JSON consumed by the interactive theme preview. */
 export namespace VscodeThemeJsonEntity {
   export const Schema = {
@@ -10,9 +31,14 @@ export namespace VscodeThemeJsonEntity {
     'properties': {
       'colors': { 'additionalProperties': { 'type': 'string' }, 'type': 'object' },
       'name': { 'type': 'string' },
-      'semanticHighlighting': { 'const': true, 'type': 'boolean' },
-      'semanticTokenColors': { 'additionalProperties': true, 'type': 'object' },
-      'tokenColors': { 'items': { 'additionalProperties': true, 'type': 'object' }, 'type': 'array' },
+      'semanticHighlighting': { 'enum': [true], 'type': 'boolean' },
+      'semanticTokenColors': {
+        'additionalProperties': {
+          'anyOf': [{ 'type': 'string' }, semanticRuleSchema]
+        },
+        'type': 'object'
+      },
+      'tokenColors': { 'items': tokenColorRuleSchema, 'type': 'array' },
       'type': { 'enum': ['dark', 'light', 'hc-dark', 'hc-light'], 'type': 'string' }
     },
     'required': ['colors', 'name', 'semanticHighlighting', 'semanticTokenColors', 'tokenColors', 'type'],
