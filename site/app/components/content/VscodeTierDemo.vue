@@ -5,7 +5,10 @@ import { useVscodeTierDemo } from '~/composables/useVscodeTierDemo.ts';
 
 const { announcement, framing, paletteName, result, roles, seedRoles, setPalette, setTier, tier } = useVscodeTierDemo();
 const copyMessage = ref('');
-const themeJson = computed(() => result.value.theme === undefined ? '' : JSON.stringify(result.value.theme.theme.json, null, 2));
+const themeJson = computed(() => {
+  const theme = result.value.theme?.theme;
+  return theme === undefined ? '' : JSON.stringify(theme.json, null, 2);
+});
 
 function updateTier(event: Event): void {
   if (event.currentTarget instanceof HTMLSelectElement) { setTier(Number(event.currentTarget.value)); }
@@ -119,7 +122,14 @@ function downloadTheme(): void {
       {{ result.error }}
     </p>
     <template v-else-if="result.theme">
+      <p
+        v-if="result.theme.compliance.disposition === 'withheld'"
+        class="rounded-md border border-warning bg-warning/10 px-3 py-2 text-sm text-warning"
+      >
+        Strict palette admission withholds this unresolved result from use; the generated theme remains available for inspection with its compliance report.
+      </p>
       <VscodeThemePreview
+        v-if="result.theme.workbenchColors !== undefined && result.theme.semanticTokenColors !== undefined"
         :semantic-token-colors="result.theme.semanticTokenColors"
         :workbench-colors="result.theme.workbenchColors"
       />
@@ -146,7 +156,10 @@ function downloadTheme(): void {
           </ul>
         </details>
       </div>
-      <div class="flex flex-wrap gap-2">
+      <div
+        v-if="result.theme.theme !== undefined"
+        class="flex flex-wrap gap-2"
+      >
         <button
           type="button"
           class="rounded-md border border-default bg-default px-3 py-2 text-sm font-medium text-highlighted"
@@ -161,7 +174,10 @@ function downloadTheme(): void {
           Download theme JSON
         </button>
       </div>
-      <details class="overflow-hidden rounded-lg border border-default">
+      <details
+        v-if="result.theme.theme !== undefined"
+        class="overflow-hidden rounded-lg border border-default"
+      >
         <summary class="cursor-pointer px-3 py-2 text-sm font-medium text-highlighted">
           Emitted theme.json
         </summary><pre class="max-h-72 overflow-auto border-t border-default p-3 text-xs leading-relaxed text-highlighted"><code>{{ themeJson }}</code></pre>

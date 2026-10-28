@@ -11,8 +11,20 @@ class VscodeThemeFixture {
     return comparison;
   }
 
+  static contrast() {
+    const result = {
+      'algorithm': 'wcag21',
+      'cvdMode': 'warn',
+      'enableStrictCompliance': false,
+      'level': 'AA',
+      'nonMandatoryLevel': 'AA'
+    };
+    return result;
+  }
+
   static darkTierFour() {
     const result = {
+      'contrast': VscodeThemeFixture.contrast(),
       'framing': 'dark',
       'roles': {
         'background': '#101820',
@@ -25,8 +37,19 @@ class VscodeThemeFixture {
     return result;
   }
 
+  static strictUnresolved() {
+    const palette = VscodeThemeFixture.darkTierFour();
+    const result = {
+      ...palette,
+      'contrast': { ...palette.contrast, 'enableStrictCompliance': true },
+      'roles': { ...palette.roles, 'foreground': palette.roles.background }
+    };
+    return result;
+  }
+
   static lightTierFour() {
     const result = {
+      'contrast': VscodeThemeFixture.contrast(),
       'framing': 'light',
       'roles': {
         'background': '#f7f4ed',
@@ -41,6 +64,7 @@ class VscodeThemeFixture {
 
   static darkTierSixteen() {
     const result = {
+      'contrast': VscodeThemeFixture.contrast(),
       'framing': 'dark',
       'roles': {
         'background': '#101820',
@@ -67,6 +91,7 @@ class VscodeThemeFixture {
 
   static lightTierSixtyFour() {
     const result = {
+      'contrast': VscodeThemeFixture.contrast(),
       'framing': 'light',
       'roles': {
         'accent': '#f7f4ed',
@@ -155,6 +180,20 @@ await test('runVscodeTheme emits canonical dark and light VS Code theme data', (
   assert.equal(light.palette.framing, 'light');
   assert.equal(dark.palette.tier, 4);
   assert.equal(light.palette.tier, 4);
+  assert.notEqual(dark.compliance.disposition, 'withheld');
+  assert.notEqual(light.compliance.disposition, 'withheld');
+  assert.notEqual(dark.workbenchColors, undefined, 'dark theme output is available');
+  assert.notEqual(light.workbenchColors, undefined, 'light theme output is available');
+  assert.notEqual(dark.semanticTokenColors, undefined, 'dark semantic output is available');
+  assert.notEqual(light.semanticTokenColors, undefined, 'light semantic output is available');
+  if (
+    dark.workbenchColors === undefined ||
+    light.workbenchColors === undefined ||
+    dark.semanticTokenColors === undefined ||
+    light.semanticTokenColors === undefined
+  ) {
+    throw new Error('resolved VS Code theme output is absent');
+  }
   assert.equal(Object.keys(dark.workbenchColors).length, 132);
   assert.equal(Object.keys(light.workbenchColors).length, 132);
   assert.equal(Object.keys(dark.semanticTokenColors).length > 0, true);
@@ -163,6 +202,7 @@ await test('runVscodeTheme emits canonical dark and light VS Code theme data', (
 
 await test('runVscodeTheme preserves exact custom structured seed roles and reports pinned provenance', () => {
   const palette = {
+    'contrast': VscodeThemeFixture.contrast(),
     'framing': 'dark' as const,
     'roles': {
       'background': '#14202b',
@@ -201,6 +241,22 @@ await test('runVscodeTheme pins every tier-specific supplied role and returns co
 await test('runVscodeTheme emits only sRGB hex workbench colors', () => {
   const result = runVscodeTheme(VscodeThemeFixture.lightTierSixtyFour());
 
+  assert.notEqual(result.workbenchColors, undefined, 'resolved workbench colors are available');
+  assert.notEqual(result.theme, undefined, 'resolved theme JSON is available');
+  if (result.workbenchColors === undefined || result.theme === undefined) {
+    throw new Error('resolved VS Code theme output is absent');
+  }
   assert.equal(Object.values(result.workbenchColors).every(VscodeThemeFixture.isSrgb), true);
   assert.equal(JSON.stringify(result.theme.json).includes('display-p3'), false);
+});
+
+await test('runVscodeTheme exposes a withheld report and canonical theme data for caller admission', () => {
+  const result = runVscodeTheme(VscodeThemeFixture.strictUnresolved());
+
+  assert.equal(result.compliance.disposition, 'withheld');
+  assert.notEqual(result.compliance.problemPairs.length, 0);
+  assert.notEqual(result.theme, undefined, 'the canonical emitter still returns theme data');
+  assert.notEqual(result.workbenchColors, undefined, 'the canonical emitter still returns workbench data');
+  assert.notEqual(result.semanticTokenColors, undefined, 'the canonical emitter still returns semantic data');
+  assert.notEqual(result.roles.foreground, undefined, 'best-achievable roles remain available for diagnostics');
 });

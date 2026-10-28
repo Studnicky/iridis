@@ -1,6 +1,7 @@
 import type { CanonicalShapeType, NominalSchemaType } from '@studnicky/json-tology/types';
 
 import { EntityCompiler } from '@studnicky/entity/browser';
+import { ContrastOptionsEntity } from '@studnicky/iridis';
 import { vscodeSeedRoleData } from '@studnicky/iridis-vscode';
 
 /** Validates a structured VS Code tier palette before it enters the theme pipeline. */
@@ -9,6 +10,7 @@ export namespace VscodeThemeRequestEntity {
     '$id': 'https://iridis.dev/site/vscode-theme-request',
     'additionalProperties': false,
     'properties': {
+      'contrast': { 'additionalProperties': true, 'type': 'object' },
       'framing': { 'enum': ['dark', 'light'], 'type': 'string' },
       'roles': {
         'additionalProperties': { 'pattern': '^#[0-9A-Fa-f]{6}$', 'type': 'string' },
@@ -16,11 +18,11 @@ export namespace VscodeThemeRequestEntity {
       },
       'tier': { 'enum': [4, 8, 16, 64], 'type': 'number' }
     },
-    'required': ['framing', 'roles', 'tier'],
+    'required': ['contrast', 'framing', 'roles', 'tier'],
     'type': 'object'
   } as const;
 
-  export type Type = NominalSchemaType<typeof Schema>;
+  export type Type = NominalSchemaType<typeof Schema> & { readonly 'contrast': ContrastOptionsEntity.Type };
 
   export const validate = EntityCompiler.compile<Type>(Schema);
   const schemaIntake = EntityCompiler.compileIntake<Type>(Schema);
@@ -54,7 +56,8 @@ export namespace VscodeThemeRequestEntity {
   class InputAdmission {
     static intake(value: unknown): Type {
       const admitted = schemaIntake(value);
-      const result = TierRoleContract.validate(admitted);
+      const contrast = ContrastOptionsEntity.intake(admitted.contrast);
+      const result = TierRoleContract.validate({ ...admitted, 'contrast': contrast });
       return result;
     }
   }

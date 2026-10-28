@@ -1,6 +1,8 @@
 import { vscodeSeedRoleData } from '@studnicky/iridis-vscode';
 import * as VueModule from 'vue';
 
+import { ContrastConfigFor } from './contrastConfigFor.ts';
+import { ContrastConfigOptionsEntity } from './entities/ContrastConfigOptionsEntity.ts';
 import { runVscodeTheme } from './runVscodeTheme.ts';
 import { useIridis } from './useIridis.ts';
 
@@ -49,15 +51,36 @@ class VscodeTierDemoData {
 
 class VscodeTierDemoOperation {
   static run() {
-    const { framing } = useIridis();
+    const {
+      contrastStrictness,
+      cvdMode,
+      enableStrictCompliance,
+      framing,
+      nonMandatoryLevel
+    } = useIridis();
     const tier = VueModule.ref(4);
     const paletteName = VueModule.ref('aurora');
     const roles = VueModule.ref<Record<string, string>>(VscodeTierDemoData.roles(tier.value, paletteName.value));
     const announcement = VueModule.ref(VscodeTierDemoData.paletteAnnouncement(paletteName.value, tier.value));
     const seedRoles = VueModule.computed(() => { const result = VscodeTierDemoData.roleNames(tier.value);
       return result; });
+    const contrast = VueModule.computed(() => {
+      const options = ContrastConfigOptionsEntity.create({
+        'cvdMode': cvdMode.value,
+        'enableStrictCompliance': enableStrictCompliance.value,
+        'nonMandatoryLevel': nonMandatoryLevel.value,
+        'strictness': contrastStrictness.value
+      });
+      const result = ContrastConfigFor.forOptions(options);
+      return result;
+    });
     const result = VueModule.computed(() => {
-      try { return { 'error': undefined, 'theme': runVscodeTheme({ 'framing': framing.value, 'roles': roles.value, 'tier': tier.value }) }; }
+      try {
+        return {
+          'error': undefined,
+          'theme': runVscodeTheme({ 'contrast': contrast.value, 'framing': framing.value, 'roles': roles.value, 'tier': tier.value })
+        };
+      }
       catch (error: unknown) {
         const themeError = error instanceof Error ? error : new Error('The theme could not be generated.');
         return { 'error': VscodeTierDemoData.messageFor(themeError), 'theme': undefined };

@@ -7,3 +7,9 @@ import './fixtures/VscodePluginScenarioSuite.ts';
 await test('VscodePlugin :: scenario-suite registration exposes the canonical plugin', () => {
   assert.strictEqual(vscodePlugin.name, 'vscode');
 });
+
+await test('VscodePlugin :: projects resolved graph roles without private colour-math tasks', () => {
+  const taskNames = vscodePlugin.tasks().map((task) => { return task.name; });
+
+  assert.deepStrictEqual(taskNames, ['vscode:seedRoles', 'emit:vscodeSemanticRules', 'emit:vscodeThemeJson']);
+});
