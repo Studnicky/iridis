@@ -4,6 +4,10 @@ import type {
   TaskInterface
 } from '@studnicky/iridis';
 
+import { VscodeRoleBridgeEntity } from './entities/VscodeRoleBridgeEntity.ts';
+import { VscodeRolePaletteEntity } from './entities/VscodeRolePaletteEntity.ts';
+import { VscodeRoleProjectionEntity } from './entities/VscodeRoleProjectionEntity.ts';
+import { bridgeVscodeRoles } from './tasks/BridgeVscodeRoles.ts';
 import { emitVscodeSemanticRules } from './tasks/EmitVscodeSemanticRules.ts';
 import { emitVscodeThemeJson } from './tasks/EmitVscodeThemeJson.ts';
 import { seedVscodeRoles } from './tasks/SeedVscodeRoles.ts';
@@ -41,11 +45,18 @@ class VscodePlugin implements PluginInterface {
   readonly 'version' = '0.1.0';
 
   tasks(): readonly TaskInterface[] {
-    return [seedVscodeRoles, emitVscodeSemanticRules, emitVscodeThemeJson];
+    return [seedVscodeRoles, bridgeVscodeRoles, emitVscodeSemanticRules, emitVscodeThemeJson];
   }
 
   schemas(): PluginSchemaContributionInterfaceEntity.Type {
     return {
+      'inputMetadata': {
+        'vscode:roleBridge': VscodeRoleBridgeEntity.Schema
+      },
+      'metadata': {
+        'vscode:rolePalette': VscodeRolePaletteEntity.Schema,
+        'vscode:roleProjection': VscodeRoleProjectionEntity.Schema
+      },
       'outputs': {
         'vscode:semanticTokenRules': VSCODE_PLUGIN_SCHEMAS.semanticTokenRules,
         'vscode:themeJson':          VSCODE_PLUGIN_SCHEMAS.themeJson,

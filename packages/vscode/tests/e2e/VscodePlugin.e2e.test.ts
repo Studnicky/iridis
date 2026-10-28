@@ -11,5 +11,5 @@ await test('VscodePlugin :: scenario-suite registration exposes the canonical pl
 await test('VscodePlugin :: projects resolved graph roles without private colour-math tasks', () => {
   const taskNames = vscodePlugin.tasks().map((task) => { return task.name; });
 
-  assert.deepStrictEqual(taskNames, ['vscode:seedRoles', 'emit:vscodeSemanticRules', 'emit:vscodeThemeJson']);
+  assert.deepStrictEqual(taskNames, ['vscode:seedRoles', 'vscode:bridgeRoles', 'emit:vscodeSemanticRules', 'emit:vscodeThemeJson']);
 });

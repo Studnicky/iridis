@@ -12,7 +12,7 @@ await test('VscodePlugin :: registers only canonical seed and projection tasks',
     return result;
   });
 
-  assert.deepEqual(names, ['vscode:seedRoles', 'emit:vscodeSemanticRules', 'emit:vscodeThemeJson']);
+  assert.deepEqual(names, ['vscode:seedRoles', 'vscode:bridgeRoles', 'emit:vscodeSemanticRules', 'emit:vscodeThemeJson']);
 });
 
 await test('VscodePlugin :: full schemas include graph-authored output roles', () => {
